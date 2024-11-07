@@ -9,7 +9,9 @@
     "unlimitedStorage",
     "scripting",
     "webNavigation",
-    "desktopCapture"
+    "desktopCapture",
+    "tabs",
+    "downloads"
   ],
   "host_permissions": [
     "*://*/*"
