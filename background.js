@@ -82,11 +82,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     // Save all screenshots as individual PNG files
                     storeScreenshots.forEach((screenshot, index) => {
                         console.log(screenshot)
-                        const base64Data = screenshot[0].split(',')[1]; // Remove the data URL prefix
-                        const filename = `${folderName}/${screenshot[1].replace(/[:.]/g, "-")}.png`;
+                        const filename = `${folderName}/${screenshot[1].replace(/[:.]/g, "-")}.jpg`;
 
                         chrome.downloads.download({
-                            url: 'data:image/png;base64,' + base64Data,
+                            url: screenshot[0],
                             filename: filename,
                             saveAs: false
                         });
@@ -110,7 +109,7 @@ async function captureScreenshot() {
   try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tab) {
-          return await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+          return await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 50 });
       }
   } catch (error) {
       console.error('Error capturing screenshot:', error);

@@ -3,34 +3,32 @@ const SCROLL_THRESHOLD = 1500; // Minimum time in ms between screenshots for scr
 let htmlSnapshotId = null;
 
 
-initializeHtmlSnapshot()
+// initializeHtmlSnapshot()
 document.addEventListener('DOMContentLoaded',()=>{
     currenttimestamp=new Date()
     captureScreenshot(timestamp=currenttimestamp)
 });
 
-function captureViewportElement(){
 
-}
+// async function initializeHtmlSnapshot() {
+//   const currentSnapshotId = generateHtmlSnapshotId();
+//   chrome.storage.local.get(['htmlSnapshots'], (result) => {
+//     const htmlSnapshots = result.htmlSnapshots || {};
 
-async function initializeHtmlSnapshot() {
-  const currentSnapshotId = generateHtmlSnapshotId();
-  chrome.storage.local.get(['htmlSnapshots'], (result) => {
-    const htmlSnapshots = result.htmlSnapshots || {};
-
-    if (!htmlSnapshots[currentSnapshotId] || htmlSnapshotId !== currentSnapshotId) {
-      htmlSnapshotId = currentSnapshotId;
-      htmlSnapshots[htmlSnapshotId] = document.documentElement.outerHTML;
-      chrome.storage.local.set({ htmlSnapshots }, () => {
-        console.log("HTML snapshot saved with new ID:", htmlSnapshotId);
-      });
-    }
-  });
-}
+//     if (!htmlSnapshots[currentSnapshotId] || htmlSnapshotId !== currentSnapshotId) {
+//       htmlSnapshotId = currentSnapshotId;
+//       htmlSnapshots[htmlSnapshotId] = document.documentElement.outerHTML;
+//       chrome.storage.local.set({ htmlSnapshots }, () => {
+//         console.log("HTML snapshot saved with new ID:", htmlSnapshotId);
+//       });
+//     }
+//   });
+// }
 function generateHtmlSnapshotId() {
     const url = window.location.href;
-    return `html_${hashCode(url)}`
-  }
+    const timestamp = new Date().toISOString();
+    return `html_${hashCode(url)}_${timestamp}`;
+}
 function hashCode(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -80,18 +78,27 @@ function getClickableElementsInViewport() {
 // Function to capture interactions
 async function captureInteraction(eventType, target, timestamp) {
     try {
-        const clickableElements = getClickableElementsInViewport();
+        // Generate new HTML snapshot ID and capture current HTML
+        const currentSnapshotId = generateHtmlSnapshotId();
+        
+        // Save HTML snapshot
+        chrome.storage.local.get(['htmlSnapshots'], (result) => {
+            const htmlSnapshots = result.htmlSnapshots || {};
+            htmlSnapshots[currentSnapshotId] = document.documentElement.outerHTML;
+            chrome.storage.local.set({ htmlSnapshots });
+        });
+
+        // const clickableElements = getClickableElementsInViewport();
         const data = {
             eventType,
             timestamp: timestamp,
             target: target,
-            targetOuterHTML:target.outerHTML,
+            targetOuterHTML: target.outerHTML,
             targetClass: target.className,
             targetId: target.id,
-            targetText: target.innerText || target.value || '', // Handles text content for clicks and inputs
-            // SS_id: screenshotId,  // Attach the screenshot ID to the interaction
-            htmlSnapshotId:htmlSnapshotId,
-            clickableElements: clickableElements,
+            targetText: target.innerText || target.value || '',
+            htmlSnapshotId: currentSnapshotId,  // Use the new snapshot ID
+            // clickableElements: clickableElements,
         };
 
         await chrome.runtime.sendMessage({ action: 'saveData', data });
@@ -118,24 +125,49 @@ document.addEventListener('scroll', async (event) => {
 });
 
 // Capture input (typing) interactions
-document.addEventListener('input', async (event) => {
-    try {
+// document.addEventListener('input', async (event) => {
+//     try {
+//         timestamp=new Date()
+//         await captureInteraction('input', event.target,timestamp);
+//         await captureScreenshot(timestamp);
+//     } catch (error) {
+//         console.error('Error during input event handling:', error);
+//     }
+// });
+
+document.addEventListener("blur", async (event) => {
+    if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA") {
+        const target = event.target;
         timestamp=new Date()
-        await captureInteraction('input', event.target,timestamp);
         await captureScreenshot(timestamp);
-    } catch (error) {
-        console.error('Error during input event handling:', error);
+        await captureInteraction("input", target, timestamp);
+        
     }
 });
+
 
 // Capture click interactions
 document.addEventListener('click', async (event) => {
     try {
         timestamp=new Date()
-        await captureInteraction('click', event.target,timestamp);
         await captureScreenshot(timestamp);
+        await captureInteraction('click', event.target,timestamp);
+        
     } catch (error) {
         console.error('Error during click event handling:', error);
+    }
+});
+
+let lastUrl = location.href;
+window.addEventListener("popstate", async () => {
+    const currentUrl = location.href;
+    if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl; // Update URL to prevent duplicate back actions
+        timestamp=new Date()
+        await captureScreenshot(timestamp);
+        await captureInteraction("back", document.body, timestamp);
+    } else {
+        console.log("Ignored duplicate back action.");
     }
 });
 
@@ -145,7 +177,7 @@ async function captureScreenshot(timestamp) {
       // Generate a unique screenshot ID
       const screenshotId = `screenshot_${timestamp.toISOString()}`;
       // Capture the screenshot
-      const screenshotDataUrl = await chrome.runtime.sendMessage({ action: 'captureScreenshot', screenshotId });
+      await chrome.runtime.sendMessage({ action: 'captureScreenshot', screenshotId });
 
 
   } catch (error) {
