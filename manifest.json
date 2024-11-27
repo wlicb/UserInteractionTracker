@@ -26,7 +26,8 @@
       "js": ["content.js"],
       "matches": [
         "https://www.amazon.com/*"
-      ]
+      ],
+      "run_at": "document_start"
     }
   ],
   "background": {
