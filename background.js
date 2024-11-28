@@ -279,38 +279,6 @@ async function selectRecipe(tabId, url) {
 
 
 importScripts('recipe.js')
-async function selectRecipe(tabId, url) {
-    const parsedUrl = new URL(url);
-    const path = parsedUrl.pathname;
-    
-    for (const recipe of recipes) {
-      const matchMethod = recipe.match_method || "text";
-      
-      if (matchMethod === "text") {
-        try {
-          // Execute script in tab to check for matching element
-          const [{result: hasMatch}] = await chrome.scripting.executeScript({
-            target: { tabId },
-            func: (selector, matchText) => {
-              const element = document.querySelector(selector);
-              return element && (!matchText || element.textContent.toLowerCase().includes(matchText.toLowerCase()));
-            },
-            args: [recipe.match, recipe.match_text || ""]
-          });
-          
-          if (hasMatch) {
-            return recipe;
-          }
-        } catch (error) {
-          console.error("Error checking text match:", error);
-        }
-      } else if (matchMethod === "url" && recipe.match === path) {
-        return recipe;
-      }
-    }
-    
-    throw new Error(`No matching recipe found for path: ${path}`);
-  }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'getRecipe') {

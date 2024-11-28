@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Error initializing clickable elements:', error);
     }
     try{
-        timestamp = new Date().toISOString();
+        const timestamp = new Date().toISOString();
         captureScreenshot(timestamp);
         captureInteraction('navigate', '',timestamp,'','',url);
     }catch(error){
@@ -296,7 +296,7 @@ document.addEventListener('scroll', async (event) => {
         const currentTime = Date.now();
         if (currentTime - lastScrollTime >= SCROLL_THRESHOLD) {
             lastScrollTime = currentTime;
-            timestamp=new Date().toISOString();
+            const timestamp=new Date().toISOString();
             // Only capture the screenshot after 3 seconds of inactivity
             await captureInteraction('scroll',event.target,timestamp);
             await captureScreenshot(timestamp);
@@ -309,15 +309,17 @@ document.addEventListener('scroll', async (event) => {
 
 
 document.addEventListener("blur", async (event) => {
-    if (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA") {
-        const target = event.target;
-        timestamp=new Date().toISOString();
+    const validInputTypes = ["text", "password", "email", "number", "search", "tel", "url"];
+    const target = event.target;
+    
+    // Check if it's a textarea or a valid input type
+    if (target.tagName === "TEXTAREA" || 
+        (target.tagName === "INPUT" && validInputTypes.includes(target.getAttribute("type")))) {
+        const timestamp = new Date().toISOString();
         await captureScreenshot(timestamp);
         await captureInteraction("input", target, timestamp);
-        
     }
-},true);
-
+}, true);
 
 // Capture click interactions
 function getUniqueSelector(element) {
@@ -356,25 +358,27 @@ function getFullSelector(element) {
 //         console.error('Error during click event handling:', error);
 //     }
 // });
-document.addEventListener('click', (event) => {
+document.addEventListener('click', async (event) => {
     try {
-        
-        function findClickableParent(element,depth=0) {
-            if (!element || depth>=2) return null;
+        function findClickableParent(element, depth=0) {
+            if (!element || depth >= 2) return null;
             if (element.hasAttribute('data-clickable-id')) {
                 return element;
             }
-            return findClickableParent(element.parentElement,depth+1);
+            return findClickableParent(element.parentElement, depth+1);
         }
-
+        console.log('click')
         const clickableElement = findClickableParent(event.target);
         const clickableId = clickableElement ? clickableElement.getAttribute('data-clickable-id') : null;
         
-        timestamp=new Date().toISOString();
-        const selector=getFullSelector(event.target);
-        captureScreenshot(timestamp);
-        captureInteraction('click', event.target,timestamp,selector,clickableId);
-
+        const timestamp = new Date().toISOString();
+        console.log(timestamp)
+        const selector = getFullSelector(event.target);
+        console.log('start screenshot')
+        await captureScreenshot(timestamp);
+        console.log('start interaction')
+        await captureInteraction('click', event.target, timestamp, selector, clickableId);
+        console.log('end interaction')
     } catch (error) {
         console.error('Error during click event handling:', error);
     }
