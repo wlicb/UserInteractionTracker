@@ -4,15 +4,16 @@ const CopyPlugin = require("copy-webpack-plugin");
 const srcDir = path.join(__dirname, "..", "src");
 
 module.exports = {
+    devtool: 'inline-source-map',
     entry: {
-      popup: path.join(srcDir, 'popup.tsx'),
-      options: path.join(srcDir, 'options.tsx'),
+      popup: path.join(srcDir, 'popup.ts'),
       background: path.join(srcDir, 'background.ts'),
-      content_script: path.join(srcDir, 'content_script.tsx'),
+      content_script: path.join(srcDir, 'content_script.ts'),
     },
     output: {
         path: path.join(__dirname, "../dist/js"),
         filename: "[name].js",
+        publicPath: '/dist/',
     },
     optimization: {
         splitChunks: {
