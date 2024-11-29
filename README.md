@@ -1,5 +1,5 @@
 # User Interaction Recorder
-This extension is build on top of the [chrome extension typescript starter](https://github.com/chibat/chrome-extension-typescript-starter).
+This extension is built on top of the [chrome extension typescript starter](https://github.com/chibat/chrome-extension-typescript-starter).
 
 ## Introduction
 The User Interaction Recorder is a Chrome extension that records user interactions on amazon web pages
@@ -52,20 +52,6 @@ Planned Improvement: Following Yuxuan's code, update the code to include additio
 ### Prerequisites
 
 * [node + npm](https://nodejs.org/) (Current Version)
-
-
-### Includes the following
-
-* TypeScript
-* Webpack
-* React
-* Jest
-* Example Code
-    * Chrome Storage
-    * Options Version 2
-    * content script
-    * count up badge number
-    * background
 
 ### Project Structure
 
