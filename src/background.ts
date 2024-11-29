@@ -101,7 +101,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           // chrome.storage.local.clear();
         });
       }
-      
+
+      if (message.action === 'clearMemoryCache') {
+        interactions = [];
+        screenshots = [];
+        actionSequenceId = 0;
+        sendResponse({ success: true });
+      }
 
     } catch (error) {
       // chrome.storage.local.clear();
@@ -117,7 +123,7 @@ async function captureScreenshot() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab) {
-      return await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 50 });
+      return await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 25 });
     }
   } catch (error) {
     console.error('Error capturing screenshot:', error);
@@ -136,58 +142,62 @@ function hashCode(str: string) {
 }
 
 // listen to switches between activated tabs
-// chrome.tabs.onActivated.addListener(async (activeInfo) => {
-//     const tab = await chrome.tabs.get(activeInfo.tabId);
-//     console.log(`Switched to tab ${activeInfo.tabId} with URL: ${tab.url}`);
-//     if (tab.url && tab.url.includes('amazon.com')) {
-//         try {
-//             const timestamp = new Date().toISOString();
-//             const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}`;
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    
+    const tabId = activeInfo.tabId;
+    const tab = await chrome.tabs.get(tabId);
+    if (!tab) {
+      console.error(`Failed to get tab with ID: ${tabId}`);
+      return;
+    }
+    console.log(`Switched to tab ${tabId} with URL: ${tab.url}`);
+    if (tab.url && tab.url.includes('amazon.com')) {
 
-//             // Execute script in the target tab to get HTML content
-//             const [{ result: htmlContent }] = await chrome.scripting.executeScript({
-//                 target: { tabId: activeInfo.tabId },
-//                 func: () => document.documentElement.outerHTML
-//             });
+      const timestamp = new Date().toISOString();
+      const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}`;
+      chrome.tabs.sendMessage(tabId, { action: 'getHTML' }, async (response) => {
+        const htmlContent = response?.html;
+        let result = await chrome.storage.local.get({ htmlSnapshots: {} })
+        const htmlSnapshots = result.htmlSnapshots || {};
+        htmlSnapshots[currentSnapshotId] = htmlContent;
+        await chrome.storage.local.set({ htmlSnapshots });
+        actionSequenceId++;
+        const data = {
+          actionSequenceId: actionSequenceId,
+          eventType: "tabActivate",
+          timestamp: timestamp,
+          target_url: tab.url,
+          htmlSnapshotId: currentSnapshotId,
+        };
+        interactions.push(data);
+        if (interactions.length > interactionsLimit) {
+          let result = await chrome.storage.local.get({ interactions: [] });
+          result = result.interactions || []
+          let storeInteractions = result.concat(interactions);
+          interactions.length = 0
+          await chrome.storage.local.set({ interactions: storeInteractions })
+        };
+        const screenshotDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 25 });
 
-//             let result = await chrome.storage.local.get({htmlSnapshots:{}})
-//             const htmlSnapshots = result.htmlSnapshots || {};
-//             htmlSnapshots[currentSnapshotId] = htmlContent;
-//             await chrome.storage.local.set({ htmlSnapshots });
+        const screenshotId = `screenshot_${timestamp}`;
+        if (screenshotDataUrl) {
+          screenshots.push([screenshotDataUrl, screenshotId]);
+          if (screenshots.length > screenshotLimit) {
+            let result = await chrome.storage.local.get({ screenshots: [] })
+            result = result.screenshots || []
+            const storeScreenshots = result.concat(screenshots);
+            screenshots.length = 0
+            await chrome.storage.local.set({ screenshots: storeScreenshots });
+          }
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error in tab activate handler:', error);
+  }
 
-//             const data = {
-//                 eventType: "navigate",
-//                 timestamp: timestamp,
-//                 target_url: tab.url,
-//                 htmlSnapshotId: currentSnapshotId,
-//             };
-//             interactions.push(data);
-//             if (interactions.length > interactionsLimit) {
-//               let result = await chrome.storage.local.get({interactions:[]});
-//               result=result.interactions||[]
-//               let storeInteractions = result.concat(interactions);
-//               interactions.length=0
-//               await chrome.storage.local.set({ interactions:storeInteractions })};
-
-//             // await new Promise(resolve => setTimeout(resolve, 200));
-//             const screenshotDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 50 });
-
-//             const screenshotId = `screenshot_${timestamp}`;
-//             if (screenshotDataUrl) {
-//                 screenshots.push([screenshotDataUrl, screenshotId]);
-//                 if (screenshots.length > screenshotLimit) {
-//                     let result = await chrome.storage.local.get({ screenshots: [] })
-//                     result = result.screenshots || []
-//                     const storeScreenshots = result.concat(screenshots);
-//                     screenshots.length = 0
-//                     await chrome.storage.local.set({ screenshots: storeScreenshots });
-//                 }
-//             }
-//         } catch (error) {
-//             console.error('Error in tab activate handler:', error);
-//         }
-//     }
-// });
+});
 
 
 async function selectRecipe(tabId: number, url: string) {

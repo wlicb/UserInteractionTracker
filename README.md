@@ -29,21 +29,12 @@ Select the `dist`folder containing the extension's files.
 Issue: When switching between already opened tabs, it's unclear whether this should be counted as an action and whether screenshots should be taken. (And I met some bugs when testing)
 
 - Asynchronous Recording Issues:
-
 Issue: There may be asynchronous issues causing some actions not to be recorded.
 
-- Incomplete Click Data Recording:
-
-Issue: While some data-clickable-id data processed by recipes is successfully recorded, the logic requires adjustments. Some clicks are not being recorded correctly.
-
 - Scroll Event Details:
-
 Issue: The pixel count for scroll events is not currently recorded. Plan to add.
-- Interaction IDs:
 
-Issue: Interactions currently lack unique identifiers. Plan to add.
 - Purchase Actions and Product Information Recording:
-
 Issue: The code for recording purchase actions and product information has bugs. Previously, only the product name and price were recorded.
 Planned Improvement: Following Yuxuan's code, update the code to include additional details such as ASIN.
 

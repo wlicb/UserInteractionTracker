@@ -1,6 +1,5 @@
 export {};  // Makes this file a module
 import { processElement } from './utils/element-processor';
-import { debounce } from 'lodash';
 // Define interfaces for Recipe and OrderDetail
 interface Recipe {
     tag_name?: string;
@@ -224,22 +223,6 @@ function getFullSelector(element:any) {
     return path.join(' > '); 
 }
 
-// document.addEventListener('click', async (event) => {
-//     try {
-//         timestamp=new Date().toISOString();
-//         const selector=getFullSelector(event.target);
-//         // const originalElement=event.target
-//         // const foundElement = document.querySelector(selector);
-//         // const isSameElement = foundElement === originalElement;
-//         // console.log(isSameElement)
-
-//         await captureScreenshot(timestamp);
-//         await captureInteraction('click', event.target,timestamp,selector);
-        
-//     } catch (error) {
-//         console.error('Error during click event handling:', error);
-//     }
-// });
 document.addEventListener('click', (event) => {
     try {
         
@@ -286,7 +269,7 @@ async function captureScreenshot(timestamp:string) {
 
 document.addEventListener("DOMContentLoaded", () => {
     // get all "Place Your Order" buttons
-    const placeOrderButtons = document.querySelectorAll('input[id="placeOrder"]');
+    const placeOrderButtons = document.querySelectorAll('input[id="placeOrder"], input[id="turbo-checkout-pyo-button"]');
 
     if (placeOrderButtons.length === 0) {
         console.log("No Place Your Order buttons found!");
@@ -328,3 +311,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
     });
 })});
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse:(response?: any)=>void) => {
+    if (message.action === 'getHTML') {
+      const htmlContent = document.documentElement.outerHTML;  
+      sendResponse({ html: htmlContent });
+    }
+    return true;
+  });
+  
+// // Add window beforeunload event listener
+// window.addEventListener('beforeunload', async (event) => {
+//     try {
+//         const timestamp = new Date().toISOString();
+//         const url = window.location.href;
+        
+//         // Capture final state before navigation
+//         await captureScreenshot(timestamp);
+//         await captureInteraction(
+//             'navigate_away', 
+//             {
+//                 outerHTML: '',
+//                 className: '',
+//                 id: '',
+//                 innerText: '',
+//                 value: ''
+//             },
+//             timestamp,
+//             '',
+//             '',
+//             url
+//         );
+//     } catch (error) {
+//         console.error('Error during beforeunload event handling:', error);
+//     }
+// });
+  
