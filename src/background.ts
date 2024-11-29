@@ -4,12 +4,14 @@ let interactions: any[] = [];
 const interactionsLimit = 10;
 let screenshots: [string, string][] = [];
 const screenshotLimit = 10;
-
+let actionSequenceId = 0;
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     try {
       if (message.action === 'saveData') {
         console.log('saveData ', message.data.eventType)
+        actionSequenceId++;
+        message.data.actionSequenceId = actionSequenceId;
         interactions.push(message.data);
         if (interactions.length > interactionsLimit) {
           let result = await chrome.storage.local.get({ interactions: [] });
@@ -46,7 +48,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         // Create a folder with the timestamp and download session info
         chrome.downloads.download({
-          url: 'data:text/plain;charset=utf-8,' + encodeURIComponent(`Session data for timestamp: ${timestamp}`),
+          url: 'data:text/plain;charset=utf-8,' + encodeURIComponent(`Session data for timestamp: ${timestamp}, user id: ${message.userId}`),
           filename: `${folderName}/session_info.txt`,
           saveAs: false
         }, async (downloadId) => {
@@ -96,16 +98,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           });
 
           sendResponse({ success: true });
-          chrome.storage.local.clear();
+          // chrome.storage.local.clear();
         });
       }
       
-      if (message.action === 'clearCache') {
-        chrome.storage.local.clear();
-        sendResponse({ success: true });
-      }
+
     } catch (error) {
-      chrome.storage.local.clear();
+      // chrome.storage.local.clear();
       console.error('Error handling message:', error);
       sendResponse({ success: false, error: (error as Error).message });
     }

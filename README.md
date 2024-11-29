@@ -11,6 +11,7 @@ The User Interaction Recorder is a Chrome extension that records user interactio
 interactions.json: A JSON file containing recorded interactions and HTML snapshots.
 session_info.txt: A text file with session information.
 Screenshots.
+- User ID: The extension allows you to set a user ID, which will be recorded in the session info.
 
 ## Installation
 

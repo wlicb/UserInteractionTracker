@@ -1,9 +1,27 @@
 const downloadDataBtn = document.getElementById('downloadData') as HTMLButtonElement;
 const outputDiv = document.getElementById('output') as HTMLDivElement;
 const clearCacheBtn = document.getElementById('clearCache') as HTMLButtonElement;
+const userIdInput = document.getElementById('userId') as HTMLInputElement;
+
+// 加载保存的用户ID
+chrome.storage.local.get(['userId'], (result) => {
+    if (result.userId) {
+        userIdInput.value = result.userId;
+    }
+});
+
+// 监听输入变化并保存
+userIdInput.addEventListener('change', () => {
+    const userId = userIdInput.value.trim();
+    chrome.storage.local.set({ userId: userId }, () => {
+        outputDiv.textContent = 'User ID saved.';
+    });
+});
+
 downloadDataBtn.addEventListener('click', () => {
     try {
-        chrome.runtime.sendMessage({ action: 'downloadData' }, (response) => {
+        const userId = userIdInput.value.trim();
+        chrome.runtime.sendMessage({ action: 'downloadData', userId }, (response) => {
             if (response.success) {
                 outputDiv.textContent = 'Data downloaded successfully.';
             } else {
@@ -16,14 +34,12 @@ downloadDataBtn.addEventListener('click', () => {
 });
 clearCacheBtn.addEventListener('click', () => {
     try {
-        chrome.runtime.sendMessage({ action: 'clearCache' }, (response) => {
-            if (response.success) {
-                outputDiv.textContent = 'Cache cleared successfully.';
-            } else {
-                outputDiv.textContent = `Failed to clear cache: ${response.error || 'Unknown error'}`;
-            }
-        });
-    } catch (error) {
+        chrome.storage.local.remove('orderDetails');
+        chrome.storage.local.remove('htmlSnapshots');
+        chrome.storage.local.remove('interactions');
+        chrome.storage.local.remove('screenshots');
+        outputDiv.textContent = 'Cache cleared successfully.';
+        }catch (error) {
         outputDiv.textContent = `Error: ${(error as Error).message}`;
     }
 });
