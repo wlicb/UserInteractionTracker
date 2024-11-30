@@ -64,13 +64,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error('Error initializing clickable elements:', error);
     }
-    try{
-        const timestamp = new Date().toISOString();
-        captureScreenshot(timestamp);
-        captureInteraction('navigate', '',timestamp,'','',url);
-    }catch(error){
-        console.error('Error capturing screenshot:', error);
-    }
+    // try{
+    //     const timestamp = new Date().toISOString();
+    //     captureScreenshot(timestamp);
+    //     captureInteraction('navigate', '',timestamp,'','',url);
+    // }catch(error){
+    //     console.error('Error capturing screenshot:', error);
+    // }
 });
 
 

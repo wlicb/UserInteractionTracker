@@ -57,7 +57,6 @@ function analyzeNavigation(tabId: number, url: string): string {
   return 'new';
 }
 
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     try {
@@ -92,6 +91,52 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else {
           sendResponse({ success: false, message: 'Failed to capture screenshot' });
         }
+      }
+      if (message.action === 'beforeUnloadEvent') {
+        console.log('beforeUnload event triggered:', message.data);
+        const { timestamp, url } = message.data;
+        
+        // Capture screenshot
+        const screenshotDataUrl = await captureScreenshot();
+        if (screenshotDataUrl) {
+          const screenshotId = `screenshot_${timestamp}`;
+          screenshots.push([screenshotDataUrl, screenshotId]);
+          if (screenshots.length > screenshotLimit) {
+            let result = await chrome.storage.local.get({ screenshots: [] })
+            result = result.screenshots || []
+            const storeScreenshots = result.concat(screenshots);
+            screenshots.length = 0
+            await chrome.storage.local.set({ screenshots: storeScreenshots });
+          }
+        }
+
+        // Record interaction
+        actionSequenceId++;
+        const data = {
+          actionSequenceId,
+          eventType: "navigate_away",
+          timestamp,
+          target_url: url,
+          target: {
+            outerHTML: '',
+            className: '',
+            id: '',
+            innerText: '',
+            value: ''
+          }
+        };
+        
+        interactions.push(data);
+        if (interactions.length > interactionsLimit) {
+          let result = await chrome.storage.local.get({ interactions: [] });
+          result = result.interactions || []
+          let storeInteractions = result.concat(interactions);
+          interactions.length = 0
+          await chrome.storage.local.set({ interactions: storeInteractions });
+        }
+
+        console.log('beforeUnload data recorded:', data);
+        sendResponse({ success: true });
       }
 
       // Download data on user request
@@ -161,16 +206,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         actionSequenceId = 0;
         sendResponse({ success: true });
       }
-      if (message.action === 'getRecipe' && sender.tab?.id) {
-        selectRecipe(sender.tab.id, message.url)
-          .then((recipe) => {
-            sendResponse({ recipe: recipe });
-          })
-          .catch((error) => {
-            sendResponse({ error: error.message });
-          });
-        return true; // Indicate that sendResponse will be called asynchronously
-      }
 
     } catch (error) {
       // chrome.storage.local.clear();
@@ -227,12 +262,11 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
         await chrome.storage.local.set({ htmlSnapshots });
         actionSequenceId++;
         const data = {
-          
+          actionSequenceId: actionSequenceId,
           eventType: "tabActivate",
           timestamp: timestamp,
           target_url: tab.url,
           htmlSnapshotId: currentSnapshotId,
-          actionSequenceId: actionSequenceId,
         };
         interactions.push(data);
         if (interactions.length > interactionsLimit) {
@@ -297,7 +331,7 @@ async function selectRecipe(tabId: number, url: string) {
   throw new Error(`No matching recipe found for path: ${path}`);
 }
 
-
+// Modify the webNavigation listener
 chrome.webNavigation.onCommitted.addListener(async (details) => {
   if (details.frameId !== 0) return;
   console.log('webNavigation onCommitted event triggered:', details);
@@ -311,23 +345,21 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
     }, async (results) => {
       if (results && results[0] && results[0].result) {
         const pageHtml = results[0].result;
-        const timestamp = new Date().toISOString();
-        const currentSnapshotId = `html_${hashCode(details.url)}_${timestamp}`;
-
-        let result = await chrome.storage.local.get({ htmlSnapshots: {} });
-        const htmlSnapshots = result.htmlSnapshots || {};
-        htmlSnapshots[currentSnapshotId] = pageHtml;
-        await chrome.storage.local.set({ htmlSnapshots });
+        console.log('当前页面的HTML:', pageHtml.slice(0, 100));
+        
         // Add navigation data to interactions
         actionSequenceId++;
         const data = {
-          
-          eventType: "navigation",
-          navigationType: navigationType,
-          timestamp: timestamp,
-          target_url: details.url,
-          htmlSnapshotId: currentSnapshotId,
           actionSequenceId,
+          eventType: "navigation",
+          timestamp: new Date().toISOString(),
+          target_url: details.url,
+          navigationType,
+          navigationState: {
+            backStack: [...tabNavigationHistory[details.tabId].backStack],
+            forwardStack: [...tabNavigationHistory[details.tabId].forwardStack],
+            currentUrl: tabNavigationHistory[details.tabId].currentUrl
+          }
         };
         
         interactions.push(data);
@@ -338,26 +370,6 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
           interactions.length = 0
           await chrome.storage.local.set({ interactions: storeInteractions });
         }
-        // add screenshot
-        const tab = await chrome.tabs.get(details.tabId);
-        const screenshotDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { 
-          format: 'jpeg', 
-          quality: 25 
-        });
-        
-        const screenshotId = `screenshot_${timestamp}`;
-        if (screenshotDataUrl) {
-          screenshots.push([screenshotDataUrl, screenshotId]);
-          if (screenshots.length > screenshotLimit) {
-            let result = await chrome.storage.local.get({ screenshots: [] })
-            result = result.screenshots || []
-            const storeScreenshots = result.concat(screenshots);
-            screenshots.length = 0
-            await chrome.storage.local.set({ screenshots: storeScreenshots });
-          }
-        }
-
-
       }
     });
   }
