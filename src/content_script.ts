@@ -178,28 +178,19 @@ document.addEventListener('scroll', async (event) => {
         console.error('Error during scroll event handling:', error);
     }
 });
-// const debouncedScrollHandler = debounce(async (event: Event) => {
-//     try {
-//         const timestamp = new Date().toISOString();
-//         await captureInteraction('scroll', event.target, timestamp, '', '', '');
-//         await captureScreenshot(timestamp);
-//     } catch (error) {
-//         console.error('Error during scroll event handling:', error);
-//     }
-// }, 200);
 
-// document.addEventListener('scroll', debouncedScrollHandler);
 
 
 document.addEventListener("blur", async (event) => {
-    if (event.target && (event.target as HTMLElement).tagName === "INPUT" || (event.target as HTMLElement).tagName === "TEXTAREA") {
-        const target = event.target;
-        const timestamp=new Date().toISOString();
+    const target = event.target as HTMLElement;
+    if (target && 
+        ((target.tagName === "INPUT" && (target as HTMLInputElement).type === "text") || 
+         target.tagName === "TEXTAREA")) {
+        const timestamp = new Date().toISOString();
         await captureScreenshot(timestamp);
         await captureInteraction("input", target, timestamp,'','','');
-        
     }
-},true);
+}, true);
 
 
 // Capture click interactions
@@ -266,51 +257,145 @@ async function captureScreenshot(timestamp:string) {
   }
 }
 
-
 document.addEventListener("DOMContentLoaded", () => {
-    // get all "Place Your Order" buttons
+    // Handle all types of order buttons
     const placeOrderButtons = document.querySelectorAll('input[id="placeOrder"], input[id="turbo-checkout-pyo-button"]');
+    const buyNowButton = document.querySelector('input[id="buy-now-button"]');
+    const setupNowButton = document.querySelector('button[id="rcx-subscribe-submit-button-announce"]');
+    const proceedToCheckoutButton = document.querySelector('input[name="proceedToRetailCheckout"]');
+    
+    // Handle Buy Now and Set Up Now buttons if present
+    [buyNowButton, setupNowButton].forEach(button => {
+        if (button) {
+            button.addEventListener("click", async () => {
+                try {
+                    const productInfo = {
+                        title: (document.querySelector("#title") as HTMLElement)?.innerText?.trim() || "",
+                        price: (document.querySelector("span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay") as HTMLElement)?.innerText?.trim() || "",
+                        asin: (document.querySelector("input#ASIN") as HTMLInputElement)?.value || "",
+                        options: {}
+                    };
 
-    if (placeOrderButtons.length === 0) {
-        console.log("No Place Your Order buttons found!");
-        return;
-    }
-    // get all product information, filter out interference items
-    const items = document.querySelectorAll('.lineitem-title-text');
-    const orderDetails: OrderDetail[] = [];
+                    // Get all option selections
+                    const optionRows = Array.from(document.querySelectorAll("#twister div.a-row:has(label.a-form-label):has(span.selection)"));
+                    optionRows.forEach(row => {
+                        const label = (row.querySelector("label.a-form-label") as HTMLElement)?.innerText?.replace(": ", "") || "";
+                        const value = (row.querySelector("span.selection") as HTMLElement)?.innerText || "";
+                        if (label && value) {
+                            (productInfo.options as any)[label] = value;
+                        }
+                    });
 
-    items.forEach((item) => {
-        // filter out interference items
-        if (item.matches('.a-size-base.lineitem-title-text')) {
-            console.log("Skipping interfering element:", (item as HTMLElement).innerText);
-            return;
+                    console.log(`${button.id} clicked - Product Info:`, productInfo);
+
+                    // Store the product info
+                    let result = await chrome.storage.local.get({orderDetails: []});
+                    const orderDetails = result.orderDetails || [];
+                    orderDetails.push({
+                        name: productInfo.title,
+                        price: parseFloat(productInfo.price.replace(/[^0-9.]/g, '')),
+                        asin: productInfo.asin,
+                        options: productInfo.options
+                    });
+                    await chrome.storage.local.set({ orderDetails });
+                } catch (error) {
+                    console.error(`Error capturing ${button.id} product info:`, error);
+                }
+            });
         }
+    });
 
-        // get product name
-        const productName = (item as HTMLElement).innerText.trim();
+    // Original Place Order button handling
+    // if (placeOrderButtons.length > 0) {
+    //     // get all product information, filter out interference items
+    //     const items = document.querySelectorAll('.lineitem-title-text');
+    //     const orderDetails: OrderDetail[] = [];
 
-        // get product price
-        const priceElement = item.closest('div')?.querySelector('.lineitem-price-text');
-        const productPrice = priceElement && (priceElement as HTMLElement).innerText
-            ? (priceElement as HTMLElement).innerText.trim().replace('$', '')
-            : '0.00';
+    //     items.forEach((item) => {
+    //         // filter out interference items
+    //         if (item.matches('.a-size-base.lineitem-title-text')) {
+    //             console.log("Skipping interfering element:", (item as HTMLElement).innerText);
+    //             return;
+    //         }
 
-        orderDetails.push({
-            name: productName,
-            price: parseFloat(productPrice),
+    //         // get product name
+    //         const productName = (item as HTMLElement).innerText.trim();
+
+    //         // get product price
+    //         const priceElement = item.closest('div')?.querySelector('.lineitem-price-text');
+    //         const productPrice = priceElement && (priceElement as HTMLElement).innerText
+    //             ? (priceElement as HTMLElement).innerText.trim().replace('$', '')
+    //             : '0.00';
+
+    //         orderDetails.push({
+    //             name: productName,
+    //             price: parseFloat(productPrice),
+    //         });
+    //     });
+    //     // add listener to each button
+    //     placeOrderButtons.forEach((button) => {
+    //         button.addEventListener("click", async(event) => {
+    //             console.log("Place Your Order button clicked!");
+    //             let result = await chrome.storage.local.get({orderDetails:[]});
+    //             result=result.orderDetails||[]
+    //             let storeOrderDetails = result.concat(orderDetails);
+    //             await chrome.storage.local.set({ orderDetails:storeOrderDetails });
+
+    //         });
+    //     });
+    // }
+    if (proceedToCheckoutButton) {
+        proceedToCheckoutButton.addEventListener("click", async(event) => {
+        try{
+            const selectedItems = [];
+            const cartItems = Array.from(document.querySelectorAll('[id^="sc-active-"]'))
+                .filter(item => item.id !== 'sc-active-cart');
+                for (const item of cartItems) {
+                    const checkbox = item.querySelector('input[type="checkbox"]') as HTMLInputElement;
+                    if (checkbox && checkbox.checked) {
+                        const productLink = item.querySelector('.sc-item-product-title-cont .sc-product-link');
+                        if (productLink) {
+                            const fullNameElement = productLink.querySelector('.a-truncate-full');
+                            const name = fullNameElement?.textContent?.trim() || '';
+                            
+                            const href = productLink.getAttribute('href') || '';
+                            const asin = href.match(/product\/([A-Z0-9]{10})/)?.[1] || '';
+                            
+                            const priceElement = item.querySelector('.sc-item-price-block .a-offscreen');
+                            const price = priceElement ? 
+                                parseFloat(priceElement.textContent?.replace(/[^0-9.]/g, '') || '0') : 0;
+
+                            const options: { [key: string]: string } = {};
+                            const variationElements = item.querySelectorAll('.sc-product-variation');
+                            variationElements.forEach(variation => {
+                                const label = variation.querySelector('.a-text-bold')?.textContent?.trim().replace(':', '') || '';
+                                const value = variation.querySelector('.a-size-small:not(.a-text-bold)')?.textContent?.trim() || '';
+                                if (label && value) {
+                                    options[label] = value;
+                                }
+                            });
+
+                            selectedItems.push({
+                                name,
+                                asin,
+                                price,
+                                options 
+                            });
+                        }
+                    }
+                }
+            if (selectedItems.length > 0) {
+                let result = await chrome.storage.local.get({orderDetails: []});
+                const orderDetails = result.orderDetails || [];
+                const updatedOrderDetails = orderDetails.concat(selectedItems);
+                await chrome.storage.local.set({ orderDetails: updatedOrderDetails });
+                console.log('Stored selected cart items:', selectedItems);
+            }
+        }catch (error) {
+                console.error('Error capturing selected cart items:', error);}
         });
-    });
-    // add listener to each button
-    placeOrderButtons.forEach((button) => {
-        button.addEventListener("click", async(event) => {
-            console.log("Place Your Order button clicked!");
-            let result = await chrome.storage.local.get({orderDetails:[]});
-            result=result.orderDetails||[]
-            let storeOrderDetails = result.concat(orderDetails);
-            await chrome.storage.local.set({ orderDetails:storeOrderDetails });
-
-    });
-})});
+    }
+});
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse:(response?: any)=>void) => {
     if (message.action === 'getHTML') {
@@ -319,31 +404,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse:(response?: 
     }
     return true;
   });
-  
-// // Add window beforeunload event listener
-// window.addEventListener('beforeunload', async (event) => {
-//     try {
-//         const timestamp = new Date().toISOString();
-//         const url = window.location.href;
-        
-//         // Capture final state before navigation
-//         await captureScreenshot(timestamp);
-//         await captureInteraction(
-//             'navigate_away', 
-//             {
-//                 outerHTML: '',
-//                 className: '',
-//                 id: '',
-//                 innerText: '',
-//                 value: ''
-//             },
-//             timestamp,
-//             '',
-//             '',
-//             url
-//         );
-//     } catch (error) {
-//         console.error('Error during beforeunload event handling:', error);
-//     }
-// });
   

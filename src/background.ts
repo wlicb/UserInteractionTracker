@@ -6,18 +6,22 @@ let screenshots: [string, string][] = [];
 const screenshotLimit = 10;
 let actionSequenceId = 0;
 
-// Add at the top of the file with other interfaces
-interface NavigationStack {
+// background.ts
+
+interface TabHistory {
   backStack: string[];
   forwardStack: string[];
   currentUrl: string | null;
 }
 
-// Add navigation tracking state for each tab
-const tabNavigationHistory: { [tabId: number]: NavigationStack } = {};
+const tabNavigationHistory: {
+  [tabId: number]: TabHistory;
+} = {};
 
-// Add this function to analyze navigation type
-function analyzeNavigation(tabId: number, url: string): string {
+function analyzeNavigation(
+  tabId: number,
+  url: string
+): 'new' | 'back' | 'forward' | 'reload' {
   if (!tabNavigationHistory[tabId]) {
     tabNavigationHistory[tabId] = {
       backStack: [],
@@ -25,38 +29,59 @@ function analyzeNavigation(tabId: number, url: string): string {
       currentUrl: null
     };
   }
-  
+
   const history = tabNavigationHistory[tabId];
-  
+
   if (!history.currentUrl) {
     history.currentUrl = url;
     return 'new';
   }
-
-  const forwardIndex = history.forwardStack.indexOf(url);
-  if (forwardIndex !== -1) {
-    const movedUrl = history.forwardStack.splice(forwardIndex, 1)[0];
-    history.backStack.push(history.currentUrl);
-    history.currentUrl = movedUrl;
-    return 'forward';
+  if (history.currentUrl === url) {
+    return 'reload';
   }
 
-  const backIndex = history.backStack.indexOf(url);
-  if (backIndex !== -1) {
-    history.forwardStack.push(history.currentUrl);
-    history.currentUrl = url;
-    history.backStack.splice(backIndex);
+  if (
+    history.backStack.length > 0 &&
+    history.backStack[history.backStack.length - 1] === url
+  ) {
+    history.forwardStack.push(history.currentUrl!);
+    history.currentUrl = history.backStack.pop()!;
     return 'back';
   }
 
-  if (history.currentUrl) {
-    history.backStack.push(history.currentUrl);
+  if (
+    history.forwardStack.length > 0 &&
+    history.forwardStack[history.forwardStack.length - 1] === url
+  ) {
+    history.backStack.push(history.currentUrl!);
+    history.currentUrl = history.forwardStack.pop()!;
+    return 'forward';
   }
+
+  history.backStack.push(history.currentUrl!);
   history.forwardStack = [];
   history.currentUrl = url;
   return 'new';
 }
 
+
+
+// Add new function to handle screenshot saving
+async function saveScreenshot(screenshotDataUrl: string, screenshotId: string) {
+  if (screenshotDataUrl) {
+    screenshots.push([screenshotDataUrl, screenshotId]);
+    if (screenshots.length > screenshotLimit) {
+      let result = await chrome.storage.local.get({ screenshots: [] })
+      result = result.screenshots || []
+      const storeScreenshots = result.concat(screenshots);
+      screenshots.length = 0
+      await chrome.storage.local.set({ screenshots: storeScreenshots });
+    }
+    return true;
+  }
+  return false;
+  
+}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
@@ -80,15 +105,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.action === 'captureScreenshot') {
         const screenshotDataUrl = await captureScreenshot();
         if (screenshotDataUrl) {
-          screenshots.push([screenshotDataUrl, message.screenshotId]);
-          if (screenshots.length > screenshotLimit) {
-            let result = await chrome.storage.local.get({ screenshots: [] })
-            result = result.screenshots || []
-            const storeScreenshots = result.concat(screenshots);
-            screenshots.length = 0
-            await chrome.storage.local.set({ screenshots: storeScreenshots });
-          }
-          sendResponse({ success: true });
+          const success = await saveScreenshot(screenshotDataUrl, message.screenshotId);
+          sendResponse({ success, message: success ? undefined : 'Failed to capture screenshot' });
         } else {
           sendResponse({ success: false, message: 'Failed to capture screenshot' });
         }
@@ -245,16 +263,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
         const screenshotDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 25 });
 
         const screenshotId = `screenshot_${timestamp}`;
-        if (screenshotDataUrl) {
-          screenshots.push([screenshotDataUrl, screenshotId]);
-          if (screenshots.length > screenshotLimit) {
-            let result = await chrome.storage.local.get({ screenshots: [] })
-            result = result.screenshots || []
-            const storeScreenshots = result.concat(screenshots);
-            screenshots.length = 0
-            await chrome.storage.local.set({ screenshots: storeScreenshots });
-          }
-        }
+        await saveScreenshot(screenshotDataUrl, screenshotId);
       });
     }
   } catch (error) {
@@ -302,6 +311,7 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
   if (details.frameId !== 0) return;
   console.log('webNavigation onCommitted event triggered:', details);
   if (details.url.includes('amazon.com')) {
+    
     const navigationType = analyzeNavigation(details.tabId, details.url);
     console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`);
     
@@ -346,17 +356,7 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
         });
         
         const screenshotId = `screenshot_${timestamp}`;
-        if (screenshotDataUrl) {
-          screenshots.push([screenshotDataUrl, screenshotId]);
-          if (screenshots.length > screenshotLimit) {
-            let result = await chrome.storage.local.get({ screenshots: [] })
-            result = result.screenshots || []
-            const storeScreenshots = result.concat(screenshots);
-            screenshots.length = 0
-            await chrome.storage.local.set({ screenshots: storeScreenshots });
-          }
-        }
-
+        await saveScreenshot(screenshotDataUrl, screenshotId);
 
       }
     });
