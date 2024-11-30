@@ -5,13 +5,16 @@ This extension is built on top of the [chrome extension typescript starter](http
 The User Interaction Recorder is a Chrome extension that records user interactions on amazon web pages
 
 ## Key Features
-- Interaction Recording: Captures user actions such as clicks, text inputs, scrolling events, and page navigations.
+- Interaction Recording: Captures user actions: clicks, scrolling, input, and navigation to new pages. Navigation is further categorized into new(new page, ie. clicking on a link), back, forward, and refresh actions. Each action records an HTML snapshot and a screenshot. The action links to the HTML snapshot through the htmlSnapshotId. And the action links to the screenshot through the screenshotId(timestamp).
 - Semantic Click Data: For click actions, the extension preloads recipes on the web page. If a clicked element has been processed by the recipe logic, it records a data-clickable-id, serving as semantic information about the user's action.
-- Data Export: After performing a set of actions, you can click the extension icon to download the recorded data. Note: Please limit the number of actions before downloading to prevent Chrome from freezing due to large amounts of data (each action may record an HTML snapshot and a screenshot).The data will be saved in a folder named DATA/SESSION_<timestamp> with the following contents:
-interactions.json: A JSON file containing recorded interactions and HTML snapshots.
-session_info.txt: A text file with session information.
-Screenshots.
-- User ID: The extension allows you to set a user ID, which will be recorded in the session info.
+- Data Export: After performing a set of actions, you can click the extension icon to download the recorded data. 
+The data will be saved in a folder named DATA/SESSION_\<timestamp\> with the following contents:
+    - interactions.json: A JSON file containing recorded interactions and HTML snapshots.
+    - session_info.txt: A text file with session information.
+    - Screenshots: screenshots of the web page at different timestamps.
+    - User ID: The extension allows you to set a user ID, which will be recorded in the session info.
+
+**Note: Please limit the number of actions before downloading to prevent Chrome from freezing due to large amounts of data (each action records an HTML snapshot and a screenshot).**
 ## Example Recording
 
 This is an example of a recorded interaction where the user clicked the "Proceed to Checkout" button on the shopping cart page. The extension recorded both the click event and the navigation to the new page, and saved the order detail information.
@@ -63,7 +66,7 @@ This is an example of a recorded interaction where the user clicked the "Proceed
 ``` 
 ![Proceed to Checkout Click](img/screenshot_2024-11-30T09-21-17-994Z.jpg)
 ![Order Detail](img/screenshot_2024-11-30T09-21-19-347Z.jpg)
-## Installation
+## How To Use
 
 1. Enable Developer Mode in Chrome Extensions:
 Open Chrome and navigate to chrome://extensions/.
@@ -72,8 +75,12 @@ Enable Developer mode by toggling the switch in the upper right corner.
 Click on Load unpacked.
 Select the `dist`folder containing the extension's files.
 3. Configure Download Settings:Go to Chrome settings and disable Ask where to save each file before downloading to allow the extension to save data files automatically.
+4. Set User ID: Click on the extension icon and set a user ID. The user ID will be recorded in the session info.
+5. Perform Actions: Perform actions on the Amazon web page. The extension will record the actions and save the data.
+6. Download Data: Click on the extension icon to download the recorded data.
 
 ## Known Issues
+currently none?
 
 ## For Developers
 
