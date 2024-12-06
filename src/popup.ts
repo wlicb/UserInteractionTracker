@@ -3,14 +3,14 @@ const outputDiv = document.getElementById('output') as HTMLDivElement;
 const clearCacheBtn = document.getElementById('clearCache') as HTMLButtonElement;
 const userIdInput = document.getElementById('userId') as HTMLInputElement;
 
-// 加载保存的用户ID
+
 chrome.storage.local.get(['userId'], (result) => {
     if (result.userId) {
         userIdInput.value = result.userId;
     }
 });
 
-// 监听输入变化并保存
+
 userIdInput.addEventListener('change', () => {
     const userId = userIdInput.value.trim();
     chrome.storage.local.set({ userId: userId }, () => {

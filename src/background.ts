@@ -5,7 +5,8 @@ const interactionsLimit = 10;
 let screenshots: [string, string][] = [];
 const screenshotLimit = 10;
 let actionSequenceId = 0;
-
+let uploadTimer: NodeJS.Timer | null = null;
+let userId: string = "";
 // background.ts
 
 interface TabHistory {
@@ -114,63 +115,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       // Download data on user request
       if (message.action === 'downloadData') {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Create a timestamp for the folder name
-        const folderName = `DATA/SESSION_${timestamp}`;
-
-        // Create a folder with the timestamp and download session info
-        chrome.downloads.download({
-          url: 'data:text/plain;charset=utf-8,' + encodeURIComponent(`Session data for timestamp: ${timestamp}, user id: ${message.userId}`),
-          filename: `${folderName}/session_info.txt`,
-          saveAs: false
-        }, async (downloadId) => {
-          // Save all interactions in a single JSON file
-          const snapshots = await chrome.storage.local.get({ htmlSnapshots: [] });
-          let htmlSnapshots = snapshots.htmlSnapshots || {};
-          chrome.storage.local.remove('htmlSnapshots')
-          console.log(htmlSnapshots)
-          const result1 = await chrome.storage.local.get({ interactions: [] });
-          chrome.storage.local.remove('interactions')
-          let storeInteractions = result1.interactions || []
-          console.log(storeInteractions)
-          storeInteractions = storeInteractions.concat(interactions);
-          interactions.length = 0
-          const orderDetails = await chrome.storage.local.get({ orderDetails: [] });
-          let storeorderDetails = orderDetails.orderDetails || [];
-          chrome.storage.local.remove('orderDetails')
-          const fullData = {
-            htmlSnapshots: htmlSnapshots,
-            interactions: storeInteractions,
-            orderDetails: storeorderDetails,
-          }
-          const interactionsData = JSON.stringify(fullData, null, 2);
-          chrome.downloads.download({
-            url: 'data:text/json;charset=utf-8,' + encodeURIComponent(interactionsData),
-            filename: `${folderName}/interactions.json`,
-            saveAs: false
-          });
-
-          const result2 = await chrome.storage.local.get({ screenshots: [] });
-          chrome.storage.local.remove('screenshots')
-          let storeScreenshots = result2.screenshots || []
-          storeScreenshots = storeScreenshots.concat(screenshots);
-          console.log(storeScreenshots)
-          screenshots.length = 0
-
-          // Save all screenshots as individual jpg files
-          storeScreenshots.forEach((screenshot: any, index: number) => {
-            console.log(screenshot)
-            const filename = `${folderName}/${screenshot[1].replace(/[:.]/g, "-")}.jpg`;
-
-            chrome.downloads.download({
-              url: screenshot[0],
-              filename: filename,
-              saveAs: false
-            });
-          });
-
-          sendResponse({ success: true });
-          // chrome.storage.local.clear();
-        });
+        try {
+          const success = await uploadDataToServer();
+          sendResponse({ success });
+        } catch (error) {
+          console.error('Error handling download:', error);
+          sendResponse({ success: false, error: (error as Error).message });
+        }
       }
 
       if (message.action === 'clearMemoryCache') {
@@ -367,3 +318,101 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   delete tabNavigationHistory[tabId];
 });
+
+// Add this function to handle data upload
+async function uploadDataToServer() {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const folderName = `DATA/SESSION_${timestamp}`;
+    
+    // Get userId from storage
+    const userIdResult = await chrome.storage.local.get({ userId: "" });
+    const currentUserId = userIdResult.userId;
+    
+    // Get all data from storage
+    const snapshots = await chrome.storage.local.get({ htmlSnapshots: [] });
+    const interact = await chrome.storage.local.get({ interactions: [] });
+    const orderDetails = await chrome.storage.local.get({ orderDetails: [] });
+    const screen = await chrome.storage.local.get({ screenshots: [] });
+    
+    let htmlSnapshots = snapshots.htmlSnapshots || {};
+    let storeInteractions = interact.interactions || [];
+    let storeorderDetails = orderDetails.orderDetails || [];
+    let storeScreenshots = screen.screenshots || [];
+    
+    // Combine with in-memory data
+    storeInteractions = storeInteractions.concat(interactions);
+    storeScreenshots = storeScreenshots.concat(screenshots);
+    
+    // Prepare the full data object
+    const fullData = {
+      htmlSnapshots,
+      interactions: storeInteractions,
+      orderDetails: storeorderDetails,
+    };
+
+    // Upload session info
+    const sessionInfo = new Blob(
+      [`Session data for timestamp: ${timestamp}, user id: ${currentUserId}`], 
+      { type: 'text/plain' }
+    );
+    const sessionFormData = new FormData();
+    sessionFormData.append('file', sessionInfo, `${folderName}/session_info.txt`);
+    await fetch('http://localhost:5000/upload', {
+      method: 'POST',
+      body: sessionFormData
+    });
+
+    // Upload interactions JSON
+    const interactionsBlob = new Blob(
+      [JSON.stringify(fullData, null, 2)], 
+      { type: 'application/json' }
+    );
+    const jsonFormData = new FormData();
+    jsonFormData.append('file', interactionsBlob, `${folderName}/interactions.json`);
+    await fetch('http://localhost:5000/upload', {
+      method: 'POST',
+      body: jsonFormData
+    });
+
+    // Upload screenshots
+    for (const [screenshotData, screenshotId] of storeScreenshots) {
+      const response = await fetch(screenshotData);
+      const blob = await response.blob();
+      const formData = new FormData();
+      formData.append('file', blob, `${folderName}/${screenshotId.replace(/[:.]/g, "-")}.jpg`);
+      await fetch('http://localhost:5000/upload', {
+        method: 'POST',
+        body: formData
+      });
+    }
+
+    // Clear cache after successful upload
+    chrome.storage.local.remove(['htmlSnapshots', 'interactions', 'orderDetails', 'screenshots']);
+    interactions.length = 0;
+    screenshots.length = 0;
+    
+    return true;
+  } catch (error) {
+    console.error('Error uploading data:', error);
+    return false;
+  }
+}
+
+// Start the periodic upload timer
+function startPeriodicUpload() {
+  if (!uploadTimer) {
+    uploadTimer = setInterval(uploadDataToServer, 60000); // 60 seconds
+  }
+}
+
+// Stop the periodic upload timer
+function stopPeriodicUpload() {
+  if (uploadTimer) {
+    clearInterval(uploadTimer);
+    uploadTimer = null;
+  }
+}
+
+// startPeriodicUpload();
+
