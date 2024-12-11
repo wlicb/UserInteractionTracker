@@ -36,14 +36,94 @@ interface Recipe {
 let lastScrollTime = 0;  // Track last scroll timestamp
 const SCROLL_THRESHOLD = 1500; // Minimum time in ms between screenshots for scroll actions
 
+interface ExtendedElement extends Element {
+    originalClick?: Function;
+    originalAddEventListener?: Function;
+}
 
+function generateSelector(element: Element): string {
+    if (element.id) {
+        return `#${element.id}`;
+    }
 
+    let path = [];
+    let current = element;
+    
+    while (current && current !== document.body && current.parentElement) {
+        let selector = current.tagName.toLowerCase();
+        
+        // 添加类名（可选）
+        if (current.className && typeof current.className === 'string') {
+            selector += '.' + current.className.trim().replace(/\s+/g, '.');
+        }
+        
+        // 添加同级元素中的位置
+        let sibling = current;
+        let nth = 1;
+        while (sibling.previousElementSibling) {
+            sibling = sibling.previousElementSibling;
+            if (sibling.tagName === current.tagName) {
+                nth++;
+            }
+        }
+        if (nth > 1) {
+            selector += `:nth-of-type(${nth})`;
+        }
+        
+        path.unshift(selector);
+        current = current.parentElement;
+    }
+    
+    return path.join(' > ');
+}
+// monkey patch
+function setupClickInterception() {
+    console.log('setupClickInterception');
 
-
-
-
+    const originalAddEventListener = EventTarget.prototype.addEventListener;
+    EventTarget.prototype.addEventListener = function(
+        this: ExtendedElement,
+        type: string,
+        listener: EventListenerOrEventListenerObject,
+        options?: boolean | AddEventListenerOptions
+    ) {
+        if (type === 'click') {
+            console.log('Intercepting click event listener');  
+            
+            const wrappedListener = function(this: HTMLElement, event: Event) {
+                try {
+                    const timestamp = new Date().toISOString();
+                    console.log('Captured click event'); 
+                    captureInteraction(
+                        'click_new',
+                        this,
+                        timestamp,
+                        generateSelector(this),
+                        this.id || '',
+                        window.location.href
+                    );
+                } catch (error) {
+                    console.error('Error in click listener:', error);
+                }
+                if (typeof listener === 'function') {
+                    listener.call(this, event);
+                } else if (listener && typeof listener.handleEvent === 'function') {
+                    listener.handleEvent.call(listener, event);
+                }
+            };
+            
+            // 使用原始的addEventListener来添加包装后的监听器
+            return originalAddEventListener.call(this, type, wrappedListener, options);
+        }
+        
+        // other events use original addEventListener
+        return originalAddEventListener.call(this, type, listener, options);
+    };
+}
+setupClickInterception();
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOMContentLoaded')
+    
     const url = window.location.href;
     try {
         const response = await new Promise<{ recipe?: any }>(resolve => {
@@ -214,33 +294,33 @@ function getFullSelector(element:any) {
     return path.join(' > '); 
 }
 
-document.addEventListener('click', (event) => {
-    try {
+// document.addEventListener('click', (event) => {
+//     try {
         
-        function findClickableParent(element: HTMLElement | null, depth: number = 0): HTMLElement | null {
-            if (!element || depth>=2) return null;
-            if (element.hasAttribute('data-clickable-id')) {
-                return element;
-            }
-            return findClickableParent(element.parentElement,depth+1);
-        }
+//         function findClickableParent(element: HTMLElement | null, depth: number = 0): HTMLElement | null {
+//             if (!element || depth>=2) return null;
+//             if (element.hasAttribute('data-clickable-id')) {
+//                 return element;
+//             }
+//             return findClickableParent(element.parentElement,depth+1);
+//         }
 
-        const clickableElement = findClickableParent(event.target as HTMLElement);
-        const clickableId = clickableElement ? clickableElement.getAttribute('data-clickable-id') || '' : '';
-        console.log('click')
-        const timestamp=new Date().toISOString();
-        console.log(timestamp)
-        const selector=getFullSelector(event.target);
-        console.log('srart screenshot')
-        captureScreenshot(timestamp);
-        console.log('end screenshot')
-        captureInteraction('click', event.target,timestamp,selector,clickableId,'');
-        console.log('end')
+//         const clickableElement = findClickableParent(event.target as HTMLElement);
+//         const clickableId = clickableElement ? clickableElement.getAttribute('data-clickable-id') || '' : '';
+//         console.log('click')
+//         const timestamp=new Date().toISOString();
+//         console.log(timestamp)
+//         const selector=getFullSelector(event.target);
+//         console.log('srart screenshot')
+//         captureScreenshot(timestamp);
+//         console.log('end screenshot')
+//         captureInteraction('click', event.target,timestamp,selector,clickableId,'');
+//         console.log('end')
 
-    } catch (error) {
-        console.error('Error during click event handling:', error);
-    }
-});
+//     } catch (error) {
+//         console.error('Error during click event handling:', error);
+//     }
+// });
 
 
 // Function to capture screenshots with unique ID
