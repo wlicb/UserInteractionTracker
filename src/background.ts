@@ -358,6 +358,7 @@ async function uploadDataToServer() {
     );
     const sessionFormData = new FormData();
     sessionFormData.append('file', sessionInfo, `${folderName}/session_info.txt`);
+    console.log('uploading session info')
     await fetch(upload_url, {
       method: 'POST',
       body: sessionFormData
@@ -369,6 +370,7 @@ async function uploadDataToServer() {
       { type: 'application/json' }
     );
     const jsonFormData = new FormData();
+    console.log('uploading interactions')
     jsonFormData.append('file', interactionsBlob, `${folderName}/interactions.json`);
     await fetch(upload_url, {
       method: 'POST',
@@ -381,6 +383,7 @@ async function uploadDataToServer() {
       const blob = await response.blob();
       const formData = new FormData();
       formData.append('file', blob, `${folderName}/${screenshotId.replace(/[:.]/g, "-")}.jpg`);
+      console.log('uploading screenshots')
       await fetch(upload_url, {
         method: 'POST',
         body: formData
