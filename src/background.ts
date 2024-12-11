@@ -1,5 +1,5 @@
 import { nav, refinement_option, recipes } from './recipe';
-
+let upload_url = "http://userdatacollect.hailab.io/upload"
 let interactions: any[] = [];
 const interactionsLimit = 10;
 let screenshots: [string, string][] = [];
@@ -358,7 +358,7 @@ async function uploadDataToServer() {
     );
     const sessionFormData = new FormData();
     sessionFormData.append('file', sessionInfo, `${folderName}/session_info.txt`);
-    await fetch('http://localhost:5000/upload', {
+    await fetch(upload_url, {
       method: 'POST',
       body: sessionFormData
     });
@@ -370,7 +370,7 @@ async function uploadDataToServer() {
     );
     const jsonFormData = new FormData();
     jsonFormData.append('file', interactionsBlob, `${folderName}/interactions.json`);
-    await fetch('http://localhost:5000/upload', {
+    await fetch(upload_url, {
       method: 'POST',
       body: jsonFormData
     });
@@ -381,7 +381,7 @@ async function uploadDataToServer() {
       const blob = await response.blob();
       const formData = new FormData();
       formData.append('file', blob, `${folderName}/${screenshotId.replace(/[:.]/g, "-")}.jpg`);
-      await fetch('http://localhost:5000/upload', {
+      await fetch(upload_url, {
         method: 'POST',
         body: formData
       });
