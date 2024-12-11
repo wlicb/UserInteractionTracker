@@ -116,6 +116,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // Download data on user request
       if (message.action === 'downloadData') {
         try {
+          console.log('downloadData')
           const success = await uploadDataToServer();
           sendResponse({ success });
         } catch (error) {
