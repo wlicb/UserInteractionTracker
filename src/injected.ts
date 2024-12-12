@@ -173,61 +173,61 @@ EventTarget.prototype.addEventListener = function (type, listener, options) {
 
 console.log('[Monkey Patch] addEventListener successfully patched.');
 
-// Function to handle clicks on <a> tags
-function handleAnchorClicks() {
-    document.addEventListener('click', async function (event) {
-        const target = event.target as HTMLElement;
+// // Function to handle clicks on <a> tags
+// function handleAnchorClicks() {
+//     document.addEventListener('click', async function (event) {
+//         const target = event.target as HTMLElement;
 
-        // Find the closest <a> tag in case of nested elements inside the <a>
-        const anchor = target.closest('a');
+//         // Find the closest <a> tag in case of nested elements inside the <a>
+//         const anchor = target.closest('a');
 
-        if (anchor && anchor.tagName.toLowerCase() === 'a' && anchor.href) {
-            console.log('[Intercepted] Click on <a> tag:', anchor.href);
-            if (!anchor.href.startsWith('javascript:')) {
-                event.preventDefault();
-                event.stopPropagation();
-                const timestamp = new Date().toISOString();
-                const targetHref = anchor.href;
+//         if (anchor && anchor.tagName.toLowerCase() === 'a' && anchor.href) {
+//             console.log('[Intercepted] Click on <a> tag:', anchor.href);
+//             if (!anchor.href.startsWith('javascript:')) {
+//                 event.preventDefault();
+//                 event.stopPropagation();
+//                 const timestamp = new Date().toISOString();
+//                 const targetHref = anchor.href;
                 
-                try {
-                    // 监听截图完成的消息
-                    const screenshotComplete = new Promise((resolve, reject) => {
-                        function handleMessage(event: MessageEvent) {
-                            if (event.data.type === 'SCREENSHOT_COMPLETE' && 
-                                event.data.timestamp === timestamp) {
-                                window.removeEventListener('message', handleMessage);
-                                if (event.data.success) {
-                                    resolve(void 0);
-                                } else {
-                                    reject(new Error(event.data.error || 'Screenshot failed'));
-                                }
-                            }
-                        }
-                        window.addEventListener('message', handleMessage);
+//                 try {
+//                     // 监听截图完成的消息
+//                     const screenshotComplete = new Promise((resolve, reject) => {
+//                         function handleMessage(event: MessageEvent) {
+//                             if (event.data.type === 'SCREENSHOT_COMPLETE' && 
+//                                 event.data.timestamp === timestamp) {
+//                                 window.removeEventListener('message', handleMessage);
+//                                 if (event.data.success) {
+//                                     resolve(void 0);
+//                                 } else {
+//                                     reject(new Error(event.data.error || 'Screenshot failed'));
+//                                 }
+//                             }
+//                         }
+//                         window.addEventListener('message', handleMessage);
                         
-                        // 添加超时处理
-                        setTimeout(() => {
-                            window.removeEventListener('message', handleMessage);
-                            reject(new Error('Screenshot timeout'));
-                        }, 3000); // 3秒超时
-                    });
+//                         // 添加超时处理
+//                         setTimeout(() => {
+//                             window.removeEventListener('message', handleMessage);
+//                             reject(new Error('Screenshot timeout'));
+//                         }, 3000); // 3秒超时
+//                     });
 
-                    // 发送截图请求
-                    window.postMessage({ type: 'CAPTURE_SCREENSHOT', timestamp: timestamp }, '*');
+//                     // 发送截图请求
+//                     window.postMessage({ type: 'CAPTURE_SCREENSHOT', timestamp: timestamp }, '*');
                     
-                    // 等待截图完成
-                    await screenshotComplete;
+//                     // 等待截图完成
+//                     await screenshotComplete;
                     
-                    // 截图确认完成后再跳转
-                    window.location.href = targetHref;
-                } catch (error) {
-                    console.error('Error capturing screenshot:', error);
-                    window.location.href = targetHref;
-                }
-            }
-        }
-    }, true); // Use capture phase to intercept the event earlier
-}
+//                     // 截图确认完成后再跳转
+//                     window.location.href = targetHref;
+//                 } catch (error) {
+//                     console.error('Error capturing screenshot:', error);
+//                     window.location.href = targetHref;
+//                 }
+//             }
+//         }
+//     }, true); // Use capture phase to intercept the event earlier
+// }
 
-// Call the function to handle <a> tag clicks
-handleAnchorClicks();
+// // Call the function to handle <a> tag clicks
+// handleAnchorClicks();
