@@ -419,4 +419,3 @@ function stopPeriodicUpload() {
 }
 
 // startPeriodicUpload();
-

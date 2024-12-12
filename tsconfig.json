@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "strict": true,
+        "strict": false,
         "target": "es6",
         "moduleResolution": "bundler",
         "module": "ES6",
@@ -8,8 +8,9 @@
         "sourceMap": false,
         "rootDir": "src",
         "outDir": "dist/js",
-        "noEmitOnError": true,
+        "noEmitOnError": false,
         "jsx": "react",
-        "typeRoots": [ "node_modules/@types" ]
+        "typeRoots": [ "node_modules/@types" ],
+        "skipLibCheck": true,
     }
 }

@@ -1,4 +1,4 @@
-export {};  // Makes this file a module
+export { };  // Makes this file a module
 import { processElement } from './utils/element-processor';
 // Define interfaces for Recipe and OrderDetail
 interface Recipe {
@@ -18,118 +18,33 @@ interface Recipe {
     direct_child?: boolean;
     empty_message?: string;
     [key: string]: any; // Allow additional properties
-  }
-  
-  interface OrderDetail {
+}
+
+interface OrderDetail {
     name: string;
     price: number;
-  }
-  
-  // Extend the Window interface to include custom properties
-  declare global {
+}
+
+// Extend the Window interface to include custom properties
+declare global {
     interface Window {
-      clickable_recipes?: { [key: string]: Recipe };
-      input_recipes?: { [key: string]: Recipe };
+        clickable_recipes?: { [key: string]: Recipe };
+        input_recipes?: { [key: string]: Recipe };
     }
-  }
+}
 
 let lastScrollTime = 0;  // Track last scroll timestamp
 const SCROLL_THRESHOLD = 1500; // Minimum time in ms between screenshots for scroll actions
 
-interface ExtendedElement extends Element {
-    originalClick?: Function;
-    originalAddEventListener?: Function;
-}
-
-function generateSelector(element: Element): string {
-    if (element.id) {
-        return `#${element.id}`;
-    }
-
-    let path = [];
-    let current = element;
-    
-    while (current && current !== document.body && current.parentElement) {
-        let selector = current.tagName.toLowerCase();
-        
-        // 添加类名（可选）
-        if (current.className && typeof current.className === 'string') {
-            selector += '.' + current.className.trim().replace(/\s+/g, '.');
-        }
-        
-        // 添加同级元素中的位置
-        let sibling = current;
-        let nth = 1;
-        while (sibling.previousElementSibling) {
-            sibling = sibling.previousElementSibling;
-            if (sibling.tagName === current.tagName) {
-                nth++;
-            }
-        }
-        if (nth > 1) {
-            selector += `:nth-of-type(${nth})`;
-        }
-        
-        path.unshift(selector);
-        current = current.parentElement;
-    }
-    
-    return path.join(' > ');
-}
-// monkey patch
-function setupClickInterception() {
-    console.log('setupClickInterception');
-
-    const originalAddEventListener = EventTarget.prototype.addEventListener;
-    EventTarget.prototype.addEventListener = function(
-        this: ExtendedElement,
-        type: string,
-        listener: EventListenerOrEventListenerObject,
-        options?: boolean | AddEventListenerOptions
-    ) {
-        if (type === 'click') {
-            console.log('Intercepting click event listener');  
-            
-            const wrappedListener = function(this: HTMLElement, event: Event) {
-                try {
-                    const timestamp = new Date().toISOString();
-                    console.log('Captured click event'); 
-                    captureInteraction(
-                        'click_new',
-                        this,
-                        timestamp,
-                        generateSelector(this),
-                        this.id || '',
-                        window.location.href
-                    );
-                } catch (error) {
-                    console.error('Error in click listener:', error);
-                }
-                if (typeof listener === 'function') {
-                    listener.call(this, event);
-                } else if (listener && typeof listener.handleEvent === 'function') {
-                    listener.handleEvent.call(listener, event);
-                }
-            };
-            
-            // 使用原始的addEventListener来添加包装后的监听器
-            return originalAddEventListener.call(this, type, wrappedListener, options);
-        }
-        
-        // other events use original addEventListener
-        return originalAddEventListener.call(this, type, listener, options);
-    };
-}
-setupClickInterception();
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOMContentLoaded')
-    
+
     const url = window.location.href;
     try {
         const response = await new Promise<{ recipe?: any }>(resolve => {
-            chrome.runtime.sendMessage({ 
-                action: 'getRecipe', 
-                url: url 
+            chrome.runtime.sendMessage({
+                action: 'getRecipe',
+                url: url
             }, resolve);
         });
         console.log('response')
@@ -144,13 +59,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error('Error initializing clickable elements:', error);
     }
-    // try{
-    //     const timestamp = new Date().toISOString();
-    //     captureScreenshot(timestamp);
-    //     captureInteraction('navigate', '',timestamp,'','',url);
-    // }catch(error){
-    //     console.error('Error capturing screenshot:', error);
-    // }
 });
 
 
@@ -161,19 +69,19 @@ function generateHtmlSnapshotId() {
     const timestamp = new Date().toISOString();
     return `html_${hashCode(url)}_${timestamp}`;
 }
-function hashCode(str:string) {
+function hashCode(str: string) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash |= 0; 
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
     }
     console.log("Hash value before return:", hash);
     return hash.toString();
-  }  
+}
 
 // Function to get clickable elements in the viewport
 function getClickableElementsInViewport() {
-    const clickableElements:any[] = []; // Array to store clickable elements
+    const clickableElements: any[] = []; // Array to store clickable elements
 
     // Select all potential clickable elements
     const allElements = document.querySelectorAll('a, button, [onclick], input[type="button"], input[type="submit"]');
@@ -201,11 +109,11 @@ function getClickableElementsInViewport() {
 }
 
 // Function to capture interactions
-async function captureInteraction(eventType:string, target:any, timestamp:string,selector:string,clickableId:string,url:string) {
+async function captureInteraction(eventType: string, target: any, timestamp: string, selector: string, clickableId: string, url: string) {
     try {
         // Generate new HTML snapshot ID
         const currentSnapshotId = generateHtmlSnapshotId();
-        
+
         // Save HTML snapshot and wait for it to complete
         await new Promise((resolve, reject) => {
             chrome.storage.local.get(['htmlSnapshots'], (result) => {
@@ -249,8 +157,8 @@ document.addEventListener('scroll', async (event) => {
         const currentTime = Date.now();
         if (currentTime - lastScrollTime >= SCROLL_THRESHOLD) {
             lastScrollTime = currentTime;
-            const timestamp=new Date().toISOString();
-            await captureInteraction('scroll',event.target,timestamp,'','','');
+            const timestamp = new Date().toISOString();
+            await captureInteraction('scroll', event.target, timestamp, '', '', '');
             await captureScreenshot(timestamp);
 
         }
@@ -263,40 +171,40 @@ document.addEventListener('scroll', async (event) => {
 
 document.addEventListener("blur", async (event) => {
     const target = event.target as HTMLElement;
-    if (target && 
-        ((target.tagName === "INPUT" && (target as HTMLInputElement).type === "text") || 
-         target.tagName === "TEXTAREA")) {
+    if (target &&
+        ((target.tagName === "INPUT" && (target as HTMLInputElement).type === "text") ||
+            target.tagName === "TEXTAREA")) {
         const timestamp = new Date().toISOString();
         await captureScreenshot(timestamp);
-        await captureInteraction("input", target, timestamp,'','','');
+        await captureInteraction("input", target, timestamp, '', '', '');
     }
 }, true);
 
 
 // Capture click interactions
-function getUniqueSelector(element:any) {
+function getUniqueSelector(element: any) {
     if (element.id) {
-        return `#${element.id}`; 
+        return `#${element.id}`;
     }
     if (element.className) {
         const className = element.className.trim().split(/\s+/).join('.');
         return `${element.tagName.toLowerCase()}.${className}`;
     }
-    return element.tagName.toLowerCase(); 
+    return element.tagName.toLowerCase();
 }
 
-function getFullSelector(element:any) {
-    let path:string[] = [];
+function getFullSelector(element: any) {
+    let path: string[] = [];
     while (element.parentElement) {
         path.unshift(getUniqueSelector(element));
         element = element.parentElement;
     }
-    return path.join(' > '); 
+    return path.join(' > ');
 }
 
 // document.addEventListener('click', (event) => {
 //     try {
-        
+
 //         function findClickableParent(element: HTMLElement | null, depth: number = 0): HTMLElement | null {
 //             if (!element || depth>=2) return null;
 //             if (element.hasAttribute('data-clickable-id')) {
@@ -324,17 +232,17 @@ function getFullSelector(element:any) {
 
 
 // Function to capture screenshots with unique ID
-async function captureScreenshot(timestamp:string) {
-  try {
-      // Generate a unique screenshot ID
-      const screenshotId = `screenshot_${timestamp}`;
-      // Capture the screenshot
-      await chrome.runtime.sendMessage({ action: 'captureScreenshot', screenshotId });
+async function captureScreenshot(timestamp: string) {
+    try {
+        // Generate a unique screenshot ID
+        const screenshotId = `screenshot_${timestamp}`;
+        // Capture the screenshot
+        await chrome.runtime.sendMessage({ action: 'captureScreenshot', screenshotId });
 
 
-  } catch (error) {
-      console.error('Error capturing screenshot:', error);
-  }
+    } catch (error) {
+        console.error('Error capturing screenshot:', error);
+    }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -343,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const buyNowButton = document.querySelector('input[id="buy-now-button"]');
     const setupNowButton = document.querySelector('button[id="rcx-subscribe-submit-button-announce"]');
     const proceedToCheckoutButton = document.querySelector('input[name="proceedToRetailCheckout"]');
-    
+
     // Handle Buy Now and Set Up Now buttons if present
     [buyNowButton, setupNowButton].forEach(button => {
         if (button) {
@@ -369,7 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.log(`${button.id} clicked - Product Info:`, productInfo);
 
                     // Store the product info
-                    let result = await chrome.storage.local.get({orderDetails: []});
+                    let result = await chrome.storage.local.get({ orderDetails: [] });
                     const orderDetails = result.orderDetails || [];
                     orderDetails.push({
                         name: productInfo.title,
@@ -384,52 +292,12 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
     });
-
-    // Original Place Order button handling
-    // if (placeOrderButtons.length > 0) {
-    //     // get all product information, filter out interference items
-    //     const items = document.querySelectorAll('.lineitem-title-text');
-    //     const orderDetails: OrderDetail[] = [];
-
-    //     items.forEach((item) => {
-    //         // filter out interference items
-    //         if (item.matches('.a-size-base.lineitem-title-text')) {
-    //             console.log("Skipping interfering element:", (item as HTMLElement).innerText);
-    //             return;
-    //         }
-
-    //         // get product name
-    //         const productName = (item as HTMLElement).innerText.trim();
-
-    //         // get product price
-    //         const priceElement = item.closest('div')?.querySelector('.lineitem-price-text');
-    //         const productPrice = priceElement && (priceElement as HTMLElement).innerText
-    //             ? (priceElement as HTMLElement).innerText.trim().replace('$', '')
-    //             : '0.00';
-
-    //         orderDetails.push({
-    //             name: productName,
-    //             price: parseFloat(productPrice),
-    //         });
-    //     });
-    //     // add listener to each button
-    //     placeOrderButtons.forEach((button) => {
-    //         button.addEventListener("click", async(event) => {
-    //             console.log("Place Your Order button clicked!");
-    //             let result = await chrome.storage.local.get({orderDetails:[]});
-    //             result=result.orderDetails||[]
-    //             let storeOrderDetails = result.concat(orderDetails);
-    //             await chrome.storage.local.set({ orderDetails:storeOrderDetails });
-
-    //         });
-    //     });
-    // }
     if (proceedToCheckoutButton) {
-        proceedToCheckoutButton.addEventListener("click", async(event) => {
-        try{
-            const selectedItems = [];
-            const cartItems = Array.from(document.querySelectorAll('[id^="sc-active-"]'))
-                .filter(item => item.id !== 'sc-active-cart');
+        proceedToCheckoutButton.addEventListener("click", async (event) => {
+            try {
+                const selectedItems = [];
+                const cartItems = Array.from(document.querySelectorAll('[id^="sc-active-"]'))
+                    .filter(item => item.id !== 'sc-active-cart');
                 for (const item of cartItems) {
                     const checkbox = item.querySelector('input[type="checkbox"]') as HTMLInputElement;
                     if (checkbox && checkbox.checked) {
@@ -437,12 +305,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (productLink) {
                             const fullNameElement = productLink.querySelector('.a-truncate-full');
                             const name = fullNameElement?.textContent?.trim() || '';
-                            
+
                             const href = productLink.getAttribute('href') || '';
                             const asin = href.match(/product\/([A-Z0-9]{10})/)?.[1] || '';
-                            
+
                             const priceElement = item.querySelector('.sc-item-price-block .a-offscreen');
-                            const price = priceElement ? 
+                            const price = priceElement ?
                                 parseFloat(priceElement.textContent?.replace(/[^0-9.]/g, '') || '0') : 0;
 
                             const options: { [key: string]: string } = {};
@@ -459,29 +327,29 @@ document.addEventListener("DOMContentLoaded", () => {
                                 name,
                                 asin,
                                 price,
-                                options 
+                                options
                             });
                         }
                     }
                 }
-            if (selectedItems.length > 0) {
-                let result = await chrome.storage.local.get({orderDetails: []});
-                const orderDetails = result.orderDetails || [];
-                const updatedOrderDetails = orderDetails.concat(selectedItems);
-                await chrome.storage.local.set({ orderDetails: updatedOrderDetails });
-                console.log('Stored selected cart items:', selectedItems);
+                if (selectedItems.length > 0) {
+                    let result = await chrome.storage.local.get({ orderDetails: [] });
+                    const orderDetails = result.orderDetails || [];
+                    const updatedOrderDetails = orderDetails.concat(selectedItems);
+                    await chrome.storage.local.set({ orderDetails: updatedOrderDetails });
+                    console.log('Stored selected cart items:', selectedItems);
+                }
+            } catch (error) {
+                console.error('Error capturing selected cart items:', error);
             }
-        }catch (error) {
-                console.error('Error capturing selected cart items:', error);}
         });
     }
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse:(response?: any)=>void) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse: (response?: any) => void) => {
     if (message.action === 'getHTML') {
-      const htmlContent = document.documentElement.outerHTML;  
-      sendResponse({ html: htmlContent });
+        const htmlContent = document.documentElement.outerHTML;
+        sendResponse({ html: htmlContent });
     }
     return true;
-  });
-  
+});
