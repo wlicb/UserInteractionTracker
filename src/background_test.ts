@@ -366,9 +366,10 @@ async function uploadDataToServer() {
       orderDetails: storeorderDetails,
     };
 
+
     // Upload session info
     const sessionInfo = new Blob(
-      [`Session data for timestamp: ${timestamp}, user id: ${currentUserId}`], 
+      [`Session data for timestamp: ${timestamp}, user id: ${currentUserId} \n order details: \n ${JSON.stringify(storeorderDetails)}`], 
       { type: 'text/plain' }
     );
     const sessionFormData = new FormData();
