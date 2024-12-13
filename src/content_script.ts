@@ -1,3 +1,79 @@
+// 内容脚本中的代码
+window.addEventListener('message', async (event) => {
+    // 确保消息来自当前页面，而非其他iframe或窗口
+    if (event.source !== window) return;
+
+    if (event.data.type && event.data.type === 'CAPTURE_SCREENSHOT') {
+        await captureScreenshot(event.data.timestamp);
+    }
+    if (event.data.type && event.data.type === 'SAVE_INTERACTION_DATA') {
+        try {
+            // 使用 Chrome API 保存 HTML snapshot
+            const response1=await chrome.storage.local.get(['htmlSnapshots'], (result) => {
+                const htmlSnapshots = result.htmlSnapshots || {};
+                htmlSnapshots[event.data.data.htmlSnapshotId] = event.data.data.htmlContent;
+                chrome.storage.local.set({ htmlSnapshots });
+            });
+            console.log(response1)
+            const dataForBackground = { ...event.data.data };
+            delete dataForBackground.htmlContent;
+            // 发送数据给 background script
+            const response2=await chrome.runtime.sendMessage({
+                action: 'saveData',
+                data: dataForBackground
+            });
+            if (!response1.success || !response2.success) {
+                throw new Error(response1.message+response2.message || 'interaction capture failed');
+            }
+            console.log(response2)
+            window.postMessage({ 
+                type: 'INTERACTION_COMPLETE',
+                timestamp: event.data.data.timestamp,
+                success: true
+            }, '*');
+        } catch (error) {
+            console.error('Error saving interaction data:', error);
+            window.postMessage({
+                type: 'INTERACTION_COMPLETE',
+                success: false,
+                error: error.message,
+                timestamp: event.data.data.timestamp 
+            }, '*');
+        }
+    }
+});
+
+async function captureScreenshot(timestamp: string) {
+    try {
+        const screenshotId = `screenshot_${timestamp}`;
+        // 发送消息到background并等待响应
+        const response = await chrome.runtime.sendMessage({ 
+            action: 'captureScreenshot', 
+            screenshotId 
+        });
+        
+        if (!response.success) {
+            throw new Error(response.message || 'Screenshot capture failed');
+        }
+        
+        // 在截图处理成功后发送消息
+        window.postMessage({ 
+            type: 'SCREENSHOT_COMPLETE',
+            timestamp: timestamp,
+            success: true
+        }, '*');
+    } catch (error) {
+        console.error('捕获截图时出错:', error);
+        // 发送失败消息
+        window.postMessage({ 
+            type: 'SCREENSHOT_COMPLETE',
+            timestamp: timestamp,
+            success: false,
+            error: error.message
+        }, '*');
+    }
+}
+
 export { };  // Makes this file a module
 import { processElement } from './utils/element-processor';
 // Define interfaces for Recipe and OrderDetail
@@ -231,19 +307,6 @@ function getFullSelector(element: any) {
 // });
 
 
-// Function to capture screenshots with unique ID
-async function captureScreenshot(timestamp: string) {
-    try {
-        // Generate a unique screenshot ID
-        const screenshotId = `screenshot_${timestamp}`;
-        // Capture the screenshot
-        await chrome.runtime.sendMessage({ action: 'captureScreenshot', screenshotId });
-
-
-    } catch (error) {
-        console.error('Error capturing screenshot:', error);
-    }
-}
 
 document.addEventListener("DOMContentLoaded", () => {
     // Handle all types of order buttons

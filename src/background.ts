@@ -1,9 +1,22 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
+chrome.webNavigation.onCommitted.addListener((details) => {
+  if (details.frameId === 0) { // Only inject into the main frame
+    chrome.scripting.executeScript({
+      target: { tabId: details.tabId },
+      files: ["js/injected.js"],
+      world: "MAIN" // Ensures the script is injected into the main world
+    });
+  }
+}, { url: [{ urlMatches: ".*" }] });
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
 import { nav, refinement_option, recipes } from './recipe';
 let upload_url = "http://userdatacollect.hailab.io/upload"
 let interactions: any[] = [];
-const interactionsLimit = 10;
+const interactionsLimit = 100;
 let screenshots: [string, string][] = [];
-const screenshotLimit = 10;
+const screenshotLimit = 100;
 let actionSequenceId = 0;
 let uploadTimer: NodeJS.Timer | null = null;
 let userId: string = "";
@@ -90,6 +103,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.action === 'saveData') {
         console.log('saveData ', message.data.eventType)
         actionSequenceId++;
+        console.log(actionSequenceId)
         message.data.actionSequenceId = actionSequenceId;
         interactions.push(message.data);
         if (interactions.length > interactionsLimit) {
@@ -104,6 +118,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       // Capture screenshot on demand
       if (message.action === 'captureScreenshot') {
+        console.log('get screenshot request')
         const screenshotDataUrl = await captureScreenshot();
         if (screenshotDataUrl) {
           const success = await saveScreenshot(screenshotDataUrl, message.screenshotId);
@@ -335,7 +350,10 @@ async function uploadDataToServer() {
     const interact = await chrome.storage.local.get({ interactions: [] });
     const orderDetails = await chrome.storage.local.get({ orderDetails: [] });
     const screen = await chrome.storage.local.get({ screenshots: [] });
-    
+    console.log('snapshots', snapshots.htmlSnapshots.length)
+    console.log('interact', interact)
+    console.log('orderDetails', orderDetails)
+    console.log('screen', screen.screenshots.length)
     let htmlSnapshots = snapshots.htmlSnapshots || {};
     let storeInteractions = interact.interactions || [];
     let storeorderDetails = orderDetails.orderDetails || [];
@@ -352,9 +370,10 @@ async function uploadDataToServer() {
       orderDetails: storeorderDetails,
     };
 
+
     // Upload session info
     const sessionInfo = new Blob(
-      [`Session data for timestamp: ${timestamp}, user id: ${currentUserId}`], 
+      [`Session data for timestamp: ${timestamp}, user id: ${currentUserId} \n order details: \n ${JSON.stringify(storeorderDetails)}`], 
       { type: 'text/plain' }
     );
     const sessionFormData = new FormData();

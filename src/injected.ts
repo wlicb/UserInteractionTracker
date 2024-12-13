@@ -2,6 +2,9 @@
 const originalAddEventListener = EventTarget.prototype.addEventListener;
 console.log('start')
 
+// Add this at the top of the file
+const DEBOUNCE_DELAY = 150; // 300ms
+let lastClickTimestamp = 0;
 
 function generateHtmlSnapshotId() {
     const url = window.location.href;
@@ -53,7 +56,19 @@ function generateSelector(element: Element): string {
     return path.join(' > ');
 }
 
-function captureInteraction(eventType: string, target: any, timestamp: string, selector: string, clickableId: string, url: string) {
+function captureInteraction(eventType: string, target: any, timestamp: string, selector: string, url: string) {
+    
+    function findClickableParent(element: HTMLElement | null, depth: number = 0): HTMLElement | null {
+        if (!element || depth>=5) return null;
+        if (element.hasAttribute('data-clickable-id')) {
+            return element;
+        }
+        return findClickableParent(element.parentElement,depth+1);
+    }
+
+    const clickableElement = findClickableParent(target as HTMLElement);
+    const clickableId = clickableElement ? clickableElement.getAttribute('data-clickable-id') || '' : '';
+
     // Generate new HTML snapshot ID
     const currentSnapshotId = generateHtmlSnapshotId();
 
@@ -81,10 +96,7 @@ function captureInteraction(eventType: string, target: any, timestamp: string, s
         htmlContent: document.documentElement.outerHTML
     };
 
-    window.postMessage({
-        type: 'SAVE_INTERACTION_DATA',
-        data: data
-    }, '*');
+    return data;
 }
 
 // Monkey patch addEventListener
@@ -93,8 +105,81 @@ EventTarget.prototype.addEventListener = function (type, listener, options) {
 
     if (type === 'click' && listener) {
         const wrappedListener = async function (event) {
+            // Add debouncing logic
+            const now = Date.now();
+            if (now - lastClickTimestamp < DEBOUNCE_DELAY) {
+                console.log('[Monkey Patch] Debouncing click event');
+                return;
+            }
+            lastClickTimestamp = now;
+
             console.log('[Monkey Patch] Click detected on:', event.target);
             const timestamp = new Date().toISOString();
+            const target = event.target as HTMLElement;
+            const anchor = target.closest('a');
+            if (anchor && anchor.href && anchor.tagName.toLowerCase() === 'a'&& !anchor.href.startsWith('javascript:')) {
+                event.preventDefault();
+                event.stopPropagation();
+                const targetHref = anchor.href;
+                try {
+                    const screenshotComplete = new Promise((resolve, reject) => {
+                        function handleMessage(event: MessageEvent) {
+                            if (event.data.type === 'SCREENSHOT_COMPLETE' && 
+                                event.data.timestamp === timestamp) {
+                                window.removeEventListener('message', handleMessage);
+                                if (event.data.success) {
+                                    resolve(void 0);
+                                } else {
+                                    reject(new Error(event.data.error || 'Screenshot failed'));
+                                }
+                            }
+                        }
+                        window.addEventListener('message', handleMessage);
+                        
+                        // Add timeout
+                        setTimeout(() => {
+                            window.removeEventListener('message', handleMessage);
+                            reject(new Error('Screenshot timeout'));
+                        }, 3000);
+                    });
+                    
+                    
+                    
+                    const interactionComplete = new Promise((resolve, reject) => {
+                        function handleMessage1(event: MessageEvent) {
+                            if (event.data.type === 'INTERACTION_COMPLETE' && 
+                                event.data.timestamp === timestamp) {
+                                window.removeEventListener('message', handleMessage1);
+                                if (event.data.success) {
+                                    resolve(void 0);
+                                } else {
+                                    reject(new Error(event.data.error || 'Interaction failed'));
+                                }
+                            }
+                        }
+                        window.addEventListener('message', handleMessage1);
+                        
+                        // Add timeout
+                        setTimeout(() => {
+                            window.removeEventListener('message', handleMessage1);
+                            reject(new Error('Interaction timeout'));
+                        }, 3000);
+                    });
+                    const data=captureInteraction('click_a', event.target, timestamp, generateSelector(event.target), window.location.href);
+                    window.postMessage({ type: 'CAPTURE_SCREENSHOT', timestamp: timestamp }, '*');
+                    window.postMessage({type: 'SAVE_INTERACTION_DATA',data: data}, '*');
+                    // Wait for screenshot to complete
+                    await screenshotComplete;
+                    await interactionComplete;
+                    
+                    // 手动控制跳转
+                    window.location.href = targetHref;
+                } catch (error) {
+                    console.error('Error:', error);
+                    window.location.href = targetHref;
+                }
+                return;
+            }
             
             try {
                 // Create a promise to wait for screenshot completion
@@ -118,11 +203,10 @@ EventTarget.prototype.addEventListener = function (type, listener, options) {
                         reject(new Error('Screenshot timeout'));
                     }, 3000);
                 });
-
+                const data=captureInteraction('click_b', event.target, timestamp, generateSelector(event.target), window.location.href);
                 // Request screenshot
                 window.postMessage({ type: 'CAPTURE_SCREENSHOT', timestamp: timestamp }, '*');
-                
-                captureInteraction('click', event.target, timestamp, generateSelector(event.target), '', window.location.href);
+                window.postMessage({type: 'SAVE_INTERACTION_DATA',data: data}, '*');
                 const interactionComplete = new Promise((resolve, reject) => {
                     function handleMessage1(event: MessageEvent) {
                         if (event.data.type === 'INTERACTION_COMPLETE' && 
@@ -173,61 +257,92 @@ EventTarget.prototype.addEventListener = function (type, listener, options) {
 
 console.log('[Monkey Patch] addEventListener successfully patched.');
 
-// // Function to handle clicks on <a> tags
-// function handleAnchorClicks() {
-//     document.addEventListener('click', async function (event) {
-//         const target = event.target as HTMLElement;
+// Function to handle clicks on <a> tags
+function handleAnchorClicks() {
+    document.addEventListener('click', async function (event) {
+        // Add debouncing logic
+        const now = Date.now();
+        if (now - lastClickTimestamp < DEBOUNCE_DELAY) {
+            console.log('[Monkey Patch] Debouncing anchor click event');
+            return;
+        }
+        lastClickTimestamp = now;
 
-//         // Find the closest <a> tag in case of nested elements inside the <a>
-//         const anchor = target.closest('a');
+        const target = event.target as HTMLElement;
 
-//         if (anchor && anchor.tagName.toLowerCase() === 'a' && anchor.href) {
-//             console.log('[Intercepted] Click on <a> tag:', anchor.href);
-//             if (!anchor.href.startsWith('javascript:')) {
-//                 event.preventDefault();
-//                 event.stopPropagation();
-//                 const timestamp = new Date().toISOString();
-//                 const targetHref = anchor.href;
+        // Find the closest <a> tag in case of nested elements inside the <a>
+        const anchor = target.closest('a');
+
+        if (anchor && anchor.tagName.toLowerCase() === 'a' && anchor.href) {
+            console.log('[Intercepted] Click on <a> tag:', anchor.href);
+            if (!anchor.href.startsWith('javascript:')) {
+                event.preventDefault();
+                event.stopPropagation();
+                const timestamp = new Date().toISOString();
+                const targetHref = anchor.href;
                 
-//                 try {
-//                     // 监听截图完成的消息
-//                     const screenshotComplete = new Promise((resolve, reject) => {
-//                         function handleMessage(event: MessageEvent) {
-//                             if (event.data.type === 'SCREENSHOT_COMPLETE' && 
-//                                 event.data.timestamp === timestamp) {
-//                                 window.removeEventListener('message', handleMessage);
-//                                 if (event.data.success) {
-//                                     resolve(void 0);
-//                                 } else {
-//                                     reject(new Error(event.data.error || 'Screenshot failed'));
-//                                 }
-//                             }
-//                         }
-//                         window.addEventListener('message', handleMessage);
+                try {
+                    // 监听截图完成的消息
+                    const screenshotComplete = new Promise((resolve, reject) => {
+                        function handleMessage(event: MessageEvent) {
+                            if (event.data.type === 'SCREENSHOT_COMPLETE' && 
+                                event.data.timestamp === timestamp) {
+                                window.removeEventListener('message', handleMessage);
+                                if (event.data.success) {
+                                    resolve(void 0);
+                                } else {
+                                    reject(new Error(event.data.error || 'Screenshot failed'));
+                                }
+                            }
+                        }
+                        window.addEventListener('message', handleMessage);
                         
-//                         // 添加超时处理
-//                         setTimeout(() => {
-//                             window.removeEventListener('message', handleMessage);
-//                             reject(new Error('Screenshot timeout'));
-//                         }, 3000); // 3秒超时
-//                     });
+                        // 添加超时处理
+                        setTimeout(() => {
+                            window.removeEventListener('message', handleMessage);
+                            reject(new Error('Screenshot timeout'));
+                        }, 3000); // 3秒超时
+                    });
 
-//                     // 发送截图请求
-//                     window.postMessage({ type: 'CAPTURE_SCREENSHOT', timestamp: timestamp }, '*');
+                    // 发送截图请求
+                    window.postMessage({ type: 'CAPTURE_SCREENSHOT', timestamp: timestamp }, '*');
+                    const data=captureInteraction('click_c', event.target, timestamp, generateSelector(target), window.location.href);
+                    window.postMessage({type: 'SAVE_INTERACTION_DATA',data: data}, '*');
+                    const interactionComplete = new Promise((resolve, reject) => {
+                        function handleMessage1(event: MessageEvent) {
+                            if (event.data.type === 'INTERACTION_COMPLETE' && 
+                                event.data.timestamp === timestamp) {
+                                window.removeEventListener('message', handleMessage1);
+                                if (event.data.success) {
+                                    resolve(void 0);
+                                } else {
+                                    reject(new Error(event.data.error || 'Interaction failed'));
+                                }
+                            }
+                        }
+                        window.addEventListener('message', handleMessage1);
+                        
+                        // Add timeout
+                        setTimeout(() => {
+                            window.removeEventListener('message', handleMessage1);
+                            reject(new Error('Interaction timeout'));
+                        }, 3000);
+                    });
+                    // 等待截图完成
+                    await screenshotComplete;
+                    await interactionComplete;
                     
-//                     // 等待截图完成
-//                     await screenshotComplete;
-                    
-//                     // 截图确认完成后再跳转
-//                     window.location.href = targetHref;
-//                 } catch (error) {
-//                     console.error('Error capturing screenshot:', error);
-//                     window.location.href = targetHref;
-//                 }
-//             }
-//         }
-//     }, true); // Use capture phase to intercept the event earlier
-// }
+                    // 截图确认完成后再跳转
+                    window.location.href = targetHref;
+                } catch (error) {
+                    console.error('Error capturing screenshot:', error);
+                    window.location.href = targetHref;
+                }
+            }
+        }
+    }, true); // Use capture phase to intercept the event earlier
+}
 
-// // Call the function to handle <a> tag clicks
-// handleAnchorClicks();
+// Call the function to handle <a> tag clicks
+handleAnchorClicks();
+

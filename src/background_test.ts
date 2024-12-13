@@ -1,16 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
-chrome.webNavigation.onCommitted.addListener((details) => {
-  if (details.frameId === 0) { // Only inject into the main frame
-    chrome.scripting.executeScript({
-      target: { tabId: details.tabId },
-      files: ["js/injected.js"],
-      world: "MAIN" // Ensures the script is injected into the main world
-    });
-  }
-}, { url: [{ urlMatches: ".*" }] });
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 import { nav, refinement_option, recipes } from './recipe';
 let upload_url = "http://userdatacollect.hailab.io/upload"
 let interactions: any[] = [];
@@ -78,7 +65,89 @@ function analyzeNavigation(
   return 'new';
 }
 
+// 首先在文件顶部添加录音相关的变量
+let mediaRecorder: MediaRecorder | null = null;
+let audioChunks: Blob[] = [];
+let isRecording = false;
 
+// 添加开始录音的函数
+async function startRecording(tabId: number) {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+      const timestamp = new Date().toISOString();
+      const audioId = `audio_${timestamp}`;
+      
+      // 保存录音数据到存储
+      let result = await chrome.storage.local.get({ audioRecordings: {} });
+      const audioRecordings = result.audioRecordings || {};
+      audioRecordings[audioId] = await blobToBase64(audioBlob);
+      await chrome.storage.local.set({ audioRecordings });
+    };
+
+    mediaRecorder.start(10000); // 每10秒保存一次数据
+    isRecording = true;
+  } catch (error) {
+    console.error('Error starting recording:', error);
+  }
+}
+
+// 添加停止录音的函数
+function stopRecording() {
+  if (mediaRecorder && isRecording) {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    isRecording = false;
+  }
+}
+
+// 辅助函数：将Blob转换为base64
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Failed to convert blob to base64'));
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// 修改webNavigation.onCommitted监听器，添加录音控制
+chrome.webNavigation.onCommitted.addListener(async (details) => {
+  if (details.frameId !== 0) return;
+  
+  if (details.url.includes('amazon.com')) {
+    if (!isRecording) {
+      console.log('start recording')
+      await startRecording(details.tabId);
+    }
+  } else {
+    console.log('stop recording')
+    stopRecording();
+  }
+});
+
+
+// 在tabs.onRemoved监听器中添加录音清理
+chrome.tabs.onRemoved.addListener((tabId) => {
+  stopRecording();
+  delete tabNavigationHistory[tabId];
+});
 
 // Add new function to handle screenshot saving
 async function saveScreenshot(screenshotDataUrl: string, screenshotId: string) {
@@ -117,7 +186,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       // Capture screenshot on demand
       if (message.action === 'captureScreenshot') {
-        console.log('get screenshot request')
         const screenshotDataUrl = await captureScreenshot();
         if (screenshotDataUrl) {
           const success = await saveScreenshot(screenshotDataUrl, message.screenshotId);
@@ -366,10 +434,9 @@ async function uploadDataToServer() {
       orderDetails: storeorderDetails,
     };
 
-
     // Upload session info
     const sessionInfo = new Blob(
-      [`Session data for timestamp: ${timestamp}, user id: ${currentUserId} \n order details: \n ${JSON.stringify(storeorderDetails)}`], 
+      [`Session data for timestamp: ${timestamp}, user id: ${currentUserId}`], 
       { type: 'text/plain' }
     );
     const sessionFormData = new FormData();
@@ -405,7 +472,22 @@ async function uploadDataToServer() {
         body: formData
       });
     }
-
+    const audioRecordings = await chrome.storage.local.get({ audioRecordings: {} });
+    if (audioRecordings.audioRecordings) {
+      for (const [audioId, audioData] of Object.entries(audioRecordings.audioRecordings)) {
+        const base64Data = audioData.split(',')[1];
+        const audioBlob = await fetch(`data:audio/wav;base64,${base64Data}`).then(r => r.blob());
+        const formData = new FormData();
+        formData.append('file', audioBlob, `${folderName}/${audioId}.wav`);
+        await fetch(upload_url, {
+          method: 'POST',
+          body: formData
+        });
+      }
+    }
+    
+    // 清除录音数据
+    chrome.storage.local.remove(['audioRecordings']);
     // Clear cache after successful upload
     chrome.storage.local.remove(['htmlSnapshots', 'interactions', 'orderDetails', 'screenshots']);
     interactions.length = 0;

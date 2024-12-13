@@ -13,7 +13,8 @@
     "tabs",
     "downloads",
     "declarativeNetRequest",
-    "declarativeNetRequestWithHostAccess"
+    "declarativeNetRequestWithHostAccess",
+    "audio"
   ],
   "host_permissions": [
     "<all_urls>",
