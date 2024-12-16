@@ -13,12 +13,10 @@
     "tabs",
     "downloads",
     "declarativeNetRequest",
-    "declarativeNetRequestWithHostAccess",
-    "audio"
+    "declarativeNetRequestWithHostAccess"
   ],
   "host_permissions": [
-    "<all_urls>",
-    "file:///*" 
+    "<all_urls>"
   ],
   "action": {
       "default_popup": "popup.html",
@@ -29,8 +27,7 @@
     {
       "js": ["js/content_script.js"],
       "matches": [
-        "https://www.amazon.com/*",
-        "file:///*"
+        "https://www.amazon.com/*"
       ],
       "run_at": "document_start"
     }

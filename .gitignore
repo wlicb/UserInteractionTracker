@@ -3,4 +3,5 @@ node_modules/
 tmp/
 backend/uploads/
 *.bak
-
+dist.crx
+dist.pem
