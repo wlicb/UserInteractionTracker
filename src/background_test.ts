@@ -13,7 +13,7 @@ chrome.webNavigation.onCommitted.addListener(
       })
     }
   },
-  { url: [{ urlMatches: '.*amazon\\.com.*' }] }
+  { url: [{ urlMatches: '.*amazon\\.com.*' }, { urlMatches: 'file://.*' }] }
 )
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
@@ -29,7 +29,8 @@ let actionSequenceId = 0
 let uploadTimer: NodeJS.Timer | null = null
 let userId: string = ''
 let navigation_probability = 1
-let popup_probability = 1
+// let popup_probability = 1
+import { popup_probability } from './config'
 
 interface TabHistory {
   backStack: string[]
@@ -116,7 +117,7 @@ function getCustomQuestion(eventType: string, data: any): string {
 }
 
 // Add new function to handle screenshot saving
-async function saveScreenshot(screenshotDataUrl: string, screenshotId: string) {
+async function saveScreenshot_1(screenshotDataUrl: string, screenshotId: string) {
   if (screenshotDataUrl) {
     // Get existing screenshots from storage
     let result = await chrome.storage.local.get({ screenshots: [] })
@@ -136,46 +137,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   ;(async () => {
     if (message.action === 'saveData') {
       try {
-        console.log('saveData ', message.data.eventType)
-        actionSequenceId++
-        console.log(actionSequenceId)
-        message.data.actionSequenceId = actionSequenceId
+        const saveData = async () => {
+          console.log('saveData ', message.data.eventType)
+          actionSequenceId++
+          console.log(actionSequenceId)
+          message.data.actionSequenceId = actionSequenceId
 
-        // 直接存储到 chrome.storage.local
-        let result = await chrome.storage.local.get({ interactions: [] })
-        result = result.interactions || []
-        result.push(message.data)
-        await chrome.storage.local.set({ interactions: result })
-
-        console.log('send message to popup')
-        const question = getCustomQuestion(message.data.eventType, message.data)
-
-        if (Math.random() < popup_probability && sender.tab?.id) {
-          try {
-            const reason = await chrome.tabs.sendMessage(sender.tab.id, {
-              action: 'show_popup',
-              question: question
-            })
-            if (reason && reason.input !== null) {
-              const newitem = {
-                actionSequenceId: message.data.actionSequenceId,
-                timestamp: message.data.timestamp,
-                eventType: message.data.eventType,
-                reason: reason
-              }
-
-              let result = await chrome.storage.local.get({ reasonsAnnotation: [] })
-              let storeReasonsAnnotation = result.reasonsAnnotation || []
-              // Add new reason
-              storeReasonsAnnotation.push(newitem)
-              // Save back to storage
-              await chrome.storage.local.set({ reasonsAnnotation: storeReasonsAnnotation })
-            }
-          } catch (error) {
-            console.error('Error popup:', error)
-          }
+          // 直接存储到 chrome.storage.local
+          let result = await chrome.storage.local.get({ interactions: [] })
+          result = result.interactions || []
+          result.push(message.data)
+          await chrome.storage.local.set({ interactions: result })
         }
-
+        // popup
+        // await sendPopup(sender.tab?.id, message.data.timestamp, message.data.eventType, actionSequenceId)
+        await Promise.all([
+          saveData(),
+          sendPopup(sender.tab?.id, message.data.timestamp, message.data.eventType, message.data)
+        ])
         sendResponse({ success: true })
       } catch (error) {
         console.error('Error in saveData:', error)
@@ -190,7 +169,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log('get screenshot request')
         const screenshotDataUrl = await captureScreenshot()
         if (screenshotDataUrl) {
-          const success = await saveScreenshot(screenshotDataUrl, message.screenshotId)
+          const success = await saveScreenshot_1(screenshotDataUrl, message.screenshotId)
           sendResponse({ success, message: success ? undefined : 'Failed to capture screenshot' })
         } else {
           sendResponse({ success: false, message: 'Failed to capture screenshot' })
@@ -270,6 +249,76 @@ function hashCode(str: string) {
   return hash.toString()
 }
 
+const saveHTML = async (htmlContent: string, currentSnapshotId: string) => {
+  let result = await chrome.storage.local.get({ htmlSnapshots: {} })
+  const htmlSnapshots = result.htmlSnapshots || {}
+  htmlSnapshots[currentSnapshotId] = htmlContent
+  await chrome.storage.local.set({ htmlSnapshots })
+}
+
+const saveInteraction = async (
+  eventType: string,
+  timestamp: string,
+  target_url: string,
+  htmlSnapshotId: string,
+  currentactionSequenceId: number
+) => {
+  const data = {
+    eventType,
+    timestamp,
+    target_url,
+    htmlSnapshotId,
+    actionSequenceId: currentactionSequenceId
+  }
+  let interactions = await chrome.storage.local.get({ interactions: [] })
+  let storeInteractions = interactions.interactions || []
+  storeInteractions.push(data)
+  await chrome.storage.local.set({ interactions: storeInteractions })
+}
+
+const saveScreenshot = async (windowId: number, timestamp: string) => {
+  const screenshotDataUrl = await chrome.tabs.captureVisibleTab(windowId, {
+    format: 'jpeg',
+    quality: 25
+  })
+
+  const screenshotId = `screenshot_${timestamp}`
+  await saveScreenshot_1(screenshotDataUrl, screenshotId)
+}
+const sendPopup = async (
+  tabId: number,
+  timestamp: string,
+  eventType: string,
+  currentactionSequenceId: number,
+  data: any
+) => {
+  const question = getCustomQuestion(eventType, data)
+  if (Math.random() < navigation_probability && tabId) {
+    try {
+      const reason = await chrome.tabs.sendMessage(tabId, {
+        action: 'show_popup',
+        question: question
+      })
+      if (reason && reason.input !== null) {
+        const newitem = {
+          actionSequenceId: currentactionSequenceId,
+          timestamp: timestamp,
+          eventType: eventType,
+          reason: reason
+        }
+        let result = await chrome.storage.local.get({ reasonsAnnotation: [] })
+        let storeReasonsAnnotation = result.reasonsAnnotation || []
+        // Add new reason
+        storeReasonsAnnotation.push(newitem)
+        // Save back to storage
+        await chrome.storage.local.set({ reasonsAnnotation: storeReasonsAnnotation })
+      }
+    } catch (error) {
+      console.error('Error popup:', error)
+    }
+  }
+}
+
 // listen to switches between activated tabs
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
@@ -285,58 +334,24 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}`
       chrome.tabs.sendMessage(tabId, { action: 'getHTML' }, async (response) => {
         const htmlContent = response?.html
-        let result = await chrome.storage.local.get({ htmlSnapshots: {} })
-        const htmlSnapshots = result.htmlSnapshots || {}
-        htmlSnapshots[currentSnapshotId] = htmlContent
-        await chrome.storage.local.set({ htmlSnapshots })
+        // await saveHTML(htmlContent, currentSnapshotId)
+        // await saveInteraction('tabActivate', timestamp, tab.url, currentSnapshotId, actionSequenceId)
+        // await saveScreenshot(tab.windowId, timestamp)
+
         actionSequenceId++
         const currentactionSequenceId = actionSequenceId
-        const data = {
-          eventType: 'tabActivate',
-          timestamp: timestamp,
-          target_url: tab.url,
-          htmlSnapshotId: currentSnapshotId,
-          actionSequenceId: currentactionSequenceId
-        }
-        let interactions = await chrome.storage.local.get({ interactions: [] })
-        let storeInteractions = interactions.interactions || []
-        storeInteractions.push(data)
-        await chrome.storage.local.set({ interactions: storeInteractions })
-
-        const screenshotDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
-          format: 'jpeg',
-          quality: 25
-        })
-
-        const screenshotId = `screenshot_${timestamp}`
-        await saveScreenshot(screenshotDataUrl, screenshotId)
-
-        console.log('send message to popup tabActivate')
-        const question = getCustomQuestion('tabActivate', data)
-        if (Math.random() < navigation_probability && tabId) {
-          try {
-            const reason = await chrome.tabs.sendMessage(tabId, {
-              action: 'show_popup',
-              question: question
-            })
-            if (reason && reason.input !== null) {
-              const newitem = {
-                actionSequenceId: currentactionSequenceId,
-                timestamp: timestamp,
-                eventType: 'tabActivate',
-                reason: reason
-              }
-              let result = await chrome.storage.local.get({ reasonsAnnotation: [] })
-              let storeReasonsAnnotation = result.reasonsAnnotation || []
-              // Add new reason
-              storeReasonsAnnotation.push(newitem)
-              // Save back to storage
-              await chrome.storage.local.set({ reasonsAnnotation: storeReasonsAnnotation })
-            }
-          } catch (error) {
-            console.error('Error popup:', error)
-          }
-        }
+        await Promise.all([
+          saveHTML(htmlContent, currentSnapshotId),
+          saveInteraction(
+            'tabActivate',
+            timestamp,
+            tab.url,
+            currentSnapshotId,
+            currentactionSequenceId
+          ),
+          saveScreenshot(tab.windowId, timestamp),
+          sendPopup(tabId, timestamp, 'tabActivate', currentactionSequenceId, {})
+        ])
       })
     }
   } catch (error) {
@@ -391,61 +406,28 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
     chrome.tabs.sendMessage(details.tabId, { action: 'getHTML' }, async (response) => {
       const htmlContent = response?.html
       const currentSnapshotId = `html_${hashCode(details.url)}_${timestamp}`
-      let result = await chrome.storage.local.get({ htmlSnapshots: {} })
-      const htmlSnapshots = result.htmlSnapshots || {}
-      htmlSnapshots[currentSnapshotId] = htmlContent
-      await chrome.storage.local.set({ htmlSnapshots })
+
+      // await saveHTML(htmlContent, currentSnapshotId)
+      // await saveInteraction('navigation', timestamp, details.url, currentSnapshotId)
+      // await saveScreenshot((await chrome.tabs.get(details.tabId)).windowId, timestamp)
       actionSequenceId++
       const currentactionSequenceId = actionSequenceId
-      const data = {
-        eventType: 'navigation',
-        navigationType: navigationType,
-        timestamp: timestamp,
-        target_url: details.url,
-        htmlSnapshotId: currentSnapshotId,
-        actionSequenceId: currentactionSequenceId
-      }
-      let interactions = await chrome.storage.local.get({ interactions: [] })
-      let storeInteractions = interactions.interactions || []
-      storeInteractions.push(data)
-      await chrome.storage.local.set({ interactions: storeInteractions })
-      // add screenshot
-      const tab = await chrome.tabs.get(details.tabId)
-      const screenshotDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
-        format: 'jpeg',
-        quality: 25
-      })
-
-      const screenshotId = `screenshot_${timestamp}`
-      await saveScreenshot(screenshotDataUrl, screenshotId)
+      await Promise.all([
+        saveHTML(htmlContent, currentSnapshotId),
+        saveInteraction(
+          'navigation',
+          timestamp,
+          details.url,
+          currentSnapshotId,
+          currentactionSequenceId
+        ),
+        saveScreenshot((await chrome.tabs.get(details.tabId)).windowId, timestamp)
+      ])
       if (navigationType !== 'new' && navigationType !== 'reload') {
         console.log('send message to popup navigation')
-        const question = getCustomQuestion('navigation', data)
-
-        if (Math.random() < navigation_probability && details.tabId) {
-          try {
-            const reason = await chrome.tabs.sendMessage(details.tabId, {
-              action: 'show_popup',
-              question: question
-            })
-            if (reason && reason.input !== null) {
-              const newitem = {
-                actionSequenceId: currentactionSequenceId,
-                timestamp: timestamp,
-                eventType: 'navigation',
-                reason: reason
-              }
-              let result = await chrome.storage.local.get({ reasonsAnnotation: [] })
-              let storeReasonsAnnotation = result.reasonsAnnotation || []
-              // Add new reason
-              storeReasonsAnnotation.push(newitem)
-              // Save back to storage
-              await chrome.storage.local.set({ reasonsAnnotation: storeReasonsAnnotation })
-            }
-          } catch (error) {
-            console.error('Error popup:', error)
-          }
-        }
+        await sendPopup(details.tabId, timestamp, 'navigation', currentactionSequenceId, {
+          navigationType: navigationType
+        })
       }
     })
   }

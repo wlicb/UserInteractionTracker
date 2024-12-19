@@ -103,15 +103,20 @@ function captureInteraction(
 
   return data
 }
-
+// todo: patch removeEventListener support wrap
+const blockSignals = {}
 // Monkey patch addEventListener
 EventTarget.prototype.addEventListener = function (type, listener, options) {
-  // console.log('[Monkey Patch] Adding event listener for type:', type);
+  if (options && options.skip_monkey_patch) {
+    return originalAddEventListener.call(this, type, listener, options)
+  }
 
   if (type === 'click' && listener) {
     const wrappedListener = async function (event) {
       const target = event.target as HTMLElement
       if (isFromPopup(target)) {
+        console.log('isFromPopup', target)
+        console.log('listener', listener)
         if (typeof listener === 'function') {
           listener.call(this, event)
         } else if (listener && typeof listener.handleEvent === 'function') {
@@ -122,10 +127,28 @@ EventTarget.prototype.addEventListener = function (type, listener, options) {
       // Add debouncing logic
       const now = Date.now()
       if (now - lastClickTimestamp < DEBOUNCE_DELAY) {
-        console.log('[Monkey Patch] Debouncing click event')
+        console.log('[Monkey Patch] Debouncing click event, blocking')
+        const signal = blockSignals[lastClickTimestamp].signal
+        const wait_for_abort = new Promise((resolve, reject) => {
+          if (signal.aborted) {
+            // If already aborted, resolve immediately
+            resolve(void 0)
+          } else {
+            // Otherwise, listen for the abort event
+            signal.addEventListener('abort', () => resolve(void 0), { once: true })
+          }
+        })
+        await wait_for_abort
+        console.log('[Monkey Patch] Debouncing click event, unblocking')
+        if (typeof listener === 'function') {
+          listener.call(this, event)
+        } else if (listener && typeof listener.handleEvent === 'function') {
+          listener.handleEvent.call(listener, event)
+        }
         return
       }
       lastClickTimestamp = now
+      blockSignals[lastClickTimestamp] = new AbortController()
 
       console.log('[Monkey Patch] Click detected on:', event.target)
       console.log(event.currentTarget)
@@ -195,6 +218,7 @@ EventTarget.prototype.addEventListener = function (type, listener, options) {
           // Wait for screenshot to complete
           await screenshotComplete
           await interactionComplete
+          blockSignals[lastClickTimestamp].abort()
           window.location.href = targetHref
         } catch (error) {
           console.error('Error:', error)
@@ -257,6 +281,8 @@ EventTarget.prototype.addEventListener = function (type, listener, options) {
         await screenshotComplete
         await interactionComplete
         // Execute original listener after screenshot is captured
+
+        blockSignals[lastClickTimestamp].abort()
         if (typeof listener === 'function') {
           listener.call(this, event)
         } else if (listener && typeof listener.handleEvent === 'function') {
@@ -265,6 +291,8 @@ EventTarget.prototype.addEventListener = function (type, listener, options) {
       } catch (error) {
         console.error('Error capturing screenshot:', error)
         // Execute original listener even if screenshot fails
+
+        blockSignals[lastClickTimestamp].abort()
         if (typeof listener === 'function') {
           listener.call(this, event)
         } else if (listener && typeof listener.handleEvent === 'function') {
@@ -325,7 +353,9 @@ function handleAnchorClicks() {
                   }
                 }
               }
-              window.addEventListener('message', handleMessage)
+              window.addEventListener('message', handleMessage, {
+                capture: true
+              })
 
               // 添加超时处理
               setTimeout(() => {
@@ -379,7 +409,10 @@ function handleAnchorClicks() {
         }
       }
     },
-    true
+    {
+      useCapture: true,
+      skip_monkey_patch: true
+    }
   ) // Use capture phase to intercept the event earlier
 }
 

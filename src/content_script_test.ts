@@ -8,12 +8,10 @@ window.addEventListener('message', async (event) => {
   }
   if (event.data.type && event.data.type === 'SAVE_INTERACTION_DATA') {
     try {
-      const response1 = await chrome.storage.local.get(['htmlSnapshots'], (result) => {
-        const htmlSnapshots = result.htmlSnapshots || {}
-        htmlSnapshots[event.data.data.htmlSnapshotId] = event.data.data.htmlContent
-        chrome.storage.local.set({ htmlSnapshots })
-      })
-      console.log(response1)
+      const result = await chrome.storage.local.get(['htmlSnapshots'])
+      const htmlSnapshots = result.htmlSnapshots || {}
+      htmlSnapshots[event.data.data.htmlSnapshotId] = event.data.data.htmlContent
+      chrome.storage.local.set({ htmlSnapshots })
       const dataForBackground = { ...event.data.data }
       delete dataForBackground.htmlContent
 
@@ -21,8 +19,8 @@ window.addEventListener('message', async (event) => {
         action: 'saveData',
         data: dataForBackground
       })
-      if (!response1.success || !response2.success) {
-        throw new Error(response1.message + response2.message || 'interaction capture failed')
+      if (!response2.success) {
+        throw new Error(response2.message || 'interaction capture failed')
       }
       console.log(response2)
       window.postMessage(
@@ -209,19 +207,12 @@ async function captureInteraction(
     const currentSnapshotId = generateHtmlSnapshotId()
 
     // Save HTML snapshot and wait for it to complete
-    await new Promise((resolve, reject) => {
-      chrome.storage.local.get(['htmlSnapshots'], (result) => {
-        const htmlSnapshots = result.htmlSnapshots || {}
-        htmlSnapshots[currentSnapshotId] = document.documentElement.outerHTML
-        chrome.storage.local.set({ htmlSnapshots }, () => {
-          if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError)
-          } else {
-            resolve(void 0)
-          }
-        })
-      })
-    })
+    // await new Promise((resolve, reject) => {
+    const result = await chrome.storage.local.get(['htmlSnapshots'])
+    const htmlSnapshots = result.htmlSnapshots || {}
+    htmlSnapshots[currentSnapshotId] = document.documentElement.outerHTML
+    chrome.storage.local.set({ htmlSnapshots })
+    // })
 
     // const clickableElements = getClickableElementsInViewport();
     const data = {
@@ -474,20 +465,23 @@ function createModal(question: string, sendResponse: (response?: any) => void) {
 
   const modalContainer = document.createElement('div')
   modalContainer.innerHTML = modalHtml
-  document.body.appendChild(modalContainer)
+  // if attach-desktop-sideSheet exists
+  if (document.querySelector('.attach-desktop-sideSheet:not(.aok-hidden)')) {
+    document.querySelector('.attach-desktop-sideSheet:not(.aok-hidden)').appendChild(modalContainer)
+  } else {
+    document.body.appendChild(modalContainer)
+  }
 
   // Add event listeners
-  const submitBtn = document.getElementById('reason-submit')
-  const skipBtn = document.getElementById('reason-skip')
-  const input = document.getElementById('reason-input') as HTMLTextAreaElement
-
-  submitBtn?.addEventListener('click', () => {
+  document.getElementById('reason-submit').addEventListener('click', () => {
+    const input = document.getElementById('reason-input') as HTMLTextAreaElement
+    console.log('submitBtn clicked')
     const value = input.value
     modalContainer.remove()
     sendResponse({ input: value })
   })
-
-  skipBtn?.addEventListener('click', () => {
+  document.getElementById('reason-skip').addEventListener('click', () => {
+    const input = document.getElementById('reason-input') as HTMLTextAreaElement
     modalContainer.remove()
     sendResponse({ input: null })
   })
@@ -496,6 +490,7 @@ function createModal(question: string, sendResponse: (response?: any) => void) {
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'show_popup') {
+    console.log('show_popup', message)
     // assert there isn't already a popup
     if (document.getElementById('reason-modal')) {
       return
