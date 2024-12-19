@@ -143,14 +143,15 @@ const monkeyPatch = () => {
       return true
     }
     // if id is nav-search-submit-button
-    if (element.id === 'nav-search-submit-button') {
-      return true
-    }
-    // if (element.tagName.toLowerCase() === 'input') {
-    //   if (element.type === 'submit') {
-    //     return true
-    //   }
+    // if (element.id === 'nav-search-submit-button') {
+    //   return true
     // }
+
+    if (element.tagName.toLowerCase() === 'input') {
+      if (element.type === 'submit') {
+        return true
+      }
+    }
     return false
   }
   // Monkey patch addEventListener
@@ -168,6 +169,10 @@ const monkeyPatch = () => {
           } else if (listener && typeof listener.handleEvent === 'function') {
             listener.handleEvent.call(listener, event)
           }
+          return
+        }
+        if (event.just_for_default) {
+          console.log('skip monkey patch')
           return
         }
         // Add debouncing logic
@@ -294,7 +299,31 @@ const monkeyPatch = () => {
               listener.handleEvent.call(listener, event)
             }
             console.log('re-dispatch the event if its not prevented')
-            executeDefaultAction(event)
+            if (!event.my_default_prevented) {
+              // Clone the original event
+              const newEvent = new MouseEvent(event.type, {
+                bubbles: event.bubbles,
+                cancelable: false, // Ensures the default behavior occurs
+                composed: event.composed,
+                view: event.view,
+                detail: event.detail,
+                screenX: event.screenX,
+                screenY: event.screenY,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                ctrlKey: event.ctrlKey,
+                altKey: event.altKey,
+                shiftKey: event.shiftKey,
+                metaKey: event.metaKey,
+                button: event.button,
+                buttons: event.buttons,
+                relatedTarget: event.relatedTarget
+              })
+              newEvent.just_for_default = true
+
+              // Re-dispatch the new event
+              target.dispatchEvent(newEvent)
+            }
           }
           return
         }
@@ -399,6 +428,10 @@ const monkeyPatch = () => {
         if (isFromPopup(event.target)) {
           return
         }
+        if (event.just_for_default) {
+          console.log('skip monkey patch b')
+          return
+        }
         // Add debouncing logic
         const now = Date.now()
         if (now - lastClickTimestamp < DEBOUNCE_DELAY) {
@@ -491,7 +524,33 @@ const monkeyPatch = () => {
             console.error('Error capturing screenshot:', error)
             // window.location.href = targetHref
           } finally {
-            executeDefaultAction(event)
+            blockSignals[lastClickTimestamp].abort()
+            console.log('re-dispatch the event if its not prevented')
+            if (!event.my_default_prevented) {
+              // Clone the original event
+              const newEvent = new MouseEvent(event.type, {
+                bubbles: event.bubbles,
+                cancelable: false, // Ensures the default behavior occurs
+                composed: event.composed,
+                view: event.view,
+                detail: event.detail,
+                screenX: event.screenX,
+                screenY: event.screenY,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                ctrlKey: event.ctrlKey,
+                altKey: event.altKey,
+                shiftKey: event.shiftKey,
+                metaKey: event.metaKey,
+                button: event.button,
+                buttons: event.buttons,
+                relatedTarget: event.relatedTarget
+              })
+              newEvent.just_for_default = true
+
+              // Re-dispatch the new event
+              target.dispatchEvent(newEvent)
+            }
           }
         }
       },
