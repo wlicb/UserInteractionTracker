@@ -116,16 +116,42 @@ const monkeyPatch = () => {
   // todo: patch removeEventListener support wrap
   const blockSignals = {}
 
-  const executeDefaultAction = (element: HTMLElement) => {
+  const executeDefaultAction = (event: Event) => {
+    console.log('executeDefaultAction')
+    const element = event.target as HTMLElement
+    console.log(element)
+    console.log(event)
+    if (event.my_default_prevented) {
+      console.log('default prevented in original listener')
+      return
+    }
     const anchor = element.closest('a')
     if (anchor) {
       window.location.href = anchor.href
     } else if (element.tagName.toLowerCase() === 'input') {
       // if type is submit, submit the form
       if (element.type === 'submit') {
+        console.log('submit the form')
         element.form?.submit()
       }
     }
+  }
+  const hasDefaultAction = (event: Event) => {
+    const element = event.target as HTMLElement
+    const anchor = element.closest('a')
+    if (anchor) {
+      return true
+    }
+    // if id is nav-search-submit-button
+    if (element.id === 'nav-search-submit-button') {
+      return true
+    }
+    // if (element.tagName.toLowerCase() === 'input') {
+    //   if (element.type === 'submit') {
+    //     return true
+    //   }
+    // }
+    return false
   }
   // Monkey patch addEventListener
   EventTarget.prototype.addEventListener = function (type, listener, options = {}) {
@@ -175,16 +201,19 @@ const monkeyPatch = () => {
         blockSignals[lastClickTimestamp] = new AbortController()
 
         console.log('[Monkey Patch] Click detected on:', event.target)
-        console.log(event.currentTarget)
+        console.log(event.target)
         const timestamp = new Date().toISOString()
         // const anchor = target.closest('a')
-        if (event.cancelable) {
+        if (hasDefaultAction(event)) {
           // console.log('[Monkey Patch] Click on <a> tag:', anchor.href)
           console.log('[Monkey Patch] Click on cancelable')
-          console.log(event)
           event.preventDefault()
           event.stopPropagation()
-          console.log(123)
+          event.preventDefault = () => {
+            event.my_default_prevented = true
+          }
+          event.my_default_prevented = false
+          console.log('after patch event', event)
           // const targetHref = anchor.href
           try {
             const screenshotComplete = new Promise((resolve, reject) => {
@@ -251,14 +280,21 @@ const monkeyPatch = () => {
             // console.log("completed")
             // debugger
             // alert("2")
-            blockSignals[lastClickTimestamp].abort()
             // window.location.href = targetHref
             // re-dispatch the event
           } catch (error) {
             console.error('Error:', error)
           } finally {
-            console.log('re-dispatch the event')
-            executeDefaultAction(event.target as HTMLElement)
+            console.log('running original listener')
+            console.log(listener)
+            blockSignals[lastClickTimestamp].abort()
+            if (typeof listener === 'function') {
+              listener.call(this, event)
+            } else if (listener && typeof listener.handleEvent === 'function') {
+              listener.handleEvent.call(listener, event)
+            }
+            console.log('re-dispatch the event if its not prevented')
+            executeDefaultAction(event)
           }
           return
         }
@@ -320,17 +356,11 @@ const monkeyPatch = () => {
           await screenshotComplete
           await interactionComplete
           // Execute original listener after screenshot is captured
-
-          blockSignals[lastClickTimestamp].abort()
-          if (typeof listener === 'function') {
-            listener.call(this, event)
-          } else if (listener && typeof listener.handleEvent === 'function') {
-            listener.handleEvent.call(listener, event)
-          }
         } catch (error) {
           console.error('Error capturing screenshot:', error)
           // Execute original listener even if screenshot fails
-
+        } finally {
+          console.log('running original listener')
           blockSignals[lastClickTimestamp].abort()
           if (typeof listener === 'function') {
             listener.call(this, event)
@@ -383,7 +413,7 @@ const monkeyPatch = () => {
         // Find the closest <a> tag in case of nested elements inside the <a>
         // const anchor = target.closest('a')
 
-        if (event.cancelable) {
+        if (hasDefaultAction(event)) {
           // console.log('[Intercepted] Click on <a> tag:', anchor.href)
           console.log('[Intercepted] Click on cancelable')
           // if (!anchor.href.startsWith('javascript:')) {
@@ -461,7 +491,7 @@ const monkeyPatch = () => {
             console.error('Error capturing screenshot:', error)
             // window.location.href = targetHref
           } finally {
-            executeDefaultAction(event.target as HTMLElement)
+            executeDefaultAction(event)
           }
         }
       },
