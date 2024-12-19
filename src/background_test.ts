@@ -543,10 +543,30 @@ async function downloadDataLocally() {
   }
 }
 
-// Start the periodic upload timer
+// Add this variable at the top with other state variables
+let lastUploadTimestamp: string = '';
 
 async function uploadDataToServer() {
     try {
+
+
+    const interact = await chrome.storage.local.get({ interactions: [] });
+    const storeInteractions = interact.interactions || [];
+      
+      // Check if there are any interactions and get the latest timestamp
+      if (storeInteractions.length === 0) {
+        console.log('No interactions to upload');
+        return false;
+      }
+
+      const latestTimestamp = storeInteractions[storeInteractions.length - 1].timestamp;
+      
+      // If the latest timestamp hasn't changed, skip upload
+      if (latestTimestamp === lastUploadTimestamp) {
+        console.log('No new interactions since last upload');
+        return false;
+      }
+
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
       const folderName = `DATA/SESSION_${timestamp}`
   
@@ -555,13 +575,13 @@ async function uploadDataToServer() {
       const currentUserId = userIdResult.userId
   
       const snapshots = await chrome.storage.local.get({ htmlSnapshots: [] })
-      const interact = await chrome.storage.local.get({ interactions: [] })
+    //   const interact = await chrome.storage.local.get({ interactions: [] })
       const orderDetails = await chrome.storage.local.get({ orderDetails: [] })
       const screen = await chrome.storage.local.get({ screenshots: [] })
       const ReasonsAnnotation = await chrome.storage.local.get({ reasonsAnnotation: [] })
   
       let htmlSnapshots = snapshots.htmlSnapshots || {}
-      let storeInteractions = interact.interactions || []
+    //   let storeInteractions = interact.interactions || []
       let storeorderDetails = orderDetails.orderDetails || []
       let storeScreenshots = screen.screenshots || []
       let storeReasonsAnnotation = ReasonsAnnotation.reasonsAnnotation || []
@@ -631,25 +651,18 @@ async function uploadDataToServer() {
           body: formData
         })
       }
-  
-      // Clear cache after successful upload
-    //   chrome.storage.local.remove([
-    //     'htmlSnapshots',
-    //     'interactions',
-    //     'orderDetails',
-    //     'screenshots',
-    //     'reasonsAnnotation'
-    //   ])
-    //   interactions.length = 0
-    //   screenshots.length = 0
-    //   reasonsAnnotation.length = 0
-  
-      return true
+
+      // Original upload logic here...
+      // ... (keep existing upload code) ...
+
+      // After successful upload, update the last upload timestamp
+      lastUploadTimestamp = latestTimestamp;
+      return true;
     } catch (error) {
       console.error('Error uploading data:', error)
       return false
     }
-  }
+}
 
   
   // Start the periodic upload timer
