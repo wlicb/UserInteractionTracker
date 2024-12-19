@@ -2,19 +2,38 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
-chrome.webNavigation.onCommitted.addListener(
-  (details) => {
-    if (details.frameId === 0) {
-      // Only inject into the main frame
-      chrome.scripting.executeScript({
-        target: { tabId: details.tabId },
-        files: ['js/injected.js'],
-        world: 'MAIN' // Ensures the script is injected into the main world
-      })
-    }
-  },
-  { url: [{ urlMatches: '.*amazon\\.com.*' }, { urlMatches: 'file://.*' }] }
-)
+// chrome.webNavigation.onCommitted.addListener(
+//   (details) => {
+//     if (details.frameId === 0) {
+//       // Only inject into the main frame
+//       chrome.scripting.executeScript({
+//         target: { tabId: details.tabId },
+//         files: ['js/injected.js'],
+//         world: 'MAIN' // Ensures the script is injected into the main world
+//       })
+//     }
+//   },
+//   { url: [{ urlMatches: '.*amazon\\.com.*' }, { urlMatches: 'file://.*' }] }
+// )
+// chrome.tabs.onCreated.addListener((tab) => {
+//   if (tab.url.includes('amazon.com') || tab.url.includes('file')) {
+
+//       chrome.scripting.executeScript({
+//         target: { tabId: details.tabId },
+//         files: ['js/injected.js'],
+//         world: 'MAIN' // Ensures the script is injected into the main world
+//       })
+//   }
+// })
+// chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+//   if (changeInfo.status === 'loading' && (tab.url.includes('amazon.com') || tab.url.includes('file'))) {
+//     chrome.scripting.executeScript({
+//       target: { tabId: tabId },
+//       files: ['js/injected.js'],
+//       world: 'MAIN' // Ensures the script is injected into the main world
+//     })
+//   }
+// })
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import { nav, refinement_option, recipes } from './recipe'
@@ -329,7 +348,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       return
     }
     console.log(`Switched to tab ${tabId} with URL: ${tab.url}`)
-    if (tab.url && tab.url.includes('amazon.com')) {
+    if (tab.url && (tab.url.includes('amazon.com') || tab.url.includes('file'))) {
       const timestamp = new Date().toISOString()
       const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}`
       chrome.tabs.sendMessage(tabId, { action: 'getHTML' }, async (response) => {
@@ -399,7 +418,7 @@ async function selectRecipe(tabId: number, url: string) {
 chrome.webNavigation.onCommitted.addListener(async (details) => {
   if (details.frameId !== 0) return
   console.log('webNavigation onCommitted event triggered:', details)
-  if (details.url.includes('amazon.com')) {
+  if (details.url.includes('amazon.com') || details.url.includes('file')) {
     const navigationType = analyzeNavigation(details.tabId, details.url)
     console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`)
     const timestamp = new Date().toISOString()

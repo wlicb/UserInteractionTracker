@@ -20,12 +20,17 @@
     "default_popup": "popup.html",
     "default_icon": "icon.png"
   },
-
   "content_scripts": [
     {
       "js": ["js/content_script.js"],
-      "matches": ["https://www.amazon.com/*"],
+      "matches": ["https://www.amazon.com/*", "file://*"],
       "run_at": "document_start"
+    },
+    {
+      "js": ["js/injected.js"],
+      "matches": ["https://www.amazon.com/*", "file://*"],
+      "run_at": "document_start",
+      "world": "MAIN"
     }
   ],
   "background": {

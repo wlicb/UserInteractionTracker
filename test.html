@@ -11,6 +11,12 @@
   <body>
     <!-- Add your content here -->
     <a href="https://www.google.com"> Normal A</a>
+    <a href="https://www.google.com">
+      <span> Span A </span>
+    </a>
+    <a id="a-with-listener" href="https://www.google.com">
+      <span> Span A with listener </span>
+    </a>
     <a id="a" href="https://www.google.com"> A with addEventListener </a>
     <a id="a2" href="https://www.google.com"> A with onclick </a>
     <a id="a3" href="https://www.google.com"> A with onclick but no prevent default </a>
@@ -26,6 +32,9 @@
       document.querySelector('#a3').onclick = (e) => {
         alert('You clicked me!')
       }
+      document.querySelector('#a-with-listener').addEventListener('click', (e) => {
+        alert('You clicked me!')
+      })
     </script>
   </body>
 </html>
