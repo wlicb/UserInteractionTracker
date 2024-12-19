@@ -24,8 +24,8 @@ const screenshotLimit = 100;
 let actionSequenceId = 0;
 let uploadTimer: NodeJS.Timer | null = null;
 let userId: string = "";
-let navigation_probability = 0.1;
-let other_probability = 0.1;
+let navigation_probability = 1;
+let other_probability = 1;
 
 interface TabHistory {
     backStack: string[];
@@ -120,18 +120,19 @@ function getCustomQuestion(eventType: string, data: any): string {
 // Add new function to handle screenshot saving
 async function saveScreenshot(screenshotDataUrl: string, screenshotId: string) {
     if (screenshotDataUrl) {
-        screenshots.push([screenshotDataUrl, screenshotId]);
-        if (screenshots.length > screenshotLimit) {
-            let result = await chrome.storage.local.get({ screenshots: [] })
-            result = result.screenshots || []
-            const storeScreenshots = result.concat(screenshots);
-            screenshots.length = 0
-            await chrome.storage.local.set({ screenshots: storeScreenshots });
-        }
+        // Get existing screenshots from storage
+        let result = await chrome.storage.local.get({ 'screenshots': [] });
+        let storeScreenshots = result.screenshots || [];
+        
+        // Add new screenshot
+        storeScreenshots.push([screenshotDataUrl, screenshotId]);
+        
+
+        // Save back to storage
+        await chrome.storage.local.set({ 'screenshots': storeScreenshots });
         return true;
     }
     return false;
-
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -143,15 +144,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     actionSequenceId++;
                     console.log(actionSequenceId);
                     message.data.actionSequenceId = actionSequenceId;
-                    interactions.push(message.data);
                     
-                    if (interactions.length > interactionsLimit) {
-                        let result = await chrome.storage.local.get({ interactions: [] });
-                        result = result.interactions || [];
-                        let storeInteractions = result.concat(interactions);
-                        interactions.length = 0;
-                        await chrome.storage.local.set({ interactions: storeInteractions });
-                    }
+                    // 直接存储到 chrome.storage.local
+                    let result = await chrome.storage.local.get({ interactions: [] });
+                    result = result.interactions || [];
+                    result.push(message.data);
+                    await chrome.storage.local.set({ interactions: result });
 
                     console.log('send message to popup');
                     const question = getCustomQuestion(message.data.eventType, message.data);
@@ -169,15 +167,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                                     eventType: message.data.eventType,
                                     reason: reason
                                 };
-                                reasonsAnnotation.push(newitem);
-                            }
-                            if (reasonsAnnotation.length > reasonsLimit) {
-                                let result = await chrome.storage.local.get({ reasonsAnnotation: [] });
-                                result = result.reasonsAnnotation || [];
-                                let storeReasonsAnnotation = result.concat(reasonsAnnotation);
-                                reasonsAnnotation.length = 0;
-                                await chrome.storage.local.set({ reasonsAnnotation: storeReasonsAnnotation });
-                            }
+                            
+                            let result = await chrome.storage.local.get({ reasonsAnnotation: [] });
+                            let storeReasonsAnnotation = result.reasonsAnnotation || [];
+                            // Add new reason
+                            storeReasonsAnnotation.push(newitem);
+                            // Save back to storage
+                            await chrome.storage.local.set({ reasonsAnnotation: storeReasonsAnnotation });
+                        }
                         } catch (error) {
                             console.error('Error popup:', error);
                         }
@@ -308,14 +305,11 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
                     htmlSnapshotId: currentSnapshotId,
                     actionSequenceId: currentactionSequenceId,
                 };
-                interactions.push(data);
-                if (interactions.length > interactionsLimit) {
-                    let result = await chrome.storage.local.get({ interactions: [] });
-                    result = result.interactions || []
-                    let storeInteractions = result.concat(interactions);
-                    interactions.length = 0
-                    await chrome.storage.local.set({ interactions: storeInteractions })
-                };
+                let interactions = await chrome.storage.local.get({ interactions: [] });
+                let storeInteractions = interactions.interactions || [];
+                storeInteractions.push(data);
+                await chrome.storage.local.set({ interactions: storeInteractions });
+
                 const screenshotDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 25 });
 
                 const screenshotId = `screenshot_${timestamp}`;
@@ -329,20 +323,18 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
                             action: 'show_popup', 
                             question: question 
                         });
-                        if (reasonreason && reason.input !== null) {
+                        if (reason && reason.input !== null) {
                             const newitem = {
                                 actionSequenceId: currentactionSequenceId,
                                 timestamp: timestamp,
                                 eventType: "tabActivate",
                                 reason: reason
                             };
-                            reasonsAnnotation.push(newitem);
-                        }
-                        if (reasonsAnnotation.length > reasonsLimit) {
                             let result = await chrome.storage.local.get({ reasonsAnnotation: [] });
-                            result = result.reasonsAnnotation || [];
-                            let storeReasonsAnnotation = result.concat(reasonsAnnotation);
-                            reasonsAnnotation.length = 0;
+                            let storeReasonsAnnotation = result.reasonsAnnotation || [];
+                            // Add new reason
+                            storeReasonsAnnotation.push(newitem);
+                            // Save back to storage
                             await chrome.storage.local.set({ reasonsAnnotation: storeReasonsAnnotation });
                         }
                     } catch (error) {
@@ -418,14 +410,10 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
                 htmlSnapshotId: currentSnapshotId,
                 actionSequenceId: currentactionSequenceId,
             };
-            interactions.push(data);
-            if (interactions.length > interactionsLimit) {
-                let result = await chrome.storage.local.get({ interactions: [] });
-                result = result.interactions || []
-                let storeInteractions = result.concat(interactions);
-                interactions.length = 0
-                await chrome.storage.local.set({ interactions: storeInteractions });
-            }
+            let interactions = await chrome.storage.local.get({ interactions: [] });
+            let storeInteractions = interactions.interactions || [];
+            storeInteractions.push(data);
+            await chrome.storage.local.set({ interactions: storeInteractions });
             // add screenshot
             const tab = await chrome.tabs.get(details.tabId);
             const screenshotDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
@@ -453,13 +441,11 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
                                 eventType: "navigation",
                                 reason: reason
                             };
-                            reasonsAnnotation.push(newitem);
-                        }
-                        if (reasonsAnnotation.length > reasonsLimit) {
                             let result = await chrome.storage.local.get({ reasonsAnnotation: [] });
-                            result = result.reasonsAnnotation || [];
-                            let storeReasonsAnnotation = result.concat(reasonsAnnotation);
-                            reasonsAnnotation.length = 0;
+                            let storeReasonsAnnotation = result.reasonsAnnotation || [];
+                            // Add new reason
+                            storeReasonsAnnotation.push(newitem);
+                            // Save back to storage
                             await chrome.storage.local.set({ reasonsAnnotation: storeReasonsAnnotation });
                         }
                     } catch (error) {
@@ -485,13 +471,22 @@ async function uploadDataToServer() {
         // Get userId and data from storage
         const userIdResult = await chrome.storage.local.get({ userId: "" });
         const currentUserId = userIdResult.userId;
-        const { htmlSnapshots = {}, storeInteractions = [], storeScreenshots = [], storeReasonsAnnotation = [] ,orderDetails = []} = 
-            await chrome.storage.local.get(['htmlSnapshots', 'interactions', 'screenshots', 'reasonsAnnotation','orderDetails']);
 
-        // Combine with in-memory data
-        const allInteractions = [...storeInteractions, ...interactions];
-        const allScreenshots = [...storeScreenshots, ...screenshots];
-        const allReasons = [...storeReasonsAnnotation, ...reasonsAnnotation];
+        const snapshots = await chrome.storage.local.get({ htmlSnapshots: [] });
+        const interact = await chrome.storage.local.get({ interactions: [] });
+        const orderDetails = await chrome.storage.local.get({ orderDetails: [] });
+        const screen = await chrome.storage.local.get({ screenshots: [] });
+        const ReasonsAnnotation = await chrome.storage.local.get({ reasonsAnnotation: [] });
+
+        let htmlSnapshots = snapshots.htmlSnapshots || {};
+        let storeInteractions = interact.interactions || [];
+        let storeorderDetails = orderDetails.orderDetails || [];
+        let storeScreenshots = screen.screenshots || [];
+        let storeReasonsAnnotation = ReasonsAnnotation.reasonsAnnotation || [];
+
+        // const allInteractions = [...storeInteractions, ...interactions];
+        // const allScreenshots = [...storeScreenshots, ...screenshots];
+        // const allReasons = [...storeReasonsAnnotation, ...reasonsAnnotation];
 
         // Upload session info
         const sessionInfo = new Blob(
@@ -519,8 +514,8 @@ async function uploadDataToServer() {
         // Upload interactions JSON
         console.log('uploading interactions')
         const fullData = {
-            interactions: allInteractions,
-            reasons: allReasons,
+            interactions: storeInteractions,
+            reasons: storeReasonsAnnotation,
             orderDetails: orderDetails
         };
         const interactionsBlob = new Blob(
@@ -536,8 +531,8 @@ async function uploadDataToServer() {
         });
 
         // Upload screenshots
-        console.log('uploading interactions')
-        for (const [screenshotData, screenshotId] of allScreenshots) {
+        console.log('uploading screenshots')
+        for (const [screenshotData, screenshotId] of storeScreenshots) {
             const response = await fetch(screenshotData);
             const blob = await response.blob();
             const formData = new FormData();
