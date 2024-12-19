@@ -1,1 +1,1 @@
-export const popup_probability = 1
+export const popup_probability = 0.15
