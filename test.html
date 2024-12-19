@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Page Title</title>
+    <style>
+      /* Add your CSS styles here */
+    </style>
+  </head>
+  <body>
+    <!-- Add your content here -->
+    <a href="https://www.google.com"> Normal A</a>
+    <a id="a" href="https://www.google.com"> A with addEventListener </a>
+    <a id="a2" href="https://www.google.com"> A with onclick </a>
+    <a id="a3" href="https://www.google.com"> A with onclick but no prevent default </a>
+    <script>
+      document.querySelector('#a').addEventListener('click', (e) => {
+        e.preventDefault()
+        alert('You clicked me!')
+      })
+      document.querySelector('#a2').onclick = (e) => {
+        e.preventDefault()
+        alert('You clicked me!')
+      }
+      document.querySelector('#a3').onclick = (e) => {
+        alert('You clicked me!')
+      }
+    </script>
+  </body>
+</html>
