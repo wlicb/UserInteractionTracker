@@ -281,7 +281,8 @@ const saveInteraction = async (
     target_url: string,
     htmlSnapshotId: string,
     currentactionSequenceId: number,
-    uuid: string
+    uuid: string,
+    navigationType: string | null = null
 ) => {
     const data = {
         eventType,
@@ -289,8 +290,14 @@ const saveInteraction = async (
         target_url,
         htmlSnapshotId,
         actionSequenceId: currentactionSequenceId,
-        uuid: uuid
+        uuid
     }
+
+    // Add navigationType only if it exists
+    if (navigationType) {
+        data['navigationType'] = navigationType
+    }
+    
     let interactions = await chrome.storage.local.get({ interactions: [] })
     let storeInteractions = interactions.interactions || []
     storeInteractions.push(data)
@@ -357,10 +364,6 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
             const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}`
             chrome.tabs.sendMessage(tabId, { action: 'getHTML' }, async (response) => {
                 const htmlContent = response?.html
-                // await saveHTML(htmlContent, currentSnapshotId)
-                // await saveInteraction('tabActivate', timestamp, tab.url, currentSnapshotId, actionSequenceId)
-                // await saveScreenshot(tab.windowId, timestamp)
-
                 actionSequenceId++
                 const currentactionSequenceId = actionSequenceId
                 const uuid = uuidv4()
@@ -372,7 +375,8 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
                         tab.url,
                         currentSnapshotId,
                         currentactionSequenceId,
-                        uuid
+                        uuid,
+                        null
                     ),
                     saveScreenshot(tab.windowId, timestamp),
                     sendPopup(tabId, timestamp, 'tabActivate', currentactionSequenceId, {}, uuid)
@@ -431,10 +435,6 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
         chrome.tabs.sendMessage(details.tabId, { action: 'getHTML' }, async (response) => {
             const htmlContent = response?.html
             const currentSnapshotId = `html_${hashCode(details.url)}_${timestamp}`
-
-            // await saveHTML(htmlContent, currentSnapshotId)
-            // await saveInteraction('navigation', timestamp, details.url, currentSnapshotId)
-            // await saveScreenshot((await chrome.tabs.get(details.tabId)).windowId, timestamp)
             actionSequenceId++
             const currentactionSequenceId = actionSequenceId
             const uuid = uuidv4()
@@ -446,7 +446,8 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
                     details.url,
                     currentSnapshotId,
                     currentactionSequenceId,
-                    uuid
+                    uuid,
+                    navigationType
                 ),
                 saveScreenshot((await chrome.tabs.get(details.tabId)).windowId, timestamp)
             ])
