@@ -1,38 +1,38 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Extension Popup</title>
     <style>
-        body {
-            width: 200px;
-            font-family: Arial, sans-serif;
-        }
-        button {
-            width: 100%;
-            margin: 5px 0;
-            padding: 8px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-        #output {
-            margin-top: 10px;
-            max-height: 100px;
-            overflow-y: auto;
-            font-size: 12px;
-            background-color: #f0f0f0;
-            padding: 5px;
-        }
+      body {
+        width: 200px;
+        font-family: Arial, sans-serif;
+      }
+      button {
+        width: 100%;
+        margin: 5px 0;
+        padding: 8px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      #output {
+        margin-top: 10px;
+        max-height: 100px;
+        overflow-y: auto;
+        font-size: 12px;
+        background-color: #f0f0f0;
+        padding: 5px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h3>Data Collector</h3>
-    <div style="margin: 10px 0;">
-        <label for="userId">User ID:</label>
-        <input type="text" id="userId" style="width: 100%; padding: 5px; box-sizing: border-box;">
+    <div style="margin: 10px 0">
+      <label for="userId">User ID:</label>
+      <input type="text" id="userId" style="width: 100%; padding: 5px; box-sizing: border-box" />
     </div>
     <button id="downloadData">Download Data</button>
     <button id="clearCache">Clear Cache</button>
     <div id="output"></div>
     <script src="js/popup.js"></script>
-</body>
+  </body>
 </html>

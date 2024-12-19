@@ -1,4 +1,3 @@
-
 export function isFromPopup(element: HTMLElement): boolean {
-    return element.closest('#reason-modal') !== null;
+  return element.closest('#reason-modal') !== null
 }
