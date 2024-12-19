@@ -38,6 +38,7 @@ clearCacheBtn.addEventListener('click', () => {
         chrome.storage.local.remove('orderDetails')
         chrome.storage.local.remove('interactions')
         chrome.storage.local.remove('screenshots')
+        chrome.storage.local.remove('reasonsAnnotation')
         chrome.runtime.sendMessage({ action: 'clearMemoryCache' }, () => {
             outputDiv.textContent = 'Cache cleared successfully.';
         });

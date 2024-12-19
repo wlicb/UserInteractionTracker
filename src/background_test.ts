@@ -1,518 +1,580 @@
+// src/background_test.ts
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
+chrome.webNavigation.onCommitted.addListener((details) => {
+    if (details.frameId === 0) { // Only inject into the main frame
+        chrome.scripting.executeScript({
+            target: { tabId: details.tabId },
+            files: ["js/injected.js"],
+            world: "MAIN" // Ensures the script is injected into the main world
+        });
+    }
+}, { url: [{ urlMatches: ".*amazon\\.com.*" }] });
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
 import { nav, refinement_option, recipes } from './recipe';
 let upload_url = "http://userdatacollect.hailab.io/upload"
 let interactions: any[] = [];
-const interactionsLimit = 10;
+const interactionsLimit = 100;
 let screenshots: [string, string][] = [];
-const screenshotLimit = 10;
+let reasonsAnnotation:any[] = [];
+const reasonsLimit = 100;
+const screenshotLimit = 100;
 let actionSequenceId = 0;
 let uploadTimer: NodeJS.Timer | null = null;
 let userId: string = "";
-// background.ts
+let navigation_probability = 0.1;
+let other_probability = 0.1;
 
 interface TabHistory {
-  backStack: string[];
-  forwardStack: string[];
-  currentUrl: string | null;
+    backStack: string[];
+    forwardStack: string[];
+    currentUrl: string | null;
 }
 
 const tabNavigationHistory: {
-  [tabId: number]: TabHistory;
+    [tabId: number]: TabHistory;
 } = {};
 
 function analyzeNavigation(
-  tabId: number,
-  url: string
+    tabId: number,
+    url: string
 ): 'new' | 'back' | 'forward' | 'reload' {
-  if (!tabNavigationHistory[tabId]) {
-    tabNavigationHistory[tabId] = {
-      backStack: [],
-      forwardStack: [],
-      currentUrl: null
-    };
-  }
+    if (!tabNavigationHistory[tabId]) {
+        tabNavigationHistory[tabId] = {
+            backStack: [],
+            forwardStack: [],
+            currentUrl: null
+        };
+    }
 
-  const history = tabNavigationHistory[tabId];
+    const history = tabNavigationHistory[tabId];
 
-  if (!history.currentUrl) {
+    if (!history.currentUrl) {
+        history.currentUrl = url;
+        return 'new';
+    }
+    if (history.currentUrl === url) {
+        return 'reload';
+    }
+
+    if (
+        history.backStack.length > 0 &&
+        history.backStack[history.backStack.length - 1] === url
+    ) {
+        history.forwardStack.push(history.currentUrl!);
+        history.currentUrl = history.backStack.pop()!;
+        return 'back';
+    }
+
+    if (
+        history.forwardStack.length > 0 &&
+        history.forwardStack[history.forwardStack.length - 1] === url
+    ) {
+        history.backStack.push(history.currentUrl!);
+        history.currentUrl = history.forwardStack.pop()!;
+        return 'forward';
+    }
+
+    history.backStack.push(history.currentUrl!);
+    history.forwardStack = [];
     history.currentUrl = url;
     return 'new';
-  }
-  if (history.currentUrl === url) {
-    return 'reload';
-  }
-
-  if (
-    history.backStack.length > 0 &&
-    history.backStack[history.backStack.length - 1] === url
-  ) {
-    history.forwardStack.push(history.currentUrl!);
-    history.currentUrl = history.backStack.pop()!;
-    return 'back';
-  }
-
-  if (
-    history.forwardStack.length > 0 &&
-    history.forwardStack[history.forwardStack.length - 1] === url
-  ) {
-    history.backStack.push(history.currentUrl!);
-    history.currentUrl = history.forwardStack.pop()!;
-    return 'forward';
-  }
-
-  history.backStack.push(history.currentUrl!);
-  history.forwardStack = [];
-  history.currentUrl = url;
-  return 'new';
 }
 
-// 首先在文件顶部添加录音相关的变量
-let mediaRecorder: MediaRecorder | null = null;
-let audioChunks: Blob[] = [];
-let isRecording = false;
-
-// 添加开始录音的函数
-async function startRecording(tabId: number) {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
-
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunks.push(event.data);
-      }
-    };
-
-    mediaRecorder.onstop = async () => {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-      const timestamp = new Date().toISOString();
-      const audioId = `audio_${timestamp}`;
-      
-      // 保存录音数据到存储
-      let result = await chrome.storage.local.get({ audioRecordings: {} });
-      const audioRecordings = result.audioRecordings || {};
-      audioRecordings[audioId] = await blobToBase64(audioBlob);
-      await chrome.storage.local.set({ audioRecordings });
-    };
-
-    mediaRecorder.start(10000); // 每10秒保存一次数据
-    isRecording = true;
-  } catch (error) {
-    console.error('Error starting recording:', error);
-  }
-}
-
-// 添加停止录音的函数
-function stopRecording() {
-  if (mediaRecorder && isRecording) {
-    mediaRecorder.stop();
-    mediaRecorder.stream.getTracks().forEach(track => track.stop());
-    isRecording = false;
-  }
-}
-
-// 辅助函数：将Blob转换为base64
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-      } else {
-        reject(new Error('Failed to convert blob to base64'));
-      }
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-// 修改webNavigation.onCommitted监听器，添加录音控制
-chrome.webNavigation.onCommitted.addListener(async (details) => {
-  if (details.frameId !== 0) return;
-  
-  if (details.url.includes('amazon.com')) {
-    if (!isRecording) {
-      console.log('start recording')
-      await startRecording(details.tabId);
+// Replace the simple question with a more detailed one based on event type
+function getCustomQuestion(eventType: string, data: any): string {
+    switch (eventType) {
+        case 'click':
+            // Check if it's a specific type of click
+            if (data.target.innerText === 'Set Up Now') {
+                return "Why did you choose 'Set Up Now' instead of buy once, and why do you like this particular product?";
+            } else if (data.target.id === 'buy-now-button') {
+                return "Why did you choose to buy this product immediately, and what convinced you to skip further exploration of other options? Why do you like this particular product?";
+            } else if (data.target.className?.includes('sc-product-link')) {
+                return "What made you click on this product, and what specific aspects attracted your attention compared to other search results?";
+            } else if (data.target.id === 'add-to-cart-button') {
+                return "Why did you decide to add this item to your cart, and are you planning to buy it now or later? What convinced you that this item was the right choice for your needs?";
+            } else {
+                return "What was your reason for clicking on this element?";
+            }
+        case 'scroll':
+            return "What are you doing while scrolling—are you browsing search results, looking at reviews, or something else, and what are you hoping to find?";
+        case 'input':
+            return "What are you searching for, and how did you decide on the search terms you used? Are you looking for a specific product, brand, or feature?";
+        case 'navigation':
+            if (data.navigationType === 'back') {
+                return "Why did you decide to go back to the previous page, and what were you hoping to revisit or reconsider?";
+            } else if (data.navigationType === 'forward') {
+                return "Why did you decide to return to this page after previously navigating away, and what new or unresolved information are you looking for now?";
+            }
+            return `What is the reason for this ${data.navigationType} navigation?`;
+        case 'tabActivate':
+            return `Why did you switch to this tab? Do you have specific task or information in mind?`;
+        default:
+            return `What is the reason for the ${eventType} action?`;
     }
-  } else {
-    console.log('stop recording')
-    stopRecording();
-  }
-});
-
-
-// 在tabs.onRemoved监听器中添加录音清理
-chrome.tabs.onRemoved.addListener((tabId) => {
-  stopRecording();
-  delete tabNavigationHistory[tabId];
-});
+}
 
 // Add new function to handle screenshot saving
 async function saveScreenshot(screenshotDataUrl: string, screenshotId: string) {
-  if (screenshotDataUrl) {
-    screenshots.push([screenshotDataUrl, screenshotId]);
-    if (screenshots.length > screenshotLimit) {
-      let result = await chrome.storage.local.get({ screenshots: [] })
-      result = result.screenshots || []
-      const storeScreenshots = result.concat(screenshots);
-      screenshots.length = 0
-      await chrome.storage.local.set({ screenshots: storeScreenshots });
+    if (screenshotDataUrl) {
+        screenshots.push([screenshotDataUrl, screenshotId]);
+        if (screenshots.length > screenshotLimit) {
+            let result = await chrome.storage.local.get({ screenshots: [] })
+            result = result.screenshots || []
+            const storeScreenshots = result.concat(screenshots);
+            screenshots.length = 0
+            await chrome.storage.local.set({ screenshots: storeScreenshots });
+        }
+        return true;
     }
-    return true;
-  }
-  return false;
-  
+    return false;
+
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  (async () => {
-    try {
-      if (message.action === 'saveData') {
-        console.log('saveData ', message.data.eventType)
-        actionSequenceId++;
-        message.data.actionSequenceId = actionSequenceId;
-        interactions.push(message.data);
-        if (interactions.length > interactionsLimit) {
-          let result = await chrome.storage.local.get({ interactions: [] });
-          result = result.interactions || []
-          let storeInteractions = result.concat(interactions);
-          interactions.length = 0
-          await chrome.storage.local.set({ interactions: storeInteractions });
-        }
-        sendResponse({ success: true });
-      }
+    (async () => {
+        
+            if (message.action === 'saveData') {
+                try {
+                    console.log('saveData ', message.data.eventType);
+                    actionSequenceId++;
+                    console.log(actionSequenceId);
+                    message.data.actionSequenceId = actionSequenceId;
+                    interactions.push(message.data);
+                    
+                    if (interactions.length > interactionsLimit) {
+                        let result = await chrome.storage.local.get({ interactions: [] });
+                        result = result.interactions || [];
+                        let storeInteractions = result.concat(interactions);
+                        interactions.length = 0;
+                        await chrome.storage.local.set({ interactions: storeInteractions });
+                    }
 
-      // Capture screenshot on demand
-      if (message.action === 'captureScreenshot') {
-        const screenshotDataUrl = await captureScreenshot();
-        if (screenshotDataUrl) {
-          const success = await saveScreenshot(screenshotDataUrl, message.screenshotId);
-          sendResponse({ success, message: success ? undefined : 'Failed to capture screenshot' });
-        } else {
-          sendResponse({ success: false, message: 'Failed to capture screenshot' });
-        }
-      }
+                    console.log('send message to popup');
+                    const question = getCustomQuestion(message.data.eventType, message.data);
+                    
+                    if (Math.random() < other_probability && sender.tab?.id) {
+                        try {
+                            const reason = await chrome.tabs.sendMessage(sender.tab.id, { 
+                                action: 'show_popup', 
+                                question: question 
+                            });
+                            if (reason && reason.input !== null) {
+                                const newitem = {
+                                    actionSequenceId: message.data.actionSequenceId,
+                                    timestamp: message.data.timestamp,
+                                    eventType: message.data.eventType,
+                                    reason: reason
+                                };
+                                reasonsAnnotation.push(newitem);
+                            }
+                            if (reasonsAnnotation.length > reasonsLimit) {
+                                let result = await chrome.storage.local.get({ reasonsAnnotation: [] });
+                                result = result.reasonsAnnotation || [];
+                                let storeReasonsAnnotation = result.concat(reasonsAnnotation);
+                                reasonsAnnotation.length = 0;
+                                await chrome.storage.local.set({ reasonsAnnotation: storeReasonsAnnotation });
+                            }
+                        } catch (error) {
+                            console.error('Error popup:', error);
+                        }
+                    }
+                    
+                    sendResponse({ success: true });
+                } catch (error) {
+                    console.error('Error in saveData:', error);
+                    sendResponse({ success: false, error: (error as Error).message });
+                }
+                return true; // Keep message channel open for async response
+            }
+            
+            // Capture screenshot on demand
+            if (message.action === 'captureScreenshot') {
+                try {
+                console.log('get screenshot request')
+                const screenshotDataUrl = await captureScreenshot();
+                if (screenshotDataUrl) {
+                    const success = await saveScreenshot(screenshotDataUrl, message.screenshotId);
+                    sendResponse({ success, message: success ? undefined : 'Failed to capture screenshot' });
+                } else {
+                    sendResponse({ success: false, message: 'Failed to capture screenshot' });
+                }
+                } catch (error) {
+                    console.error('Error in captureScreenshot:', error);
+                    sendResponse({ success: false, message: 'Failed to capture screenshot' });
+                }
+                return true;
+            }
 
-      // Download data on user request
-      if (message.action === 'downloadData') {
-        try {
-          console.log('downloadData')
-          const success = await uploadDataToServer();
-          sendResponse({ success });
-        } catch (error) {
-          console.error('Error handling download:', error);
-          sendResponse({ success: false, error: (error as Error).message });
-        }
-      }
+            // Download data on user request
+            if (message.action === 'downloadData') {
+                try {
+                    console.log('downloadData')
+                    const success = await uploadDataToServer();
+                    sendResponse({ success });
+                } catch (error) {
+                    console.error('Error handling download:', error);
+                    sendResponse({ success: false, error: (error as Error).message });
+                }
+                return true;
+            }
 
-      if (message.action === 'clearMemoryCache') {
-        interactions = [];
-        screenshots = [];
-        actionSequenceId = 0;
-        sendResponse({ success: true });
-      }
-      if (message.action === 'getRecipe' && sender.tab?.id) {
-        selectRecipe(sender.tab.id, message.url)
-          .then((recipe) => {
-            sendResponse({ recipe: recipe });
-          })
-          .catch((error) => {
-            sendResponse({ error: error.message });
-          });
-        return true; // Indicate that sendResponse will be called asynchronously
-      }
-
-    } catch (error) {
-      // chrome.storage.local.clear();
-      console.error('Error handling message:', error);
-      sendResponse({ success: false, error: (error as Error).message });
-    }
-  })();
-  return true; // Keeps the message channel open for async responses
+            if (message.action === 'clearMemoryCache') {
+                try {
+                    interactions = [];
+                    screenshots = [];
+                    reasonsAnnotation = [];
+                    actionSequenceId = 0;
+                    sendResponse({ success: true });
+                } catch (error) {
+                    console.error('Error handling clearMemoryCache:', error);
+                    sendResponse({ success: false, error: (error as Error).message });
+                }
+                return true;
+            }
+            if (message.action === 'getRecipe' && sender.tab?.id) {
+                try {
+                    selectRecipe(sender.tab.id, message.url)
+                    .then((recipe) => {
+                        sendResponse({ recipe: recipe });
+                    })
+                    .catch((error) => {
+                        sendResponse({ error: error.message });
+                    });
+                } catch (error) {
+                    console.error('Error handling getRecipe:', error);
+                    sendResponse({ success: false, error: (error as Error).message });
+                }
+                return true; // Indicate that sendResponse will be called asynchronously
+            }
+    })();
+    return true; // Keeps the message channel open for async responses
 });
 
 // Capture the screenshot in the current tab
 async function captureScreenshot() {
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab) {
-      return await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 25 });
+    try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab) {
+            return await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 25 });
+        }
+    } catch (error) {
+        console.error('Error capturing screenshot:', error);
     }
-  } catch (error) {
-    console.error('Error capturing screenshot:', error);
-  }
-  return null;
+    return null;
 }
 
 function hashCode(str: string) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash |= 0;
-  }
-  console.log("Hash value before return:", hash);
-  return hash.toString();
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+    }
+    console.log("Hash value before return:", hash);
+    return hash.toString();
 }
 
 // listen to switches between activated tabs
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
-  try {
-    
-    const tabId = activeInfo.tabId;
-    const tab = await chrome.tabs.get(tabId);
-    if (!tab) {
-      console.error(`Failed to get tab with ID: ${tabId}`);
-      return;
-    }
-    console.log(`Switched to tab ${tabId} with URL: ${tab.url}`);
-    if (tab.url && tab.url.includes('amazon.com')) {
+    try {
 
-      const timestamp = new Date().toISOString();
-      const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}`;
-      chrome.tabs.sendMessage(tabId, { action: 'getHTML' }, async (response) => {
-        const htmlContent = response?.html;
-        let result = await chrome.storage.local.get({ htmlSnapshots: {} })
-        const htmlSnapshots = result.htmlSnapshots || {};
-        htmlSnapshots[currentSnapshotId] = htmlContent;
-        await chrome.storage.local.set({ htmlSnapshots });
-        actionSequenceId++;
-        const data = {
-          
-          eventType: "tabActivate",
-          timestamp: timestamp,
-          target_url: tab.url,
-          htmlSnapshotId: currentSnapshotId,
-          actionSequenceId: actionSequenceId,
-        };
-        interactions.push(data);
-        if (interactions.length > interactionsLimit) {
-          let result = await chrome.storage.local.get({ interactions: [] });
-          result = result.interactions || []
-          let storeInteractions = result.concat(interactions);
-          interactions.length = 0
-          await chrome.storage.local.set({ interactions: storeInteractions })
-        };
-        const screenshotDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 25 });
+        const tabId = activeInfo.tabId;
+        const tab = await chrome.tabs.get(tabId);
+        if (!tab) {
+            console.error(`Failed to get tab with ID: ${tabId}`);
+            return;
+        }
+        console.log(`Switched to tab ${tabId} with URL: ${tab.url}`);
+        if (tab.url && tab.url.includes('amazon.com')) {
 
-        const screenshotId = `screenshot_${timestamp}`;
-        await saveScreenshot(screenshotDataUrl, screenshotId);
-      });
+            const timestamp = new Date().toISOString();
+            const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}`;
+            chrome.tabs.sendMessage(tabId, { action: 'getHTML' }, async (response) => {
+                const htmlContent = response?.html;
+                let result = await chrome.storage.local.get({ htmlSnapshots: {} })
+                const htmlSnapshots = result.htmlSnapshots || {};
+                htmlSnapshots[currentSnapshotId] = htmlContent;
+                await chrome.storage.local.set({ htmlSnapshots });
+                actionSequenceId++;
+                const currentactionSequenceId = actionSequenceId;
+                const data = {
+
+                    eventType: "tabActivate",
+                    timestamp: timestamp,
+                    target_url: tab.url,
+                    htmlSnapshotId: currentSnapshotId,
+                    actionSequenceId: currentactionSequenceId,
+                };
+                interactions.push(data);
+                if (interactions.length > interactionsLimit) {
+                    let result = await chrome.storage.local.get({ interactions: [] });
+                    result = result.interactions || []
+                    let storeInteractions = result.concat(interactions);
+                    interactions.length = 0
+                    await chrome.storage.local.set({ interactions: storeInteractions })
+                };
+                const screenshotDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 25 });
+
+                const screenshotId = `screenshot_${timestamp}`;
+                await saveScreenshot(screenshotDataUrl, screenshotId);
+                
+                console.log('send message to popup tabActivate');
+                const question = getCustomQuestion("tabActivate",data);
+                if (Math.random() < navigation_probability && tabId) {
+                    try {
+                        const reason = await chrome.tabs.sendMessage(tabId, { 
+                            action: 'show_popup', 
+                            question: question 
+                        });
+                        if (reasonreason && reason.input !== null) {
+                            const newitem = {
+                                actionSequenceId: currentactionSequenceId,
+                                timestamp: timestamp,
+                                eventType: "tabActivate",
+                                reason: reason
+                            };
+                            reasonsAnnotation.push(newitem);
+                        }
+                        if (reasonsAnnotation.length > reasonsLimit) {
+                            let result = await chrome.storage.local.get({ reasonsAnnotation: [] });
+                            result = result.reasonsAnnotation || [];
+                            let storeReasonsAnnotation = result.concat(reasonsAnnotation);
+                            reasonsAnnotation.length = 0;
+                            await chrome.storage.local.set({ reasonsAnnotation: storeReasonsAnnotation });
+                        }
+                    } catch (error) {
+                        console.error('Error popup:', error);
+                        }
+                    }
+            });
+        }
+    } catch (error) {
+        console.error('Error in tab activate handler:', error);
     }
-  } catch (error) {
-    console.error('Error in tab activate handler:', error);
-  }
 
 });
 
 
 async function selectRecipe(tabId: number, url: string) {
-  const parsedUrl = new URL(url);
-  const path = parsedUrl.pathname;
+    const parsedUrl = new URL(url);
+    const path = parsedUrl.pathname;
 
-  for (const recipe of recipes) {
-    const matchMethod = recipe.match_method || "text";
+    for (const recipe of recipes) {
+        const matchMethod = recipe.match_method || "text";
 
-    if (matchMethod === "text") {
-      try {
-        // Execute script in tab to check for matching element
-        const [{ result: hasMatch }] = await chrome.scripting.executeScript({
-          target: { tabId },
-          func: (selector, matchText) => {
-            const element = document.querySelector(selector);
-            return element && (!matchText || (element.textContent?.toLowerCase().includes(matchText.toLowerCase()) ?? false));
-          },
-          args: [recipe.match, recipe.match_text || ""]
-        });
+        if (matchMethod === "text") {
+            try {
+                // Execute script in tab to check for matching element
+                const [{ result: hasMatch }] = await chrome.scripting.executeScript({
+                    target: { tabId },
+                    func: (selector, matchText) => {
+                        const element = document.querySelector(selector);
+                        return element && (!matchText || (element.textContent?.toLowerCase().includes(matchText.toLowerCase()) ?? false));
+                    },
+                    args: [recipe.match, recipe.match_text || ""]
+                });
 
-        if (hasMatch) {
-          return recipe;
+                if (hasMatch) {
+                    return recipe;
+                }
+            } catch (error) {
+                console.error("Error checking text match:", error);
+            }
+        } else if (matchMethod === "url" && recipe.match === path) {
+            return recipe;
         }
-      } catch (error) {
-        console.error("Error checking text match:", error);
-      }
-    } else if (matchMethod === "url" && recipe.match === path) {
-      return recipe;
     }
-  }
 
-  throw new Error(`No matching recipe found for path: ${path}`);
+    throw new Error(`No matching recipe found for path: ${path}`);
 }
 
 
 chrome.webNavigation.onCommitted.addListener(async (details) => {
-  if (details.frameId !== 0) return;
-  console.log('webNavigation onCommitted event triggered:', details);
-  if (details.url.includes('amazon.com')) {
-    
-    const navigationType = analyzeNavigation(details.tabId, details.url);
-    console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`);
-    
-    chrome.scripting.executeScript({
-      target: { tabId: details.tabId },
-      func: () => document.documentElement.outerHTML
-    }, async (results) => {
-      if (results && results[0] && results[0].result) {
-        const pageHtml = results[0].result;
+    if (details.frameId !== 0) return;
+    console.log('webNavigation onCommitted event triggered:', details);
+    if (details.url.includes('amazon.com')) {
+
+        const navigationType = analyzeNavigation(details.tabId, details.url);
+        console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`);
         const timestamp = new Date().toISOString();
-        const currentSnapshotId = `html_${hashCode(details.url)}_${timestamp}`;
+        chrome.tabs.sendMessage(details.tabId, { action: 'getHTML' }, async (response) => {
+            const htmlContent = response?.html;
+            const currentSnapshotId = `html_${hashCode(details.url)}_${timestamp}`;
+            let result = await chrome.storage.local.get({ htmlSnapshots: {} });
+            const htmlSnapshots = result.htmlSnapshots || {};
+            htmlSnapshots[currentSnapshotId] = htmlContent;
+            await chrome.storage.local.set({ htmlSnapshots });
+            actionSequenceId++;
+            const currentactionSequenceId = actionSequenceId;
+            const data = {
 
-        let result = await chrome.storage.local.get({ htmlSnapshots: {} });
-        const htmlSnapshots = result.htmlSnapshots || {};
-        htmlSnapshots[currentSnapshotId] = pageHtml;
-        await chrome.storage.local.set({ htmlSnapshots });
-        // Add navigation data to interactions
-        actionSequenceId++;
-        const data = {
-          
-          eventType: "navigation",
-          navigationType: navigationType,
-          timestamp: timestamp,
-          target_url: details.url,
-          htmlSnapshotId: currentSnapshotId,
-          actionSequenceId,
-        };
-        
-        interactions.push(data);
-        if (interactions.length > interactionsLimit) {
-          let result = await chrome.storage.local.get({ interactions: [] });
-          result = result.interactions || []
-          let storeInteractions = result.concat(interactions);
-          interactions.length = 0
-          await chrome.storage.local.set({ interactions: storeInteractions });
-        }
-        // add screenshot
-        const tab = await chrome.tabs.get(details.tabId);
-        const screenshotDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { 
-          format: 'jpeg', 
-          quality: 25 
+                eventType: "navigation",
+                navigationType: navigationType,
+                timestamp: timestamp,
+                target_url: details.url,
+                htmlSnapshotId: currentSnapshotId,
+                actionSequenceId: currentactionSequenceId,
+            };
+            interactions.push(data);
+            if (interactions.length > interactionsLimit) {
+                let result = await chrome.storage.local.get({ interactions: [] });
+                result = result.interactions || []
+                let storeInteractions = result.concat(interactions);
+                interactions.length = 0
+                await chrome.storage.local.set({ interactions: storeInteractions });
+            }
+            // add screenshot
+            const tab = await chrome.tabs.get(details.tabId);
+            const screenshotDataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
+                format: 'jpeg',
+                quality: 25
+            });
+
+            const screenshotId = `screenshot_${timestamp}`;
+            await saveScreenshot(screenshotDataUrl, screenshotId);
+            if (navigationType !== 'new'&& navigationType !== 'reload')
+            {
+                console.log('send message to popup navigation');
+                const question = getCustomQuestion("navigation",data);
+            
+                if (Math.random() < navigation_probability && details.tabId) {
+                    try {
+                        const reason = await chrome.tabs.sendMessage(details.tabId, { 
+                            action: 'show_popup', 
+                            question: question 
+                        });
+                        if (reason && reason.input !== null) {
+                            const newitem = {
+                                actionSequenceId: currentactionSequenceId,
+                                timestamp: timestamp,
+                                eventType: "navigation",
+                                reason: reason
+                            };
+                            reasonsAnnotation.push(newitem);
+                        }
+                        if (reasonsAnnotation.length > reasonsLimit) {
+                            let result = await chrome.storage.local.get({ reasonsAnnotation: [] });
+                            result = result.reasonsAnnotation || [];
+                            let storeReasonsAnnotation = result.concat(reasonsAnnotation);
+                            reasonsAnnotation.length = 0;
+                            await chrome.storage.local.set({ reasonsAnnotation: storeReasonsAnnotation });
+                        }
+                    } catch (error) {
+                        console.error('Error popup:', error);
+                        }
+                    }
+                }
         });
-        
-        const screenshotId = `screenshot_${timestamp}`;
-        await saveScreenshot(screenshotDataUrl, screenshotId);
-
-      }
-    });
-  }
+    }
 });
 
 // Add cleanup when tab is closed
 chrome.tabs.onRemoved.addListener((tabId) => {
-  delete tabNavigationHistory[tabId];
+    delete tabNavigationHistory[tabId];
 });
 
 // Add this function to handle data upload
 async function uploadDataToServer() {
-  try {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const folderName = `DATA/SESSION_${timestamp}`;
-    
-    // Get userId from storage
-    const userIdResult = await chrome.storage.local.get({ userId: "" });
-    const currentUserId = userIdResult.userId;
-    
-    // Get all data from storage
-    const snapshots = await chrome.storage.local.get({ htmlSnapshots: [] });
-    const interact = await chrome.storage.local.get({ interactions: [] });
-    const orderDetails = await chrome.storage.local.get({ orderDetails: [] });
-    const screen = await chrome.storage.local.get({ screenshots: [] });
-    
-    let htmlSnapshots = snapshots.htmlSnapshots || {};
-    let storeInteractions = interact.interactions || [];
-    let storeorderDetails = orderDetails.orderDetails || [];
-    let storeScreenshots = screen.screenshots || [];
-    
-    // Combine with in-memory data
-    storeInteractions = storeInteractions.concat(interactions);
-    storeScreenshots = storeScreenshots.concat(screenshots);
-    
-    // Prepare the full data object
-    const fullData = {
-      htmlSnapshots,
-      interactions: storeInteractions,
-      orderDetails: storeorderDetails,
-    };
+    try {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const folderName = `DATA/SESSION_${timestamp}`;
 
-    // Upload session info
-    const sessionInfo = new Blob(
-      [`Session data for timestamp: ${timestamp}, user id: ${currentUserId}`], 
-      { type: 'text/plain' }
-    );
-    const sessionFormData = new FormData();
-    sessionFormData.append('file', sessionInfo, `${folderName}/session_info.txt`);
-    console.log('uploading session info')
-    await fetch(upload_url, {
-      method: 'POST',
-      body: sessionFormData
-    });
+        // Get userId and data from storage
+        const userIdResult = await chrome.storage.local.get({ userId: "" });
+        const currentUserId = userIdResult.userId;
+        const { htmlSnapshots = {}, storeInteractions = [], storeScreenshots = [], storeReasonsAnnotation = [] ,orderDetails = []} = 
+            await chrome.storage.local.get(['htmlSnapshots', 'interactions', 'screenshots', 'reasonsAnnotation','orderDetails']);
 
-    // Upload interactions JSON
-    const interactionsBlob = new Blob(
-      [JSON.stringify(fullData, null, 2)], 
-      { type: 'application/json' }
-    );
-    const jsonFormData = new FormData();
-    console.log('uploading interactions')
-    jsonFormData.append('file', interactionsBlob, `${folderName}/interactions.json`);
-    await fetch(upload_url, {
-      method: 'POST',
-      body: jsonFormData
-    });
+        // Combine with in-memory data
+        const allInteractions = [...storeInteractions, ...interactions];
+        const allScreenshots = [...storeScreenshots, ...screenshots];
+        const allReasons = [...storeReasonsAnnotation, ...reasonsAnnotation];
 
-    // Upload screenshots
-    for (const [screenshotData, screenshotId] of storeScreenshots) {
-      const response = await fetch(screenshotData);
-      const blob = await response.blob();
-      const formData = new FormData();
-      formData.append('file', blob, `${folderName}/${screenshotId.replace(/[:.]/g, "-")}.jpg`);
-      console.log('uploading screenshots')
-      await fetch(upload_url, {
-        method: 'POST',
-        body: formData
-      });
-    }
-    const audioRecordings = await chrome.storage.local.get({ audioRecordings: {} });
-    if (audioRecordings.audioRecordings) {
-      for (const [audioId, audioData] of Object.entries(audioRecordings.audioRecordings)) {
-        const base64Data = audioData.split(',')[1];
-        const audioBlob = await fetch(`data:audio/wav;base64,${base64Data}`).then(r => r.blob());
-        const formData = new FormData();
-        formData.append('file', audioBlob, `${folderName}/${audioId}.wav`);
+        // Upload session info
+        const sessionInfo = new Blob(
+            [`Session data for timestamp: ${timestamp}, user id: ${currentUserId} \n order details: \n ${JSON.stringify(orderDetails)}`],
+            { type: 'text/plain' }
+        );
+        const sessionFormData = new FormData();
+        sessionFormData.append('file', sessionInfo, `${folderName}/session_info.txt`);
+        console.log('uploading session info')
         await fetch(upload_url, {
-          method: 'POST',
-          body: formData
+            method: 'POST',
+            body: sessionFormData
         });
-      }
+
+        // Upload HTML snapshots as separate files
+        console.log('uploading html snapshots')
+        for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
+            const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
+            const formData = new FormData();
+            formData.append('file', htmlBlob, `${folderName}/html/${snapshotId}.html`);
+            await fetch(upload_url, { method: 'POST', body: formData });
+        }
+
+
+        // Upload interactions JSON
+        console.log('uploading interactions')
+        const fullData = {
+            interactions: allInteractions,
+            reasons: allReasons,
+            orderDetails: orderDetails
+        };
+        const interactionsBlob = new Blob(
+            [JSON.stringify(fullData, null, 2)],
+            { type: 'application/json' }
+        );
+        const jsonFormData = new FormData();
+        
+        jsonFormData.append('file', interactionsBlob, `${folderName}/interactions.json`);
+        await fetch(upload_url, {
+            method: 'POST',
+            body: jsonFormData
+        });
+
+        // Upload screenshots
+        console.log('uploading interactions')
+        for (const [screenshotData, screenshotId] of allScreenshots) {
+            const response = await fetch(screenshotData);
+            const blob = await response.blob();
+            const formData = new FormData();
+            formData.append('file', blob, `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, "-")}.jpg`);
+            console.log('uploading screenshots')
+            await fetch(upload_url, {
+                method: 'POST',
+                body: formData
+            });
+        }
+
+        // Clear cache after successful upload
+        chrome.storage.local.remove(['htmlSnapshots', 'interactions', 'orderDetails', 'screenshots', 'reasonsAnnotation']);
+        interactions.length = 0;
+        screenshots.length = 0;
+        reasonsAnnotation.length = 0;
+
+        return true;
+    } catch (error) {
+        console.error('Error uploading data:', error);
+        return false;
     }
-    
-    // 清除录音数据
-    chrome.storage.local.remove(['audioRecordings']);
-    // Clear cache after successful upload
-    chrome.storage.local.remove(['htmlSnapshots', 'interactions', 'orderDetails', 'screenshots']);
-    interactions.length = 0;
-    screenshots.length = 0;
-    
-    return true;
-  } catch (error) {
-    console.error('Error uploading data:', error);
-    return false;
-  }
 }
 
 // Start the periodic upload timer
 function startPeriodicUpload() {
-  if (!uploadTimer) {
-    uploadTimer = setInterval(uploadDataToServer, 60000); // 60 seconds
-  }
+    if (!uploadTimer) {
+        uploadTimer = setInterval(uploadDataToServer, 60000); // 60 seconds
+    }
 }
 
 // Stop the periodic upload timer
 function stopPeriodicUpload() {
-  if (uploadTimer) {
-    clearInterval(uploadTimer);
-    uploadTimer = null;
-  }
+    if (uploadTimer) {
+        clearInterval(uploadTimer);
+        uploadTimer = null;
+    }
 }
 
 // startPeriodicUpload();

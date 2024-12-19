@@ -1,3 +1,75 @@
+window.addEventListener('message', async (event) => {
+
+    if (event.source !== window) return;
+
+    if (event.data.type && event.data.type === 'CAPTURE_SCREENSHOT') {
+        await captureScreenshot(event.data.timestamp);
+    }
+    if (event.data.type && event.data.type === 'SAVE_INTERACTION_DATA') {
+        try {
+            const response1=await chrome.storage.local.get(['htmlSnapshots'], (result) => {
+                const htmlSnapshots = result.htmlSnapshots || {};
+                htmlSnapshots[event.data.data.htmlSnapshotId] = event.data.data.htmlContent;
+                chrome.storage.local.set({ htmlSnapshots });
+            });
+            console.log(response1)
+            const dataForBackground = { ...event.data.data };
+            delete dataForBackground.htmlContent;
+
+            const response2=await chrome.runtime.sendMessage({
+                action: 'saveData',
+                data: dataForBackground
+            });
+            if (!response1.success || !response2.success) {
+                throw new Error(response1.message+response2.message || 'interaction capture failed');
+            }
+            console.log(response2)
+            window.postMessage({ 
+                type: 'INTERACTION_COMPLETE',
+                timestamp: event.data.data.timestamp,
+                success: true
+            }, '*');
+        } catch (error) {
+            console.error('Error saving interaction data:', error);
+            window.postMessage({
+                type: 'INTERACTION_COMPLETE',
+                success: false,
+                error: error.message,
+                timestamp: event.data.data.timestamp 
+            }, '*');
+        }
+    }
+});
+
+async function captureScreenshot(timestamp: string) {
+    try {
+        const screenshotId = `screenshot_${timestamp}`;
+        const response = await chrome.runtime.sendMessage({ 
+            action: 'captureScreenshot', 
+            screenshotId 
+        });
+        
+        if (!response.success) {
+            throw new Error(response.message || 'Screenshot capture failed');
+        }
+        
+        window.postMessage({ 
+            type: 'SCREENSHOT_COMPLETE',
+            timestamp: timestamp,
+            success: true
+        }, '*');
+    } catch (error) {
+        console.error('Error capturing screenshot in content script:', error);
+
+        window.postMessage({ 
+            type: 'SCREENSHOT_COMPLETE',
+            timestamp: timestamp,
+            success: false,
+            error: error.message
+        }, '*');
+    }
+}
+
 export { };  // Makes this file a module
 import { processElement } from './utils/element-processor';
 // Define interfaces for Recipe and OrderDetail
@@ -154,13 +226,15 @@ async function captureInteraction(eventType: string, target: any, timestamp: str
 // Capture scroll interactions
 document.addEventListener('scroll', async (event) => {
     try {
+        if (event.target instanceof HTMLElement && isFromPopup(event.target)) {
+            return;
+        }
         const currentTime = Date.now();
         if (currentTime - lastScrollTime >= SCROLL_THRESHOLD) {
             lastScrollTime = currentTime;
             const timestamp = new Date().toISOString();
             await captureInteraction('scroll', event.target, timestamp, '', '', '');
             await captureScreenshot(timestamp);
-
         }
     } catch (error) {
         console.error('Error during scroll event handling:', error);
@@ -171,6 +245,8 @@ document.addEventListener('scroll', async (event) => {
 
 document.addEventListener("blur", async (event) => {
     const target = event.target as HTMLElement;
+    if (isFromPopup(target))
+        {return;}
     if (target &&
         ((target.tagName === "INPUT" && (target as HTMLInputElement).type === "text") ||
             target.tagName === "TEXTAREA")) {
@@ -202,48 +278,9 @@ function getFullSelector(element: any) {
     return path.join(' > ');
 }
 
-// document.addEventListener('click', (event) => {
-//     try {
-
-//         function findClickableParent(element: HTMLElement | null, depth: number = 0): HTMLElement | null {
-//             if (!element || depth>=2) return null;
-//             if (element.hasAttribute('data-clickable-id')) {
-//                 return element;
-//             }
-//             return findClickableParent(element.parentElement,depth+1);
-//         }
-
-//         const clickableElement = findClickableParent(event.target as HTMLElement);
-//         const clickableId = clickableElement ? clickableElement.getAttribute('data-clickable-id') || '' : '';
-//         console.log('click')
-//         const timestamp=new Date().toISOString();
-//         console.log(timestamp)
-//         const selector=getFullSelector(event.target);
-//         console.log('srart screenshot')
-//         captureScreenshot(timestamp);
-//         console.log('end screenshot')
-//         captureInteraction('click', event.target,timestamp,selector,clickableId,'');
-//         console.log('end')
-
-//     } catch (error) {
-//         console.error('Error during click event handling:', error);
-//     }
-// });
 
 
-// Function to capture screenshots with unique ID
-async function captureScreenshot(timestamp: string) {
-    try {
-        // Generate a unique screenshot ID
-        const screenshotId = `screenshot_${timestamp}`;
-        // Capture the screenshot
-        await chrome.runtime.sendMessage({ action: 'captureScreenshot', screenshotId });
 
-
-    } catch (error) {
-        console.error('Error capturing screenshot:', error);
-    }
-}
 
 document.addEventListener("DOMContentLoaded", () => {
     // Handle all types of order buttons
@@ -353,3 +390,75 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse: (response?:
     }
     return true;
 });
+
+function createModal(question: string, sendResponse: (response?: any) => void) {
+    const modalHtml = `
+        <div id="reason-modal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        ">
+            <div style="
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                width: 400px;
+            ">
+                <h3>${question}</h3>
+                <textarea id="reason-input" style="
+                    width: 100%;
+                    height: 100px;
+                    margin: 10px 0;
+                "></textarea>
+                <div style="
+                    text-align: right;
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 10px;
+                ">
+                    <button id="reason-skip">Skip</button>
+                    <button id="reason-submit">Submit</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const modalContainer = document.createElement('div');
+    modalContainer.innerHTML = modalHtml;
+    document.body.appendChild(modalContainer);
+
+    // Add event listeners
+    const submitBtn = document.getElementById('reason-submit');
+    const skipBtn = document.getElementById('reason-skip');
+    const input = document.getElementById('reason-input') as HTMLTextAreaElement;
+    
+    submitBtn?.addEventListener('click', () => {
+        const value = input.value;
+        modalContainer.remove();
+        sendResponse({ input: value });
+    });
+
+    skipBtn?.addEventListener('click', () => {
+        modalContainer.remove();
+        sendResponse({ input: null });
+    });
+}
+
+// Listen for messages from background script
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'show_popup') {
+        createModal(message.question,sendResponse);
+        return true; // Will respond asynchronously
+    }
+});
+
+function isFromPopup(element: HTMLElement): boolean {
+    return element.closest('#reason-modal') !== null;
+}
