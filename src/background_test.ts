@@ -47,8 +47,6 @@ const screenshotLimit = 100
 let actionSequenceId = 0
 let uploadTimer: NodeJS.Timer | null = null
 let userId: string = ''
-let navigation_probability = 1
-// let popup_probability = 1
 import { popup_probability } from './config'
 
 interface TabHistory {
@@ -312,7 +310,7 @@ const sendPopup = async (
   data: any
 ) => {
   const question = getCustomQuestion(eventType, data)
-  if (Math.random() < navigation_probability && tabId) {
+  if (Math.random() < popup_probability && tabId) {
     try {
       const reason = await chrome.tabs.sendMessage(tabId, {
         action: 'show_popup',
