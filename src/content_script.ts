@@ -1,3 +1,5 @@
+import { isFromPopup } from './utils/util';
+
 // 内容脚本中的代码
 window.addEventListener('message', async (event) => {
     // 确保消息来自当前页面，而非其他iframe或窗口

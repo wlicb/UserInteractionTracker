@@ -1,3 +1,6 @@
+import { isFromPopup } from './utils/util';
+
+
 window.addEventListener('message', async (event) => {
 
     if (event.source !== window) return;
@@ -226,7 +229,8 @@ async function captureInteraction(eventType: string, target: any, timestamp: str
 // Capture scroll interactions
 document.addEventListener('scroll', async (event) => {
     try {
-        if (event.target instanceof HTMLElement && isFromPopup(event.target)) {
+        // scroll don't have a specific target, so we judge whether popup is open
+        if (document.getElementById('reason-modal')) {
             return;
         }
         const currentTime = Date.now();
@@ -245,8 +249,7 @@ document.addEventListener('scroll', async (event) => {
 
 document.addEventListener("blur", async (event) => {
     const target = event.target as HTMLElement;
-    if (isFromPopup(target))
-        {return;}
+    if (isFromPopup(target)) return;
     if (target &&
         ((target.tagName === "INPUT" && (target as HTMLInputElement).type === "text") ||
             target.tagName === "TEXTAREA")) {
@@ -454,11 +457,11 @@ function createModal(question: string, sendResponse: (response?: any) => void) {
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'show_popup') {
+        // assert there isn't already a popup
+        if (document.getElementById('reason-modal')) {
+            return;
+        }
         createModal(message.question,sendResponse);
         return true; // Will respond asynchronously
     }
 });
-
-function isFromPopup(element: HTMLElement): boolean {
-    return element.closest('#reason-modal') !== null;
-}

@@ -25,7 +25,7 @@ let actionSequenceId = 0;
 let uploadTimer: NodeJS.Timer | null = null;
 let userId: string = "";
 let navigation_probability = 1;
-let other_probability = 1;
+let popup_probability = 1;
 
 interface TabHistory {
     backStack: string[];
@@ -154,7 +154,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     console.log('send message to popup');
                     const question = getCustomQuestion(message.data.eventType, message.data);
                     
-                    if (Math.random() < other_probability && sender.tab?.id) {
+                    if (Math.random() < popup_probability && sender.tab?.id) {
                         try {
                             const reason = await chrome.tabs.sendMessage(sender.tab.id, { 
                                 action: 'show_popup', 
