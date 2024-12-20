@@ -67,7 +67,7 @@ function analyzeNavigation(tabId: number, url: string): 'new' | 'back' | 'forwar
 // Replace the simple question with a more detailed one based on event type
 function getCustomQuestion(eventType: string, data: any): string {
     switch (eventType) {
-        case 'click':
+        case 'click_a'||'click_b' ||'click_c':
             // Check if it's a specific type of click
             if (data.target.innerText === 'Set Up Now') {
                 return "Why did you choose 'Set Up Now' instead of buy once, and why do you like this particular product?"
@@ -530,15 +530,6 @@ async function uploadDataToServer() {
             console.log('No interactions to upload');
             return false;
         }
-
-        const latestTimestamp = storeInteractions[storeInteractions.length - 1].timestamp;
-
-        // If the latest timestamp hasn't changed, skip upload
-        if (latestTimestamp === lastUploadTimestamp) {
-            console.log('No new interactions since last upload');
-            return false;
-        }
-
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
 
         // Get userId and data from storage
@@ -658,8 +649,18 @@ async function uploadDataToServer() {
                 return false
             }
         }
-        lastUploadTimestamp = latestTimestamp;
-        return true;
+        chrome.storage.local.remove([
+            'htmlSnapshots',
+            'interactions',
+            'orderDetails',
+            'screenshots',
+            'reasonsAnnotation'
+          ])
+          interactions.length = 0
+          screenshots.length = 0
+          reasonsAnnotation.length = 0
+      
+          return true
     } catch (error) {
         console.error('Error uploading data:', error)
         return false
