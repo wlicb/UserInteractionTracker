@@ -2,53 +2,17 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
-// chrome.webNavigation.onCommitted.addListener(
-//   (details) => {
-//     if (details.frameId === 0) {
-//       // Only inject into the main frame
-//       chrome.scripting.executeScript({
-//         target: { tabId: details.tabId },
-//         files: ['js/injected.js'],
-//         world: 'MAIN' // Ensures the script is injected into the main world
-//       })
-//     }
-//   },
-//   { url: [{ urlMatches: '.*amazon\\.com.*' }, { urlMatches: 'file://.*' }] }
-// )
-// chrome.tabs.onCreated.addListener((tab) => {
-//   if (tab.url.includes('amazon.com') || tab.url.includes('file')) {
-
-//       chrome.scripting.executeScript({
-//         target: { tabId: details.tabId },
-//         files: ['js/injected.js'],
-//         world: 'MAIN' // Ensures the script is injected into the main world
-//       })
-//   }
-// })
-// chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-//   if (changeInfo.status === 'loading' && (tab.url.includes('amazon.com') || tab.url.includes('file'))) {
-//     chrome.scripting.executeScript({
-//       target: { tabId: tabId },
-//       files: ['js/injected.js'],
-//       world: 'MAIN' // Ensures the script is injected into the main world
-//     })
-//   }
-// })
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 import { v4 as uuidv4 } from 'uuid'
 import { nav, refinement_option, recipes } from './recipe'
-let upload_url = 'http://userdatacollect.hailab.io/upload'
+import JSZip from 'jszip'
+
 let interactions: any[] = []
-const interactionsLimit = 100
 let screenshots: [string, string][] = []
 let reasonsAnnotation: any[] = []
-const reasonsLimit = 100
-const screenshotLimit = 100
 let actionSequenceId = 0
 let uploadTimer: NodeJS.Timer | null = null
 let userId: string = ''
-import { popup_probability } from './config'
+import { popup_probability, folder_name, zip, upload_url} from './config'
 
 interface TabHistory {
     backStack: string[]
@@ -470,11 +434,15 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 async function uploadDataToServer() {
     try {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-        const folderName = `DATA/SESSION_${timestamp}`
+        
 
         // Get userId and data from storage
         const userIdResult = await chrome.storage.local.get({ userId: '' })
         const currentUserId = userIdResult.userId
+
+        let user_id = currentUserId||'unknown'
+        
+        const folderName = `${folder_name}/USER_${user_id}/SESSION_${timestamp}`
 
         const snapshots = await chrome.storage.local.get({ htmlSnapshots: [] })
         const interact = await chrome.storage.local.get({ interactions: [] })
@@ -488,16 +456,21 @@ async function uploadDataToServer() {
         let storeScreenshots = screen.screenshots || []
         let storeReasonsAnnotation = ReasonsAnnotation.reasonsAnnotation || []
 
-        // const allInteractions = [...storeInteractions, ...interactions];
-        // const allScreenshots = [...storeScreenshots, ...screenshots];
-        // const allReasons = [...storeReasonsAnnotation, ...reasonsAnnotation];
+        const fullData = {
+            interactions: storeInteractions,
+            reasons: storeReasonsAnnotation,
+            orderDetails: orderDetails
+        }
 
-        // Upload session info
-        const sessionInfo = new Blob(
-            [
-                `Session data for timestamp: ${timestamp}, user id: ${currentUserId} \n order details: \n ${JSON.stringify(
-                    orderDetails
-                )}`
+        if (!zip) {
+        try{
+            // Upload session info
+            const sessionInfo = new Blob(
+                [
+                `Session data for timestamp: ${timestamp}
+                \n user id: ${user_id} 
+                \n order details: 
+                \n ${JSON.stringify(orderDetails)}`
             ],
             { type: 'text/plain' }
         )
@@ -520,11 +493,7 @@ async function uploadDataToServer() {
 
         // Upload interactions JSON
         console.log('uploading interactions')
-        const fullData = {
-            interactions: storeInteractions,
-            reasons: storeReasonsAnnotation,
-            orderDetails: orderDetails
-        }
+        
         const interactionsBlob = new Blob([JSON.stringify(fullData, null, 2)], {
             type: 'application/json'
         })
@@ -552,8 +521,42 @@ async function uploadDataToServer() {
                 method: 'POST',
                 body: formData
             })
+            }
+        }catch(error){
+            console.error('Error uploading data:', error)
+            return false
         }
-
+    }
+        else{
+            console.log('upload zip file')
+            try{
+                const zip = new JSZip()
+                zip.file('session_info.txt', `Session data for timestamp: ${timestamp}
+                \n user id: ${user_id} 
+                \n order details: 
+                \n ${JSON.stringify(orderDetails)}`)
+                zip.file('interactions.json', JSON.stringify(fullData, null, 2))
+                const screenshotsFolder = zip.folder('screenshots')
+                for (const [screenshotData, screenshotId] of storeScreenshots) {
+                    const response = await fetch(screenshotData)
+                    const blob = await response.blob()
+                    screenshotsFolder.file(screenshotId.replace(/[:.]/g, '-') + '.jpg', blob)
+                }
+                const htmlSnapshotsFolder = zip.folder('htmlSnapshots')
+                for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
+                    htmlSnapshotsFolder.file(snapshotId + '.html', htmlContent)
+                }
+                
+                const zipBlob = await zip.generateAsync({ type: 'blob' })
+                const formData = new FormData()
+                formData.append('file', zipBlob, `${folderName}.zip`)
+                await fetch(upload_url, { method: 'POST', body: formData })
+            }catch(error){
+                console.error('Error uploading data:', error)
+                return false
+            }
+        }
+        
         // Clear cache after successful upload
         chrome.storage.local.remove([
             'htmlSnapshots',
