@@ -46,7 +46,7 @@ localhost:5000
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-
+    
     if 'file' not in request.files:
         app.logger.info('No file part in the request')
         return {'error': 'No file part'}, 400
@@ -73,6 +73,7 @@ def upload_file():
    
     if file:
         filepath = ""
+        interactions_file=None
         if file.filename.endswith('.zip'):
             try:
                 file_bytes = file.read()
@@ -84,6 +85,10 @@ def upload_file():
                     zip_ref.extractall(filepath)
                     app.logger.info(f'File {file.filename} decompressed successfully')
 
+                    if 'interactions.json' in zip_ref.namelist():
+                        with zip_ref.open('interactions.json') as json_file:
+                            interactions_file = json.load(json_file)
+
             except zipfile.BadZipFile:
                 app.logger.error(f'Error: {file.filename} is not a valid zip file')
                 return {'error': 'Invalid zip file'}, 400    
@@ -94,20 +99,23 @@ def upload_file():
             file.save(filepath)
             app.logger.info(f'File {file.filename} uploaded successfully')
 
-        with open(os.path.join(filepath,'interactions.json'), 'r') as json_file:
-            interaction_file = json.load(json_file)
 
-        interaction_collection.update_one(
-            { "_id": ObjectId(user_id) }, 
-            {
-                "$push": {
-                    "interactions": {
-                        "$each": interaction_file["interactions"]
+        if file.filename.endswith('interactions.json'):
+            file.seek(0)
+            interactions_file = json.load(file)
+
+        if interactions_file:
+            interaction_collection.update_one(
+                { "_id": ObjectId(user_id) }, 
+                {
+                    "$push": {
+                        "interactions": {
+                            "$each": interactions_file["interactions"]
+                        }
                     }
                 }
-            }
-        )
-        
+            )
+            app.logger.info(f'Interactions added successfully')
 
         return {'message': f'File {file.filename} uploaded successfully'}, 200
 
