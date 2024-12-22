@@ -4,16 +4,24 @@ import os
 import zipfile
 from io import BytesIO
 import re
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from bson import ObjectId
 import json
 from pymongo import MongoClient
+import boto3
+from botocore.exceptions import NoCredentialsError
 
 import config
 
 client = MongoClient(config.MONGO_URI)
 db = client[config.DATABASE_NAME]
 interaction_collection = db[config.COLLECTION_NAME]
+
+AWS_ACCESS_KEY = config.AWS_ACCESS_KEY
+AWS_SECRET_KEY = config.AWS_SECRET_KEY
+BUCKET_NAME = config.BUCKET_NAME
+
+s3_client = boto3.client('s3')
 
 # db_schema
 # [
@@ -107,47 +115,48 @@ def upload_file():
             app.logger.info(f'File {file.filename} uploaded successfully')
             
         return jsonify({'message': f'File {file.filename} uploaded successfully'}), 200
+    
+@app.route('/generate_presigned_post', methods=['POST'])
+def generate_presigned_post():
 
+    data = request.get_json()
+    prefix = data.get('prefix')
+
+    if not prefix:
+        return jsonify({'error': 'Prefix is required'}), 400
     
 
-@app.route('/interactions', methods=['POST'])
-def interactions():
-    data = None
-    json_data = request.form.get('interactions')
-    
-    if not json_data:
-        return jsonify({'error': 'Interactions not found'}), 400
-    
-    try:
-        data = json.loads(json_data) 
-    except json.JSONDecodeError:
-        return jsonify({'error': 'Invalid JSON data'}), 400   
+    expiration = config.EXPIRATION_TIME  
+    expire_timestamp = int((datetime.now(timezone.utc) + timedelta(seconds=expiration)).timestamp())
 
-
-    user_id = request.form.get('user_id')
+    user_id = data.get('user_id')
 
     result, status = check_user(user_id, interaction_collection)
     if status!=200:
         return result, status
     else: user_id = result
-    
 
-    if data:
-        interaction_collection.update_one(
-            { "_id": user_id }, 
-            {
-                "$push": {
-                    "interactions": {
-                        "$each": data["interactions"]
-                    }
-                }
-            }
-        )
-        app.logger.info(f'Interactions added successfully, ${len(data["interactions"])}')
-
-        return jsonify({'message': f'Interactions added successfully'}), 200
+    if not prefix.startswith(f'uploads/user_interactions_data/USER_{user_id}'):
+        return jsonify({'error': 'Prefix is invalid'}), 400
     
-    return jsonify({'error': f'Unknown error'}), 400
+    try:
+        # Generate a presigned POST URL
+        response = s3_client.generate_presigned_post(
+                    Bucket=BUCKET_NAME,
+                    Key=f'{prefix}/${{filename}}',
+                    ExpiresIn=expiration,
+                    Conditions=[
+                        ["content-length-range", 0*(1024*1024), 100*(1024*1024)], #100MB
+                        ["starts-with", "$key", prefix],
+                    ]
+                )
+
+        response['expire_timestamp'] = expire_timestamp 
+        return jsonify(response)
+
+    except NoCredentialsError:
+        return jsonify({'error': 'Credentials not available'}), 403
+
 
 
 
