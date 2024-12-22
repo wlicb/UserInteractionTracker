@@ -53,11 +53,8 @@ def upload_file():
         app.logger.info('No selected file')
         return {'error': 'No selected file'}, 400
     
-    match = re.search(r"USER_(.+?)/SESSION", file.filename)
-    user_id = None 
-    if match:
-        user_id = match.group(1)  
-    
+    user_id = request.form.get('user_id')
+
     if not user_id: 
         app.logger.error(f'user_id is not available')
         return {'error': f'user_id is not available'}, 400 
