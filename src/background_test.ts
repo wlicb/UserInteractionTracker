@@ -12,7 +12,10 @@ let reasonsAnnotation: any[] = []
 let actionSequenceId = 0
 let uploadTimer: NodeJS.Timer | null = null
 let userId: string = ''
-import { popup_probability, folder_name, zip, upload_url } from './config'
+import { popup_probability, folder_name, zip, base_url } from './config'
+
+const upload_url = `${base_url}/upload`
+const interactions_url = `${base_url}/interactions`
 
 interface TabHistory {
   backStack: string[]
@@ -583,6 +586,7 @@ async function uploadDataToServer() {
         )
         const sessionFormData = new FormData()
         sessionFormData.append('file', sessionInfo, `${folderName}/session_info.txt`)
+        sessionFormData.append('user_id', user_id)
         console.log('uploading session info')
         await fetch(upload_url, {
           method: 'POST',
@@ -595,21 +599,33 @@ async function uploadDataToServer() {
           const htmlBlob = new Blob([htmlContent], { type: 'text/html' })
           const formData = new FormData()
           formData.append('file', htmlBlob, `${folderName}/html/${snapshotId}.html`)
+          formData.append('user_id', user_id)
           await fetch(upload_url, { method: 'POST', body: formData })
         }
 
         // Upload interactions JSON
         console.log('uploading interactions')
 
-        const interactionsBlob = new Blob([JSON.stringify(fullData, null, 2)], {
-          type: 'application/json'
-        })
+        const interactions_json = JSON.stringify(fullData, null, 2)
         const jsonFormData = new FormData()
 
-        jsonFormData.append('file', interactionsBlob, `${folderName}/interactions.json`)
-        await fetch(upload_url, {
+        jsonFormData.append('interactions', interactions_json)
+        jsonFormData.append('user_id', user_id)
+
+        await fetch(interactions_url, {
           method: 'POST',
           body: jsonFormData
+        })
+
+        const interactionsBlob = new Blob([interactions_json], {
+          type: 'application/json'
+        })
+        const jsonFormDataFile = new FormData()
+
+        jsonFormDataFile.append('file', interactionsBlob, `${folderName}/interactions.json`)
+        await fetch(upload_url, {
+          method: 'POST',
+          body: jsonFormDataFile
         })
 
         // Upload screenshots
@@ -644,7 +660,8 @@ async function uploadDataToServer() {
                 \n order details: 
                 \n ${JSON.stringify(orderDetails)}`
         )
-        zip.file('interactions.json', JSON.stringify(fullData, null, 2))
+        const interactions_json = JSON.stringify(fullData, null, 2)
+        zip.file('interactions.json', interactions_json)
         const screenshotsFolder = zip.folder('screenshots')
         for (const [screenshotData, screenshotId] of storeScreenshots) {
           const response = await fetch(screenshotData)
@@ -655,6 +672,16 @@ async function uploadDataToServer() {
         for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
           htmlSnapshotsFolder.file(snapshotId + '.html', htmlContent)
         }
+
+        console.log('uploading interactions as a json')
+        const jsonFormData = new FormData()
+
+        jsonFormData.append('interactions', interactions_json)
+        jsonFormData.append('user_id', user_id)
+        await fetch(interactions_url, {
+          method: 'POST',
+          body: jsonFormData
+        })
 
         const zipBlob = await zip.generateAsync({ type: 'blob' })
         const formData = new FormData()

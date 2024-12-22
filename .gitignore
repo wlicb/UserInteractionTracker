@@ -6,3 +6,4 @@ backend/uploads/
 dist.crx
 dist.pem
 backend/config.py
+uploads*
