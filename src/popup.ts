@@ -6,9 +6,9 @@ import { data_collector_secret_id } from './config'
 
 chrome.storage.local.get(['userId'], (result) => {
   if (result.userId) {
-    userIdInput.value = result.userId
+    userIdInput.value = result.userId || ''
   }
-  if (result.userId == data_collector_secret_id) {
+  if (result.userId.includes(data_collector_secret_id)) {
     downloadDataBtn.style.display = 'block' // Show button
   } else {
     downloadDataBtn.style.display = 'none' // Hide button

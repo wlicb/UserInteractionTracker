@@ -12,7 +12,7 @@ let reasonsAnnotation: any[] = []
 let actionSequenceId = 0
 let uploadTimer: NodeJS.Timer | null = null
 let userId: string = ''
-import { popup_probability, folder_name, zip, base_url } from './config'
+import { popup_probability, folder_name, zip, base_url, data_collector_secret_id } from './config'
 
 const upload_url = `${base_url}/upload`
 const interactions_url = `${base_url}/interactions`
@@ -712,29 +712,31 @@ async function uploadDataToServer() {
         return false
       }
     }
-    const seen_interact = await chrome.storage.local.get({ seen_interactions: [] })
-    const seen_snapshots = await chrome.storage.local.get({ seen_htmlSnapshots: [] })
-    const seen_orderDetails = await chrome.storage.local.get({ seen_orderDetails: [] })
-    const seen_screen = await chrome.storage.local.get({ seen_screenshots: [] })
-    const seen_ReasonsAnnotation = await chrome.storage.local.get({ seen_reasonsAnnotation: [] })
+    if (user_id.includes(data_collector_secret_id)) {
+      const seen_interact = await chrome.storage.local.get({ seen_interactions: [] })
+      const seen_snapshots = await chrome.storage.local.get({ seen_htmlSnapshots: [] })
+      const seen_orderDetails = await chrome.storage.local.get({ seen_orderDetails: [] })
+      const seen_screen = await chrome.storage.local.get({ seen_screenshots: [] })
+      const seen_ReasonsAnnotation = await chrome.storage.local.get({ seen_reasonsAnnotation: [] })
 
-    let seen_storeInteractions = seen_interact.interactions || []
-    let seen_htmlSnapshots = seen_snapshots.htmlSnapshots || {}
-    let seen_storeOrderDetails = seen_orderDetails.orderDetails || []
-    let seen_storeScreenshots = seen_screen.screenshots || []
-    let seen_storeReasonsAnnotation = seen_ReasonsAnnotation.reasonsAnnotation || []
+      let seen_storeInteractions = seen_interact.interactions || []
+      let seen_htmlSnapshots = seen_snapshots.htmlSnapshots || {}
+      let seen_storeOrderDetails = seen_orderDetails.orderDetails || []
+      let seen_storeScreenshots = seen_screen.screenshots || []
+      let seen_storeReasonsAnnotation = seen_ReasonsAnnotation.reasonsAnnotation || []
 
-    seen_storeInteractions = [...seen_storeInteractions, ...storeInteractions]
-    seen_htmlSnapshots = { ...seen_htmlSnapshots, ...htmlSnapshots }
-    seen_storeOrderDetails = [...seen_storeOrderDetails, ...storeOrderDetails]
-    seen_storeScreenshots = [...seen_storeScreenshots, ...storeScreenshots]
-    seen_storeReasonsAnnotation = [...seen_storeReasonsAnnotation, ...storeReasonsAnnotation]
+      seen_storeInteractions = [...seen_storeInteractions, ...storeInteractions]
+      seen_htmlSnapshots = { ...seen_htmlSnapshots, ...htmlSnapshots }
+      seen_storeOrderDetails = [...seen_storeOrderDetails, ...storeOrderDetails]
+      seen_storeScreenshots = [...seen_storeScreenshots, ...storeScreenshots]
+      seen_storeReasonsAnnotation = [...seen_storeReasonsAnnotation, ...storeReasonsAnnotation]
 
-    await chrome.storage.local.set({ seen_interactions: seen_storeInteractions })
-    await chrome.storage.local.set({ seen_htmlSnapshots })
-    await chrome.storage.local.set({ seen_orderDetails: seen_storeOrderDetails })
-    await chrome.storage.local.set({ seen_screenshots: seen_storeScreenshots })
-    await chrome.storage.local.set({ seen_reasonsAnnotation: seen_storeReasonsAnnotation })
+      await chrome.storage.local.set({ seen_interactions: seen_storeInteractions })
+      await chrome.storage.local.set({ seen_htmlSnapshots })
+      await chrome.storage.local.set({ seen_orderDetails: seen_storeOrderDetails })
+      await chrome.storage.local.set({ seen_screenshots: seen_storeScreenshots })
+      await chrome.storage.local.set({ seen_reasonsAnnotation: seen_storeReasonsAnnotation })
+    }
 
     chrome.storage.local.remove([
       'htmlSnapshots',
