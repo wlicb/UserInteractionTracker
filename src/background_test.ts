@@ -3,7 +3,7 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import { v4 as uuidv4 } from 'uuid'
-import { nav, refinement_option, recipes } from './recipe'
+import { nav, refinement_option, recipes } from './recipe_new'
 import JSZip from 'jszip'
 
 let interactions: any[] = []
