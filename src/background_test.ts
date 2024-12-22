@@ -468,14 +468,33 @@ async function downloadDataLocally() {
 
     let htmlSnapshots = snapshots.htmlSnapshots || {}
     let storeInteractions = interact.interactions || []
-    let storeorderDetails = orderDetails.orderDetails || []
+    let storeOrderDetails = orderDetails.orderDetails || []
     let storeScreenshots = screen.screenshots || []
     let storeReasonsAnnotation = ReasonsAnnotation.reasonsAnnotation || []
+
+    // concatenating with the seen data
+    const seen_interact = await chrome.storage.local.get({ seen_interactions: [] })
+    const seen_snapshots = await chrome.storage.local.get({ seen_htmlSnapshots: [] })
+    const seen_orderDetails = await chrome.storage.local.get({ seen_orderDetails: [] })
+    const seen_screen = await chrome.storage.local.get({ seen_screenshots: [] })
+    const seen_ReasonsAnnotation = await chrome.storage.local.get({ seen_reasonsAnnotation: [] })
+
+    let seen_storeInteractions = seen_interact.interactions || []
+    let seen_htmlSnapshots = seen_snapshots.htmlSnapshots || {}
+    let seen_storeOrderDetails = seen_orderDetails.orderDetails || []
+    let seen_storeScreenshots = seen_screen.screenshots || []
+    let seen_storeReasonsAnnotation = seen_ReasonsAnnotation.reasonsAnnotation || []
+
+    storeInteractions = [...seen_storeInteractions, ...storeInteractions]
+    htmlSnapshots = { ...seen_htmlSnapshots, ...htmlSnapshots }
+    storeOrderDetails = [...seen_storeOrderDetails, ...storeOrderDetails]
+    storeScreenshots = [...seen_storeScreenshots, ...storeScreenshots]
+    storeReasonsAnnotation = [...seen_storeReasonsAnnotation, ...storeReasonsAnnotation]
 
     // Upload session info
     console.log('uploading session info')
     const sessionInfoContent = `Session data for timestamp: ${timestamp}, user id: ${currentUserId},\n order details: \n ${JSON.stringify(
-      storeorderDetails
+      storeOrderDetails
     )}`
     chrome.downloads.download({
       url: 'data:text/plain;charset=utf-8,' + encodeURIComponent(sessionInfoContent),
@@ -519,15 +538,15 @@ async function downloadDataLocally() {
 
     // Clear cache after successful upload
     chrome.storage.local.remove([
-      'htmlSnapshots',
-      'interactions',
-      'orderDetails',
-      'screenshots',
-      'reasonsAnnotation'
+      'seen_htmlSnapshots',
+      'seen_interactions',
+      'seen_orderDetails',
+      'seen_screenshots',
+      'seen_reasonsAnnotation'
     ])
-    interactions.length = 0
-    screenshots.length = 0
-    reasonsAnnotation.length = 0
+    // interactions.length = 0
+    // screenshots.length = 0
+    // reasonsAnnotation.length = 0
 
     return true
   } catch (error) {
@@ -563,14 +582,14 @@ async function uploadDataToServer() {
     const ReasonsAnnotation = await chrome.storage.local.get({ reasonsAnnotation: [] })
 
     let htmlSnapshots = snapshots.htmlSnapshots || {}
-    let storeorderDetails = orderDetails.orderDetails || []
+    let storeOrderDetails = orderDetails.orderDetails || []
     let storeScreenshots = screen.screenshots || []
     let storeReasonsAnnotation = ReasonsAnnotation.reasonsAnnotation || []
 
     const fullData = {
       interactions: storeInteractions,
       reasons: storeReasonsAnnotation,
-      orderDetails: storeorderDetails
+      orderDetails: storeOrderDetails
     }
     if (!zip) {
       try {
@@ -693,6 +712,30 @@ async function uploadDataToServer() {
         return false
       }
     }
+    const seen_interact = await chrome.storage.local.get({ seen_interactions: [] })
+    const seen_snapshots = await chrome.storage.local.get({ seen_htmlSnapshots: [] })
+    const seen_orderDetails = await chrome.storage.local.get({ seen_orderDetails: [] })
+    const seen_screen = await chrome.storage.local.get({ seen_screenshots: [] })
+    const seen_ReasonsAnnotation = await chrome.storage.local.get({ seen_reasonsAnnotation: [] })
+
+    let seen_storeInteractions = seen_interact.interactions || []
+    let seen_htmlSnapshots = seen_snapshots.htmlSnapshots || {}
+    let seen_storeOrderDetails = seen_orderDetails.orderDetails || []
+    let seen_storeScreenshots = seen_screen.screenshots || []
+    let seen_storeReasonsAnnotation = seen_ReasonsAnnotation.reasonsAnnotation || []
+
+    seen_storeInteractions = [...seen_storeInteractions, ...storeInteractions]
+    seen_htmlSnapshots = { ...seen_htmlSnapshots, ...htmlSnapshots }
+    seen_storeOrderDetails = [...seen_storeOrderDetails, ...storeOrderDetails]
+    seen_storeScreenshots = [...seen_storeScreenshots, ...storeScreenshots]
+    seen_storeReasonsAnnotation = [...seen_storeReasonsAnnotation, ...storeReasonsAnnotation]
+
+    await chrome.storage.local.set({ seen_interactions: seen_storeInteractions })
+    await chrome.storage.local.set({ seen_htmlSnapshots })
+    await chrome.storage.local.set({ seen_orderDetails: seen_storeOrderDetails })
+    await chrome.storage.local.set({ seen_screenshots: seen_storeScreenshots })
+    await chrome.storage.local.set({ seen_reasonsAnnotation: seen_storeReasonsAnnotation })
+
     chrome.storage.local.remove([
       'htmlSnapshots',
       'interactions',
