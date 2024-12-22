@@ -5,3 +5,4 @@ backend/uploads/
 *.bak
 dist.crx
 dist.pem
+backend/config.py

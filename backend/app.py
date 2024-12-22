@@ -6,17 +6,14 @@ from io import BytesIO
 import re
 from datetime import datetime
 from bson import ObjectId
-
 import json
-
 from pymongo import MongoClient
 
+import config
 
-MONGO_URI = "mongodb://localhost:27017/"
-
-client = MongoClient(MONGO_URI)  
-db = client['amazon_data_collector']  
-interaction_collection = db['interactions'] 
+client = MongoClient(config.MONGO_URI)
+db = client[config.DATABASE_NAME]
+interaction_collection = db[config.COLLECTION_NAME]
 
 # db_schema
 # [
@@ -64,12 +61,18 @@ def upload_file():
     if not user_id: 
         app.logger.error(f'user_id is not available')
         return {'error': f'user_id is not available'}, 400 
+    
+    try:
+        user_id = ObjectId(user_id)
+    except:
+        app.logger.error(f'User ID is not a valid ObjectId: {user_id}')
+        return {f'error': f'User ID is not a valid id:{user_id}'}, 400
 
-    user= interaction_collection.find_one({"_id": ObjectId(user_id)})
+    user= interaction_collection.find_one({"_id": user_id})
 
     if not user:
-        app.logger.error(f'User not found. user_id:{user_id}')
-        return {f'error': f'User not found. user_id:{user_id}'}, 403
+        app.logger.error(f'User not found. user_id: {user_id}')
+        return {f'error': f'User not found. user_id: {user_id}'}, 403
    
     if file:
         filepath = ""
@@ -106,7 +109,7 @@ def upload_file():
 
         if interactions_file:
             interaction_collection.update_one(
-                { "_id": ObjectId(user_id) }, 
+                { "_id": user_id }, 
                 {
                     "$push": {
                         "interactions": {
