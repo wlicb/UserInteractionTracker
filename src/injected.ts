@@ -140,6 +140,9 @@ const monkeyPatch = () => {
     const element = event.target as HTMLElement
     const anchor = element.closest('a')
     if (anchor) {
+      if (anchor.href.startsWith('javascript:')) {
+        return false
+      }
       return true
     }
     // if id is nav-search-submit-button
@@ -209,6 +212,7 @@ const monkeyPatch = () => {
         console.log(event.target)
         const timestamp = new Date().toISOString()
         // const anchor = target.closest('a')
+        console.log(event.target)
         if (hasDefaultAction(event)) {
           // console.log('[Monkey Patch] Click on <a> tag:', anchor.href)
           console.log('[Monkey Patch] Click on cancelable')

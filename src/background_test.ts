@@ -521,7 +521,7 @@ let lastUploadTimestamp = ''
 
 async function uploadDataToServer() {
     try {
-
+        console.log('uploadDataToServer')
         const interact = await chrome.storage.local.get({ interactions: [] });
         const storeInteractions = interact.interactions || [];
 
