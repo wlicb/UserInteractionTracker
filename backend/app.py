@@ -21,7 +21,9 @@ AWS_ACCESS_KEY = config.AWS_ACCESS_KEY
 AWS_SECRET_KEY = config.AWS_SECRET_KEY
 BUCKET_NAME = config.BUCKET_NAME
 
-s3_client = boto3.client('s3')
+s3_client = boto3.client('s3',
+        aws_access_key_id=AWS_ACCESS_KEY,
+        aws_secret_access_key=AWS_SECRET_KEY)
 
 # db_schema
 # [
@@ -116,28 +118,21 @@ def upload_file():
             
         return jsonify({'message': f'File {file.filename} uploaded successfully'}), 200
     
-@app.route('/generate_presigned_post', methods=['POST'])
+@app.route('/generate_presigned_post', methods=['GET'])
 def generate_presigned_post():
 
-    data = request.get_json()
-    prefix = data.get('prefix')
-
-    if not prefix:
-        return jsonify({'error': 'Prefix is required'}), 400
-    
-
-    expiration = config.EXPIRATION_TIME  
-    expire_timestamp = int((datetime.now(timezone.utc) + timedelta(seconds=expiration)).timestamp())
-
-    user_id = data.get('user_id')
+    user_id = request.args.get('user_id')
 
     result, status = check_user(user_id, interaction_collection)
+
     if status!=200:
         return result, status
     else: user_id = result
 
-    if not prefix.startswith(f'uploads/user_interactions_data/USER_{user_id}'):
-        return jsonify({'error': 'Prefix is invalid'}), 400
+    expiration = config.EXPIRATION_TIME  
+    expire_timestamp = int((datetime.now(timezone.utc) + timedelta(seconds=expiration)).timestamp())
+
+    prefix = f'uploads/user_interactions_data/USER_{user_id}'
     
     try:
         # Generate a presigned POST URL
