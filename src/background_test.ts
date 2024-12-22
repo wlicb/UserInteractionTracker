@@ -10,7 +10,7 @@ let interactions: any[] = []
 let screenshots: [string, string][] = []
 let reasonsAnnotation: any[] = []
 let actionSequenceId = 0
-let uploadTimer: NodeJS.Timer | null = null
+let uploadTimer: NodeJS.Timer | null | false = null
 let userId: string = ''
 import { popup_probability, folder_name, zip, base_url } from './config'
 
@@ -538,6 +538,7 @@ async function downloadDataLocally() {
 let lastUploadTimestamp = ''
 
 async function uploadDataToServer() {
+  stopPeriodicUpload()
   try {
     const interact = await chrome.storage.local.get({ interactions: [] })
     const storeInteractions = interact.interactions || []
@@ -545,6 +546,7 @@ async function uploadDataToServer() {
     // Check if there are any interactions and get the latest timestamp
     if (storeInteractions.length === 0) {
       console.log('No interactions to upload')
+      startPeriodicUpload()
       return false
     }
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
@@ -572,6 +574,7 @@ async function uploadDataToServer() {
       reasons: storeReasonsAnnotation,
       orderDetails: storeorderDetails
     }
+    const startTime = performance.now()
     if (!zip) {
       try {
         // Upload session info
@@ -646,6 +649,7 @@ async function uploadDataToServer() {
           })
         }
       } catch (error) {
+        startPeriodicUpload()
         console.error('Error uploading data:', error)
         return false
       }
@@ -689,10 +693,14 @@ async function uploadDataToServer() {
         formData.append('user_id', user_id)
         await fetch(upload_url, { method: 'POST', body: formData })
       } catch (error) {
+        startPeriodicUpload()
         console.error('Error uploading data:', error)
         return false
       }
     }
+    const endTime = performance.now()
+    console.log('----time difference:', -(startTime - endTime).toFixed(3), 'ms')
+    console.log('----start:', startTime, ' end:', endTime)
     chrome.storage.local.remove([
       'htmlSnapshots',
       'interactions',
@@ -704,8 +712,10 @@ async function uploadDataToServer() {
     screenshots.length = 0
     reasonsAnnotation.length = 0
 
+    startPeriodicUpload()
     return true
   } catch (error) {
+    startPeriodicUpload()
     console.error('Error uploading data:', error)
     return false
   }
@@ -714,6 +724,7 @@ async function uploadDataToServer() {
 // Start the periodic upload timer
 function startPeriodicUpload() {
   if (!uploadTimer) {
+    console.log('startPeriodicUpload')
     uploadTimer = setInterval(uploadDataToServer, 10000) // 10 seconds
   }
 }
@@ -721,9 +732,12 @@ function startPeriodicUpload() {
 // Stop the periodic upload timer
 function stopPeriodicUpload() {
   if (uploadTimer) {
+    console.log('stopPeriodicUpload')
     clearInterval(uploadTimer)
-    uploadTimer = null
+    uploadTimer = false
   }
 }
-
-startPeriodicUpload()
+if (uploadTimer == null) {
+  console.log('--initializing interval--')
+  startPeriodicUpload()
+}
