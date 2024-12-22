@@ -2,10 +2,16 @@ const downloadDataBtn = document.getElementById('downloadData') as HTMLButtonEle
 const outputDiv = document.getElementById('output') as HTMLDivElement
 const clearCacheBtn = document.getElementById('clearCache') as HTMLButtonElement
 const userIdInput = document.getElementById('userId') as HTMLInputElement
+import { data_collector_secret_id } from './config'
 
 chrome.storage.local.get(['userId'], (result) => {
   if (result.userId) {
     userIdInput.value = result.userId
+  }
+  if (result.userId == data_collector_secret_id) {
+    downloadDataBtn.style.display = 'block' // Show button
+  } else {
+    downloadDataBtn.style.display = 'none' // Hide button
   }
 })
 

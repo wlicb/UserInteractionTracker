@@ -2,3 +2,4 @@ export const popup_probability = 0.0
 export const folder_name = `folder_name`
 export const zip = true
 export const base_url = 'http://***.somewhere.io'
+export const data_collector_secret_id = 'secret'
