@@ -491,49 +491,95 @@ async function downloadDataLocally() {
     let storeScreenshots = screen.screenshots || []
     let storeReasonsAnnotation = ReasonsAnnotation.reasonsAnnotation || []
 
-    // Upload session info
-    console.log('uploading session info')
-    const sessionInfoContent = `Session data for timestamp: ${timestamp}, user id: ${currentUserId},\n order details: \n ${JSON.stringify(
-      storeorderDetails
-    )}`
-    chrome.downloads.download({
-      url: 'data:text/plain;charset=utf-8,' + encodeURIComponent(sessionInfoContent),
-      filename: `${folderName}/session_info.txt`,
-      saveAs: false
-    })
-
-    // Upload HTML snapshots as separate files
-    console.log('uploading html snapshots')
-    for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
-      await chrome.downloads.download({
-        url: 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent),
-        filename: `${folderName}/html/${snapshotId.replace(/[:.]/g, '-')}.html`,
-        saveAs: false
-      })
-    }
-
-    // Upload interactions JSON
-    console.log('uploading interactions')
-    const fullData = {
-      interactions: storeInteractions,
-      reasons: storeReasonsAnnotation,
-      orderDetails: orderDetails
-    }
-    const interactionsData = JSON.stringify(fullData, null, 2)
-    chrome.downloads.download({
-      url: 'data:text/json;charset=utf-8,' + encodeURIComponent(interactionsData),
-      filename: `${folderName}/interactions.json`,
-      saveAs: false
-    })
-
-    // Upload screenshots
-    console.log('uploading screenshots')
-    for (const [screenshotData, screenshotId] of storeScreenshots) {
+    if (!zip) {
+      // Upload session info
+      console.log('downloading session info')
+      const sessionInfoContent = `Session data for timestamp: ${timestamp}, user id: ${currentUserId},\n order details: \n ${JSON.stringify(
+        storeorderDetails
+      )}`
       chrome.downloads.download({
-        url: screenshotData,
-        filename: `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`,
+        url: 'data:text/plain;charset=utf-8,' + encodeURIComponent(sessionInfoContent),
+        filename: `${folderName}/session_info.txt`,
         saveAs: false
       })
+
+      // Upload HTML snapshots as separate files
+      console.log('downloading html snapshots')
+      for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
+        await chrome.downloads.download({
+          url: 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent),
+          filename: `${folderName}/html/${snapshotId.replace(/[:.]/g, '-')}.html`,
+          saveAs: false
+        })
+      }
+
+      // Upload interactions JSON
+      console.log('downloading interactions')
+      const fullData = {
+        interactions: storeInteractions,
+        reasons: storeReasonsAnnotation,
+        orderDetails: orderDetails
+      }
+      const interactionsData = JSON.stringify(fullData, null, 2)
+      chrome.downloads.download({
+        url: 'data:text/json;charset=utf-8,' + encodeURIComponent(interactionsData),
+        filename: `${folderName}/interactions.json`,
+        saveAs: false
+      })
+
+      // Upload screenshots
+      console.log('downloading screenshots')
+      for (const [screenshotData, screenshotId] of storeScreenshots) {
+        chrome.downloads.download({
+          url: screenshotData,
+          filename: `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`,
+          saveAs: false
+        })
+      }
+    } else {
+      console.log('downloading zip file')
+      const zip = new JSZip()
+      zip.file(
+        'session_info.txt',
+        `Session data for timestamp: ${timestamp}
+          \n user id: ${user_id}
+                \n order details:
+                \n ${JSON.stringify(orderDetails)}`
+      )
+
+      const fullData = {
+        interactions: storeInteractions,
+        reasons: storeReasonsAnnotation,
+        orderDetails: orderDetails
+      }
+
+      const interactions_json = JSON.stringify(fullData, null, 2)
+      zip.file('interactions.json', interactions_json)
+      const screenshotsFolder = zip.folder('screenshots')
+      for (const [screenshotData, screenshotId] of storeScreenshots) {
+        const response = await fetch(screenshotData)
+        const blob = await response.blob()
+        screenshotsFolder.file(screenshotId.replace(/[:.]/g, '-') + '.jpg', blob)
+      }
+
+      const htmlSnapshotsFolder = zip.folder('htmlSnapshots')
+      for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
+        htmlSnapshotsFolder.file(snapshotId + '.html', htmlContent)
+      }
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      console.log('zip file is generated')
+
+      const reader = new FileReader()
+      reader.onloadend = function () {
+        const base64Zip = reader.result.split(',')[1] // Get the base64 part
+        chrome.downloads.download({
+          url: 'data:application/zip;base64,' + base64Zip,
+          filename: `${folderName}.zip`,
+          saveAs: false
+        })
+      }
+      reader.readAsDataURL(zipBlob)
     }
 
     // Clear cache after successful upload
@@ -550,7 +596,7 @@ async function downloadDataLocally() {
 
     return true
   } catch (error) {
-    console.error('Error uploading data:', error)
+    console.error('Error download data:', error)
     return false
   }
 }
@@ -626,136 +672,87 @@ async function uploadDataToServer() {
       lastGeneratePresignedPostResponse = await postUrlResult.json()
     }
 
-    if (!zip) {
-      try {
-        // Upload session info
-        const sessionInfo = new Blob(
-          [
-            `Session data for timestamp: ${timestamp}
+    try {
+      const sessionInfo = new Blob(
+        [
+          `Session data for timestamp: ${timestamp}
                     \n user id: ${user_id}
                     \n order details:
                     \n ${JSON.stringify(orderDetails)}`
-          ],
-          { type: 'text/plain' }
-        )
-        const sessionFormData = presignedFormData(`${folderName}/session_info.txt`)
-        sessionFormData.append('file', sessionInfo)
+        ],
+        { type: 'text/plain' }
+      )
+      const sessionFormData = presignedFormData(`${folderName}/session_info.txt`)
+      sessionFormData.append('file', sessionInfo)
 
-        console.log('uploading session info')
-        await fetch(lastGeneratePresignedPostResponse.url, {
-          method: 'POST',
-          body: sessionFormData
-        })
+      console.log('uploading session info')
+      await fetch(lastGeneratePresignedPostResponse.url, {
+        method: 'POST',
+        body: sessionFormData
+      })
 
-        // Upload HTML snapshots as separate files
-        console.log('uploading html snapshots')
-        for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
-          const htmlBlob = new Blob([htmlContent], { type: 'text/html' })
-          const formData = presignedFormData(`${folderName}/html/${snapshotId}.html`)
-          formData.append('file', htmlBlob)
-
-          await fetch(lastGeneratePresignedPostResponse.url, {
-            method: 'POST',
-            body: formData
-          })
-        }
-
-        // Upload screenshots
-        console.log('uploading screenshots')
-        for (const [screenshotData, screenshotId] of storeScreenshots) {
-          const response = await fetch(screenshotData)
-          const blob = await response.blob()
-          const formData = presignedFormData(
-            `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`
-          )
-          formData.append('file', blob)
-
-          console.log('uploading screenshots')
-          await fetch(lastGeneratePresignedPostResponse.url, {
-            method: 'POST',
-            body: formData
-          })
-        }
-
-        // Upload interactions JSON
-        console.log('uploading interactions')
-        const interactions_json = JSON.stringify(fullData, null, 2)
-
-        const interactionsBlob = new Blob([interactions_json], {
-          type: 'application/json'
-        })
-        const jsonFormDataFile = presignedFormData(`${folderName}/interactions.json`)
-
-        jsonFormDataFile.append('file', interactionsBlob)
-
-        await fetch(lastGeneratePresignedPostResponse.url, {
-          method: 'POST',
-          body: jsonFormDataFile
-        })
-
-        const jsonFormData = new FormData()
-
-        jsonFormData.append('interactions', interactions_json)
-        jsonFormData.append('user_id', user_id)
-
-        console.log('uploading interactions as a json')
-        await fetch(interactions_url, {
-          method: 'POST',
-          body: jsonFormData
-        })
-      } catch (error) {
-        startPeriodicUpload()
-        console.error('Error uploading data:', error)
-        return false
-      }
-    } else {
-      console.log('upload zip file')
-      try {
-        const zip = new JSZip()
-        zip.file(
-          'session_info.txt',
-          `Session data for timestamp: ${timestamp}
-          \n user id: ${user_id}
-                \n order details:
-                \n ${JSON.stringify(orderDetails)}`
-        )
-        const interactions_json = JSON.stringify(fullData, null, 2)
-        zip.file('interactions.json', interactions_json)
-        const screenshotsFolder = zip.folder('screenshots')
-        for (const [screenshotData, screenshotId] of storeScreenshots) {
-          const response = await fetch(screenshotData)
-          const blob = await response.blob()
-          screenshotsFolder.file(screenshotId.replace(/[:.]/g, '-') + '.jpg', blob)
-        }
-        const htmlSnapshotsFolder = zip.folder('htmlSnapshots')
-        for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
-          htmlSnapshotsFolder.file(snapshotId + '.html', htmlContent)
-        }
-
-        const zipBlob = await zip.generateAsync({ type: 'blob' })
-        const formData = presignedFormData(`${folderName}.zip`)
-        formData.append('file', zipBlob)
+      // Upload HTML snapshots as separate files
+      console.log('uploading html snapshots')
+      for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
+        const htmlBlob = new Blob([htmlContent], { type: 'text/html' })
+        const formData = presignedFormData(`${folderName}/html/${snapshotId}.html`)
+        formData.append('file', htmlBlob)
 
         await fetch(lastGeneratePresignedPostResponse.url, {
           method: 'POST',
           body: formData
         })
-
-        console.log('uploading interactions as a json')
-        const jsonFormData = new FormData()
-
-        jsonFormData.append('interactions', interactions_json)
-        jsonFormData.append('user_id', user_id)
-        await fetch(interactions_url, {
-          method: 'POST',
-          body: jsonFormData
-        })
-      } catch (error) {
-        startPeriodicUpload()
-        console.error('Error uploading data:', error)
-        return false
       }
+
+      // Upload screenshots
+      console.log('uploading screenshots')
+      for (const [screenshotData, screenshotId] of storeScreenshots) {
+        const response = await fetch(screenshotData)
+        const blob = await response.blob()
+        const formData = presignedFormData(
+          `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`
+        )
+        formData.append('file', blob)
+
+        console.log('uploading screenshots')
+        await fetch(lastGeneratePresignedPostResponse.url, {
+          method: 'POST',
+          body: formData
+        })
+      }
+
+      // Upload interactions JSON
+      console.log('uploading interactions')
+      const interactions_json = JSON.stringify(fullData, null, 2)
+
+      const interactionsBlob = new Blob([interactions_json], {
+        type: 'application/json'
+      })
+      const jsonFormDataFile = presignedFormData(`${folderName}/interactions.json`)
+
+      jsonFormDataFile.append('file', interactionsBlob)
+
+      await fetch(lastGeneratePresignedPostResponse.url, {
+        method: 'POST',
+        body: jsonFormDataFile
+      })
+
+      const jsonFormData = new FormData()
+
+      jsonFormData.append('interactions', interactions_json)
+      jsonFormData.append('user_id', user_id)
+
+      console.log('uploading interactions as a json')
+      await fetch(interactions_url, {
+        method: 'POST',
+        body: jsonFormData
+      })
+    } catch (error) {
+      startPeriodicUpload()
+      console.error('Error uploading data:', error)
+      return false
     }
+
     lastTimestamp = null
 
     chrome.storage.local.remove([
@@ -783,7 +780,7 @@ async function uploadDataToServer() {
 // Start the periodic upload timer
 function startPeriodicUpload() {
   if (!uploadTimer) {
-    console.log('startPeriodicUpload')
+    // console.log('startPeriodicUpload')
     uploadTimer = setInterval(uploadDataToServer, 10000) // 10 seconds
   }
 }
@@ -791,7 +788,7 @@ function startPeriodicUpload() {
 // Stop the periodic upload timer
 function stopPeriodicUpload() {
   if (uploadTimer) {
-    console.log('stopPeriodicUpload')
+    // console.log('stopPeriodicUpload')
     clearInterval(uploadTimer)
     uploadTimer = false
   }
