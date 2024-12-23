@@ -15,7 +15,9 @@ import config
 
 client = MongoClient(config.MONGO_URI)
 db = client[config.DATABASE_NAME]
-interaction_collection = db[config.COLLECTION_NAME]
+interaction_collection = db[config.INTERACTION_COLLECTION_NAME]
+user_collection = db[config.USER_COLLECTION_NAME]
+UPLOAD_FOLDER = config.UPLOAD_FOLDER
 
 AWS_ACCESS_KEY = config.AWS_ACCESS_KEY
 AWS_SECRET_KEY = config.AWS_SECRET_KEY
@@ -25,33 +27,42 @@ s3_client = boto3.client('s3',
         aws_access_key_id=AWS_ACCESS_KEY,
         aws_secret_access_key=AWS_SECRET_KEY)
 
+
 # db_schema
-# [
-#     {
-#         _id:user_id,
-#         user_name:user_name,
-#         interactions:[
-#             {**interaction},
-#             .
-#             .
-#             .
-#         ]
-#     },
-#     .
-#     .
-#     .
-# ]
+#       interactions:
+#             [
+#                 {
+#                     interactions:[
+#                         {**interaction, user_id:ObjectID},
+#                         .
+#                         .
+#                         .
+#                     ]
+#                 },
+#                 .
+#                 .
+#                 .
+#             ]
+#       users:
+#             [
+#                 {
+#                     _id:ObjectID,
+#                     user_name:string,
+#                 },
+#                 .
+#                 .
+#                 .
+#             ]
 
 app = Flask(__name__)
 CORS(app)
 
-UPLOAD_FOLDER = 'uploads'
 REMOVE_ZIP_FILE= True
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 localhost:5000
 
-def check_user(user_id, interaction_collection):
+def check_user(user_id, user_collection):
     if not user_id:
         app.logger.error(f'user_id is not available')
         return {'error': f'user_id is not available'}, 400
@@ -62,7 +73,7 @@ def check_user(user_id, interaction_collection):
         app.logger.error(f'User ID is not a valid ObjectId: {user_id}')
         return {f'error': f'User ID is not a valid id:{user_id}'}, 400
 
-    user= interaction_collection.find_one({"_id": user_id})
+    user= user_collection.find_one({"_id": user_id})
 
     if not user:
         app.logger.error(f'User not found. user_id: {user_id}')
@@ -87,7 +98,7 @@ def upload_file():
 
     user_id = request.form.get('user_id')
 
-    result, status = check_user(user_id, interaction_collection)
+    result, status = check_user(user_id, user_collection=user_collection)
     if status!=200:
         return jsonify(result), status
     else: user_id = result
@@ -136,24 +147,19 @@ def interactions():
 
     user_id = request.form.get('user_id')
 
-    result, status = check_user(user_id, interaction_collection)
+    result, status = check_user(user_id, user_collection=user_collection)
     if status!=200:
         return result, status
     else: user_id = result
 
 
     if data:
-        interaction_collection.update_one(
-            { "_id": user_id },
-            {
-                "$push": {
-                    "interactions": {
-                        "$each": data["interactions"]
-                    }
-                }
-            }
-        )
-        app.logger.info(f'Interactions added successfully, ${len(data["interactions"])}')
+        updated_interactions = [
+            {**interaction, "user_id": ObjectId(user_id)}
+            for interaction in data["interactions"]
+            ]
+
+        interaction_collection.insert_many(updated_interactions)
 
         return jsonify({'message': f'Interactions added successfully'}), 200
 
@@ -165,7 +171,7 @@ def generate_presigned_post():
 
     user_id = request.args.get('user_id')
 
-    result, status = check_user(user_id, interaction_collection)
+    result, status = check_user(user_id, user_collection=user_collection)
 
     if status!=200:
         return result, status
