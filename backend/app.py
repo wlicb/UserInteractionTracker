@@ -201,6 +201,84 @@ def generate_presigned_post():
         return jsonify({'error': 'Credentials not available'}), 403
 
 
+def get_interactions_by_date(user_id, date=None, return_data=None ):
+    # If no date is specified, use today's date
+    if date is None:
+        date = datetime.now()
+
+    # Create date range for the specified date
+
+    start_of_day = date.strftime("%Y-%m-%dT00:00:00.000Z")
+    end_of_day = (date + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00.000Z")
+
+    if return_data:
+        interactions = interaction_collection.find({
+            "user_id": ObjectId(user_id),
+            "timestamp": {
+                "$gte": start_of_day,
+                "$lt": end_of_day
+            }
+        })
+        interactions = list(interactions)
+        for interaction in interactions:
+            interaction["_id"] = str(interaction["_id"])
+            if "user_id" in interaction:
+                interaction["user_id"] = str(interaction["user_id"])
+        return list(interactions)
+    else:
+        n_documents= interaction_collection.count_documents({
+            "user_id": ObjectId(user_id),
+            "timestamp": {
+                "$gte": start_of_day,
+                "$lt": end_of_day
+            }
+        })
+        return{
+            "start_of_day":start_of_day,
+            "end_of_day":end_of_day,
+            "number_of_documents" : n_documents
+        }
+
+@app.route('/get_interactions', methods=['GET'])
+def get_interactions():
+    user_id = request.args.get('user_id')
+    date_str = request.args.get('date')  # in 'YYYY-MM-DD' format
+    return_data = request.args.get('return')
+
+    result, status = check_user(user_id, user_collection=user_collection)
+
+    if status!=200:
+        return result, status
+    else: user_id = result
+
+    if date_str:
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d')
+        except ValueError:
+            return jsonify({"error": "Invalid date format, should be YYYY-MM-DD"}), 400
+    else:
+        date = None
+
+    interactions = get_interactions_by_date(user_id, date, return_data)
+
+    return jsonify(interactions)
+
+
+@app.route('/get_all_users', methods=['GET'])
+def get_all_users():
+    user_id = request.args.get('user_id')
+    date_str = request.args.get('date')  # in 'YYYY-MM-DD' format
+
+    result, status = check_user(user_id, user_collection=user_collection)
+
+    # if status!=200:
+    #     return result, status
+    # else: user_id = result
+
+    all_users = user_collection.find({})
+    all_users = [{**item, "_id":str(item["_id"])} for item in all_users]
+
+    return list(all_users),200
 
 
 if __name__ == '__main__':
