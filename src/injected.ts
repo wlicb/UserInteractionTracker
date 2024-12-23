@@ -100,13 +100,13 @@ const monkeyPatch = () => {
       eventType,
       timestamp: timestamp,
       target: serializedTarget, // Replace direct DOM element with serializable object
-    //   targetOuterHTML: target.outerHTML,
-    //   targetClass: target.className,
-    //   targetId: target.id,
-    //   targetText: target.innerText || target.value || '',
+      //   targetOuterHTML: target.outerHTML,
+      //   targetClass: target.className,
+      //   targetId: target.id,
+      //   targetText: target.innerText || target.value || '',
       htmlSnapshotId: currentSnapshotId,
       selector: selector || '',
-      clickableId: clickableId || '',
+      'data-semantic-id': clickableId || '',
       url: url || '',
       htmlContent: document.documentElement.outerHTML
     }
