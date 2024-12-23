@@ -15,7 +15,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
       elementText = textElement.innerText || textElement.textContent || ''
     }
   } else if (recipe.text_js) {
-    elementText = eval(recipe.text_js)
+    elementText = recipe.text_js();
   } else if (recipe.add_text) {
     elementText = element.innerText || element.textContent || ''
   }
@@ -45,6 +45,11 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     }
     newElement.setAttribute('name', elementName)
     parentName = elementName
+  }
+
+  if (recipe.generate_metadata) {
+    const metadata = JSON.stringify(recipe.generate_metadata());
+    newElement.setAttribute('data-element-meta', metadata);
   }
 
   // Handle clickables and inputs
