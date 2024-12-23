@@ -610,9 +610,6 @@ async function downloadDataLocally() {
       'seen_screenshots',
       'seen_reasonsAnnotation'
     ])
-    // interactions.length = 0
-    // screenshots.length = 0
-    // reasonsAnnotation.length = 0
 
     return true
   } catch (error) {
@@ -631,6 +628,17 @@ function presignedFormData(name) {
   })
 
   return formData
+}
+
+const customFetch = async (url, options) => {
+  const response = await fetch(url, options)
+
+  // If response is not OK (status code not in 200-299 range), throw an error
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`)
+  }
+
+  return response
 }
 
 async function uploadDataToServer() {
@@ -684,16 +692,20 @@ async function uploadDataToServer() {
 
     if (
       !lastGeneratePresignedPostResponse ||
-      lastGeneratePresignedPostResponse?.timestamp > Date.now() / 1000 || // prevent from requesting for post url over and over
+      lastGeneratePresignedPostResponse?.timestamp < Date.now() / 1000 || // prevent from requesting for post url over and over
       !lastGeneratePresignedPostResponse?.fields?.key.includes(user_id)
     ) {
-      let postUrlResult = await fetch(`${generate_presigned_post_url}?user_id=${user_id}`, {
+      console.log('getting new post url')
+      let postUrlResult = await customFetch(`${generate_presigned_post_url}?user_id=${user_id}`, {
         method: 'GET'
       })
-      if (postUrlResult.status == 200)
-        lastGeneratePresignedPostResponse = await postUrlResult.json()
-    }
 
+      lastGeneratePresignedPostResponse = await postUrlResult.json()
+      console.log(
+        'new post url received',
+        Date.now() / 1000 - lastGeneratePresignedPostResponse?.timestamp
+      )
+    }
     try {
       const sessionInfo = new Blob(
         [
@@ -708,7 +720,7 @@ async function uploadDataToServer() {
       sessionFormData.append('file', sessionInfo)
 
       console.log('uploading session info')
-      await fetch(lastGeneratePresignedPostResponse.url, {
+      await customFetch(lastGeneratePresignedPostResponse.url, {
         method: 'POST',
         body: sessionFormData
       })
@@ -720,7 +732,7 @@ async function uploadDataToServer() {
         const formData = presignedFormData(`${folderName}/html/${snapshotId}.html`)
         formData.append('file', htmlBlob)
 
-        await fetch(lastGeneratePresignedPostResponse.url, {
+        await customFetch(lastGeneratePresignedPostResponse.url, {
           method: 'POST',
           body: formData
         })
@@ -729,7 +741,7 @@ async function uploadDataToServer() {
       // Upload screenshots
       console.log('uploading screenshots')
       for (const [screenshotData, screenshotId] of storeScreenshots) {
-        const response = await fetch(screenshotData)
+        const response = await customFetch(screenshotData)
         const blob = await response.blob()
         const formData = presignedFormData(
           `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`
@@ -737,9 +749,11 @@ async function uploadDataToServer() {
         formData.append('file', blob)
 
         console.log('uploading screenshots')
-        await fetch(lastGeneratePresignedPostResponse.url, {
+        await customFetch(lastGeneratePresignedPostResponse.url, {
           method: 'POST',
           body: formData
+        }).catch(() => {
+          throw new Error(`Error: ${e}`)
         })
       }
 
@@ -754,7 +768,7 @@ async function uploadDataToServer() {
 
       jsonFormDataFile.append('file', interactionsBlob)
 
-      await fetch(lastGeneratePresignedPostResponse.url, {
+      await customFetch(lastGeneratePresignedPostResponse.url, {
         method: 'POST',
         body: jsonFormDataFile
       })
@@ -765,7 +779,7 @@ async function uploadDataToServer() {
       jsonFormData.append('user_id', user_id)
 
       console.log('uploading interactions as a json')
-      await fetch(interactions_url, {
+      await customFetch(interactions_url, {
         method: 'POST',
         body: jsonFormData
       })

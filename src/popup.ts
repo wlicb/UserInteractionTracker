@@ -38,11 +38,19 @@ downloadDataBtn.addEventListener('click', () => {
 })
 clearCacheBtn.addEventListener('click', () => {
   try {
-    chrome.storage.local.remove('htmlSnapshots')
-    chrome.storage.local.remove('orderDetails')
-    chrome.storage.local.remove('interactions')
-    chrome.storage.local.remove('screenshots')
-    chrome.storage.local.remove('reasonsAnnotation')
+    chrome.storage.local.remove([
+      'htmlSnapshots',
+      'orderDetails',
+      'screenshots',
+      'reasonsAnnotation',
+      'interactions',
+      'user_interaction_tracker_last_timestamp',
+      'seen_htmlSnapshots',
+      'seen_interactions',
+      'seen_orderDetails',
+      'seen_screenshots',
+      'seen_reasonsAnnotation'
+    ])
     chrome.runtime.sendMessage({ action: 'clearMemoryCache' }, () => {
       outputDiv.textContent = 'Cache cleared successfully.'
     })
