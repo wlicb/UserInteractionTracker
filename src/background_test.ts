@@ -12,10 +12,18 @@ let reasonsAnnotation: any[] = []
 let actionSequenceId = 0
 let uploadTimer: NodeJS.Timer | null | false = null
 let userId: string = ''
+let lastTimestamp: string | null = null
+let lastGeneratePresignedPostResponse: {
+  url: string
+  fields: { key: string; AWSAccessKeyId: string; policy: string; signature: string }
+  timestamp: number
+} | null = null
+
 import { popup_probability, folder_name, zip, base_url } from './config'
 
 const upload_url = `${base_url}/upload`
 const interactions_url = `${base_url}/interactions`
+const generate_presigned_post_url = `${base_url}/generate_presigned_post`
 
 interface TabHistory {
   backStack: string[]
@@ -192,7 +200,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         interactions = []
         screenshots = []
         reasonsAnnotation = []
+
         actionSequenceId = 0
+        interactions.length = 0
+        screenshots.length = 0
+        reasonsAnnotation.length = 0
+
         sendResponse({ success: true })
       } catch (error) {
         console.error('Error handling clearMemoryCache:', error)
@@ -537,6 +550,17 @@ async function downloadDataLocally() {
 }
 let lastUploadTimestamp = ''
 
+function presignedFormData(name) {
+  const formData = new FormData()
+  formData.append('key', name)
+
+  Object.keys(lastGeneratePresignedPostResponse.fields).forEach((key) => {
+    if (key != 'key') formData.append(key, lastGeneratePresignedPostResponse.fields[key])
+  })
+
+  return formData
+}
+
 async function uploadDataToServer() {
   stopPeriodicUpload()
   try {
@@ -549,7 +573,18 @@ async function uploadDataToServer() {
       startPeriodicUpload()
       return false
     }
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    lastTimestamp = await chrome.storage.local.get({
+      user_interaction_tracker_last_timestamp: null
+    })
+    lastTimestamp = lastTimestamp.user_interaction_tracker_last_timestamp || null
+
+    if (lastTimestamp) console.log('lastTimestamp restored: ', lastTimestamp)
+
+    const timestamp = lastTimestamp || new Date().toISOString().replace(/[:.]/g, '-')
+
+    await chrome.storage.local.set({
+      user_interaction_tracker_last_timestamp: timestamp
+    }) // making sure with reopening the browser, it continues from left point and rewrites the information
 
     // Get userId and data from storage
     const userIdResult = await chrome.storage.local.get({ userId: '' })
@@ -574,7 +609,17 @@ async function uploadDataToServer() {
       reasons: storeReasonsAnnotation,
       orderDetails: storeorderDetails
     }
-    const startTime = performance.now()
+
+    if (
+      !lastGeneratePresignedPostResponse ||
+      lastGeneratePresignedPostResponse.timestamp > Date.now() / 1000 // prevent from requesting for post url over and over
+    ) {
+      let postUrlResult = await fetch(`${generate_presigned_post_url}?user_id=${user_id}`, {
+        method: 'GET'
+      })
+      lastGeneratePresignedPostResponse = await postUrlResult.json()
+    }
+
     if (!zip) {
       try {
         // Upload session info
@@ -587,11 +632,11 @@ async function uploadDataToServer() {
           ],
           { type: 'text/plain' }
         )
-        const sessionFormData = new FormData()
-        sessionFormData.append('file', sessionInfo, `${folderName}/session_info.txt`)
-        sessionFormData.append('user_id', user_id)
+        const sessionFormData = presignedFormData(`${folderName}/session_info.txt`)
+        sessionFormData.append('file', sessionInfo)
+
         console.log('uploading session info')
-        await fetch(upload_url, {
+        await fetch(lastGeneratePresignedPostResponse.url, {
           method: 'POST',
           body: sessionFormData
         })
@@ -600,54 +645,55 @@ async function uploadDataToServer() {
         console.log('uploading html snapshots')
         for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
           const htmlBlob = new Blob([htmlContent], { type: 'text/html' })
-          const formData = new FormData()
-          formData.append('file', htmlBlob, `${folderName}/html/${snapshotId}.html`)
-          formData.append('user_id', user_id)
-          await fetch(upload_url, { method: 'POST', body: formData })
+          const formData = presignedFormData(`${folderName}/html/${snapshotId}.html`)
+          formData.append('file', htmlBlob)
+
+          await fetch(lastGeneratePresignedPostResponse.url, { method: 'POST', body: formData })
         }
-
-        // Upload interactions JSON
-        console.log('uploading interactions')
-
-        const interactions_json = JSON.stringify(fullData, null, 2)
-        const jsonFormData = new FormData()
-
-        jsonFormData.append('interactions', interactions_json)
-        jsonFormData.append('user_id', user_id)
-
-        await fetch(interactions_url, {
-          method: 'POST',
-          body: jsonFormData
-        })
-
-        const interactionsBlob = new Blob([interactions_json], {
-          type: 'application/json'
-        })
-        const jsonFormDataFile = new FormData()
-
-        jsonFormDataFile.append('file', interactionsBlob, `${folderName}/interactions.json`)
-        await fetch(upload_url, {
-          method: 'POST',
-          body: jsonFormDataFile
-        })
 
         // Upload screenshots
         console.log('uploading screenshots')
         for (const [screenshotData, screenshotId] of storeScreenshots) {
           const response = await fetch(screenshotData)
           const blob = await response.blob()
-          const formData = new FormData()
-          formData.append(
-            'file',
-            blob,
+          const formData = presignedFormData(
             `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`
           )
+          formData.append('file', blob)
+
           console.log('uploading screenshots')
-          await fetch(upload_url, {
+          await fetch(lastGeneratePresignedPostResponse.url, {
             method: 'POST',
             body: formData
           })
         }
+
+        // Upload interactions JSON
+        console.log('uploading interactions')
+        const interactions_json = JSON.stringify(fullData, null, 2)
+
+        const interactionsBlob = new Blob([interactions_json], {
+          type: 'application/json'
+        })
+        const jsonFormDataFile = presignedFormData(`${folderName}/interactions.json`)
+
+        jsonFormDataFile.append('file', interactionsBlob)
+
+        await fetch(lastGeneratePresignedPostResponse.url, {
+          method: 'POST',
+          body: jsonFormDataFile
+        })
+
+        const jsonFormData = new FormData()
+
+        jsonFormData.append('interactions', interactions_json)
+        jsonFormData.append('user_id', user_id)
+
+        console.log('uploading interactions as a json')
+        await fetch(interactions_url, {
+          method: 'POST',
+          body: jsonFormData
+        })
       } catch (error) {
         startPeriodicUpload()
         console.error('Error uploading data:', error)
@@ -660,7 +706,7 @@ async function uploadDataToServer() {
         zip.file(
           'session_info.txt',
           `Session data for timestamp: ${timestamp}
-                \n user id: ${user_id} 
+          \n user id: ${user_id} 
                 \n order details: 
                 \n ${JSON.stringify(orderDetails)}`
         )
@@ -677,6 +723,12 @@ async function uploadDataToServer() {
           htmlSnapshotsFolder.file(snapshotId + '.html', htmlContent)
         }
 
+        const zipBlob = await zip.generateAsync({ type: 'blob' })
+        const formData = presignedFormData(`${folderName}.zip`)
+        formData.append('file', zipBlob)
+
+        await fetch(lastGeneratePresignedPostResponse.url, { method: 'POST', body: formData })
+
         console.log('uploading interactions as a json')
         const jsonFormData = new FormData()
 
@@ -686,33 +738,28 @@ async function uploadDataToServer() {
           method: 'POST',
           body: jsonFormData
         })
-
-        const zipBlob = await zip.generateAsync({ type: 'blob' })
-        const formData = new FormData()
-        formData.append('file', zipBlob, `${folderName}.zip`)
-        formData.append('user_id', user_id)
-        await fetch(upload_url, { method: 'POST', body: formData })
       } catch (error) {
         startPeriodicUpload()
         console.error('Error uploading data:', error)
         return false
       }
     }
-    const endTime = performance.now()
-    console.log('----time difference:', -(startTime - endTime).toFixed(3), 'ms')
-    console.log('----start:', startTime, ' end:', endTime)
+    lastTimestamp = null
+
     chrome.storage.local.remove([
       'htmlSnapshots',
-      'interactions',
       'orderDetails',
       'screenshots',
-      'reasonsAnnotation'
+      'reasonsAnnotation',
+      'interactions',
+      'user_interaction_tracker_last_timestamp'
     ])
     interactions.length = 0
     screenshots.length = 0
     reasonsAnnotation.length = 0
 
     startPeriodicUpload()
+
     return true
   } catch (error) {
     startPeriodicUpload()

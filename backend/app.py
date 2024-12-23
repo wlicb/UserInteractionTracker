@@ -118,6 +118,48 @@ def upload_file():
             
         return jsonify({'message': f'File {file.filename} uploaded successfully'}), 200
     
+
+
+@app.route('/interactions', methods=['POST'])
+def interactions():
+    data = None
+    json_data = request.form.get('interactions')
+    
+    if not json_data:
+        return jsonify({'error': 'Interactions not found'}), 400
+    
+    try:
+        data = json.loads(json_data) 
+    except json.JSONDecodeError:
+        return jsonify({'error': 'Invalid JSON data'}), 400   
+
+
+    user_id = request.form.get('user_id')
+
+    result, status = check_user(user_id, interaction_collection)
+    if status!=200:
+        return result, status
+    else: user_id = result
+    
+
+    if data:
+        interaction_collection.update_one(
+            { "_id": user_id }, 
+            {
+                "$push": {
+                    "interactions": {
+                        "$each": data["interactions"]
+                    }
+                }
+            }
+        )
+        app.logger.info(f'Interactions added successfully, ${len(data["interactions"])}')
+
+        return jsonify({'message': f'Interactions added successfully'}), 200
+    
+    return jsonify({'error': f'Unknown error'}), 400
+
+    
 @app.route('/generate_presigned_post', methods=['GET'])
 def generate_presigned_post():
 
@@ -130,9 +172,9 @@ def generate_presigned_post():
     else: user_id = result
 
     expiration = config.EXPIRATION_TIME  
-    expire_timestamp = int((datetime.now(timezone.utc) + timedelta(seconds=expiration)).timestamp())
+    expire_timestamp = int((datetime.now(timezone.utc) + timedelta(seconds=expiration//2)).timestamp()) # to make sure at least half of the time remains
 
-    prefix = f'uploads/user_interactions_data/USER_{user_id}'
+    prefix = f'user_interaction_data/USER_{user_id}'
     
     try:
         # Generate a presigned POST URL
