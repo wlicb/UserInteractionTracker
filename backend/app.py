@@ -52,10 +52,10 @@ if not os.path.exists(UPLOAD_FOLDER):
 localhost:5000
 
 def check_user(user_id, interaction_collection):
-    if not user_id: 
+    if not user_id:
         app.logger.error(f'user_id is not available')
-        return {'error': f'user_id is not available'}, 400 
-    
+        return {'error': f'user_id is not available'}, 400
+
     try:
         user_id = ObjectId(user_id)
     except:
@@ -67,15 +67,15 @@ def check_user(user_id, interaction_collection):
     if not user:
         app.logger.error(f'User not found. user_id: {user_id}')
         return {f'error': f'User not found. user_id: {user_id}'}, 403
-    
+
     return user_id, 200
 
-    
+
 
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    
+
     if 'file' not in request.files:
         app.logger.info('No file part in the request')
         return jsonify({'error': 'No file part'}), 400
@@ -84,7 +84,7 @@ def upload_file():
     if file.filename == '':
         app.logger.info('No selected file')
         return jsonify({'error': 'No selected file'}), 400
-    
+
     user_id = request.form.get('user_id')
 
     result, status = check_user(user_id, interaction_collection)
@@ -92,7 +92,7 @@ def upload_file():
         return jsonify(result), status
     else: user_id = result
 
-   
+
     if file:
         filepath = ""
         if file.filename.endswith('.zip'):
@@ -102,36 +102,36 @@ def upload_file():
                 with zipfile.ZipFile(BytesIO(file_bytes), 'r') as zip_ref:
                     filepath = os.path.join(UPLOAD_FOLDER, file.filename.replace('.zip', ''))
                     os.makedirs(filepath, exist_ok=True)
-                    
+
                     zip_ref.extractall(filepath)
                     app.logger.info(f'File {file.filename} decompressed successfully')
 
             except zipfile.BadZipFile:
                 app.logger.error(f'Error: {file.filename} is not a valid zip file')
-                return jsonify({'error': 'Invalid zip file'}), 400    
+                return jsonify({'error': 'Invalid zip file'}), 400
         else:
             filepath = os.path.join(UPLOAD_FOLDER, file.filename)
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
             file.save(filepath)
             app.logger.info(f'File {file.filename} uploaded successfully')
-            
+
         return jsonify({'message': f'File {file.filename} uploaded successfully'}), 200
-    
+
 
 
 @app.route('/interactions', methods=['POST'])
 def interactions():
     data = None
     json_data = request.form.get('interactions')
-    
+
     if not json_data:
         return jsonify({'error': 'Interactions not found'}), 400
-    
+
     try:
-        data = json.loads(json_data) 
+        data = json.loads(json_data)
     except json.JSONDecodeError:
-        return jsonify({'error': 'Invalid JSON data'}), 400   
+        return jsonify({'error': 'Invalid JSON data'}), 400
 
 
     user_id = request.form.get('user_id')
@@ -140,11 +140,11 @@ def interactions():
     if status!=200:
         return result, status
     else: user_id = result
-    
+
 
     if data:
         interaction_collection.update_one(
-            { "_id": user_id }, 
+            { "_id": user_id },
             {
                 "$push": {
                     "interactions": {
@@ -156,10 +156,10 @@ def interactions():
         app.logger.info(f'Interactions added successfully, ${len(data["interactions"])}')
 
         return jsonify({'message': f'Interactions added successfully'}), 200
-    
+
     return jsonify({'error': f'Unknown error'}), 400
 
-    
+
 @app.route('/generate_presigned_post', methods=['GET'])
 def generate_presigned_post():
 
@@ -171,11 +171,11 @@ def generate_presigned_post():
         return result, status
     else: user_id = result
 
-    expiration = config.EXPIRATION_TIME  
+    expiration = config.EXPIRATION_TIME
     expire_timestamp = int((datetime.now(timezone.utc) + timedelta(seconds=expiration//2)).timestamp()) # to make sure at least half of the time remains
 
     prefix = f'user_interaction_data/USER_{user_id}'
-    
+
     try:
         # Generate a presigned POST URL
         response = s3_client.generate_presigned_post(
@@ -188,7 +188,7 @@ def generate_presigned_post():
                     ]
                 )
 
-        response['expire_timestamp'] = expire_timestamp 
+        response['expire_timestamp'] = expire_timestamp
         return jsonify(response)
 
     except NoCredentialsError:

@@ -171,7 +171,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const screenshotDataUrl = await captureScreenshot()
         if (screenshotDataUrl) {
           const success = await saveScreenshot_1(screenshotDataUrl, message.screenshotId)
-          sendResponse({ success, message: success ? undefined : 'Failed to capture screenshot' })
+          sendResponse({
+            success,
+            message: success ? undefined : 'Failed to capture screenshot'
+          })
         } else {
           sendResponse({ success: false, message: 'Failed to capture screenshot' })
         }
@@ -237,7 +240,10 @@ async function captureScreenshot() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
     if (tab) {
-      return await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 25 })
+      return await chrome.tabs.captureVisibleTab(tab.windowId, {
+        format: 'jpeg',
+        quality: 25
+      })
     }
   } catch (error) {
     console.error('Error capturing screenshot:', error)
@@ -626,8 +632,8 @@ async function uploadDataToServer() {
         const sessionInfo = new Blob(
           [
             `Session data for timestamp: ${timestamp}
-                    \n user id: ${user_id} 
-                    \n order details: 
+                    \n user id: ${user_id}
+                    \n order details:
                     \n ${JSON.stringify(orderDetails)}`
           ],
           { type: 'text/plain' }
@@ -648,7 +654,10 @@ async function uploadDataToServer() {
           const formData = presignedFormData(`${folderName}/html/${snapshotId}.html`)
           formData.append('file', htmlBlob)
 
-          await fetch(lastGeneratePresignedPostResponse.url, { method: 'POST', body: formData })
+          await fetch(lastGeneratePresignedPostResponse.url, {
+            method: 'POST',
+            body: formData
+          })
         }
 
         // Upload screenshots
@@ -706,8 +715,8 @@ async function uploadDataToServer() {
         zip.file(
           'session_info.txt',
           `Session data for timestamp: ${timestamp}
-          \n user id: ${user_id} 
-                \n order details: 
+          \n user id: ${user_id}
+                \n order details:
                 \n ${JSON.stringify(orderDetails)}`
         )
         const interactions_json = JSON.stringify(fullData, null, 2)
@@ -727,7 +736,10 @@ async function uploadDataToServer() {
         const formData = presignedFormData(`${folderName}.zip`)
         formData.append('file', zipBlob)
 
-        await fetch(lastGeneratePresignedPostResponse.url, { method: 'POST', body: formData })
+        await fetch(lastGeneratePresignedPostResponse.url, {
+          method: 'POST',
+          body: formData
+        })
 
         console.log('uploading interactions as a json')
         const jsonFormData = new FormData()
