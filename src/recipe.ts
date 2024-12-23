@@ -1,5 +1,5 @@
 
-const nav = {
+export const nav = {
   selector: "#navbar-main",
   name: "nav_bar",
   children: [
@@ -40,7 +40,7 @@ const nav = {
   ],
 };
 
-const refinement_option = [
+export const refinement_option = [
   {
     selector: "span.a-size-base.a-color-base.puis-bold-weight-text",
     add_text: true,
@@ -144,19 +144,19 @@ const refinement_option = [
   },
 ];
 
-const product_facts = {
+export const product_facts = {
   selector: "#productFactsDesktopExpander",
   add_text: true,
   class: "product-facts",
 };
 
-const product_delivery = {
+export const product_delivery = {
   selector: "div.mir-layout-DELIVERY_BLOCK-slot-PRIMARY_DELIVERY_MESSAGE_LARGE",
   add_text: true,
   class: "product-delivery",
 };
 
-const quantity_selector = {
+export const quantity_selector = {
   selector: "#selectQuantity",
   name: "quantity_selector",
   children: [
@@ -172,7 +172,7 @@ const quantity_selector = {
   ],
 };
 
-const delivery_frequency_selector = {
+export const delivery_frequency_selector = {
   selector: "#replenishmentFrequency_feature_div",
   name: "delivery_frequency_selector",
   text_selector: "div.a-section.a-spacing-micro > span",
@@ -186,7 +186,7 @@ const delivery_frequency_selector = {
   ],
 };
 
-const set_up_now_button = {
+export const set_up_now_button = {
   selector: "#rcx-subscribe-submit-button-announce",
   add_text: true,
   clickable: true,
@@ -194,7 +194,7 @@ const set_up_now_button = {
   class: "product-set-up-now",
 };
 
-const add_to_cart_button = {
+export const add_to_cart_button = {
   selector:
     "input[name='submit.add-to-cart'], input[name='submit.add-to-cart-ubb']",
   add_text: true,
@@ -203,7 +203,7 @@ const add_to_cart_button = {
   class: "product-add-to-cart",
 };
 
-const buy_now_button = {
+export const buy_now_button = {
   selector: "input[name='submit.buy-now']",
   add_text: true,
   clickable: true,
@@ -211,7 +211,7 @@ const buy_now_button = {
   class: "product-buy-now",
 };
 
-const buy_box_with_accordion = {
+export const buy_box_with_accordion = {
   selector: "#buyBoxAccordion > div.a-box.celwidget",
   name: "from_text",
   text_selector: "div.accordion-caption > span",
@@ -240,7 +240,7 @@ const buy_box_with_accordion = {
   ],
 };
 
-const buy_box_without_accordion_delivery = {
+export const buy_box_without_accordion_delivery = {
   selector: "#gsod_singleOfferDisplay_Desktop",
   children: [
     {
@@ -257,7 +257,7 @@ const buy_box_without_accordion_delivery = {
   ],
 };
 
-const buy_box_without_accordion_pick_up = {
+export const buy_box_without_accordion_pick_up = {
   selector: "#gsod_singleOfferDisplay_group_2_Desktop",
   children: [
     {
@@ -274,7 +274,7 @@ const buy_box_without_accordion_pick_up = {
   ],
 };
 
-const cart = [
+export const cart = [
   nav,
   {
     selector: "div[data-name='Active Items']",
