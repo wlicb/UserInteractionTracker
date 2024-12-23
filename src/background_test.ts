@@ -664,12 +664,14 @@ async function uploadDataToServer() {
 
     if (
       !lastGeneratePresignedPostResponse ||
-      lastGeneratePresignedPostResponse.timestamp > Date.now() / 1000 // prevent from requesting for post url over and over
+      lastGeneratePresignedPostResponse?.timestamp > Date.now() / 1000 || // prevent from requesting for post url over and over
+      !lastGeneratePresignedPostResponse?.fields?.key.includes(user_id)
     ) {
       let postUrlResult = await fetch(`${generate_presigned_post_url}?user_id=${user_id}`, {
         method: 'GET'
       })
-      lastGeneratePresignedPostResponse = await postUrlResult.json()
+      if (postUrlResult.status == 200)
+        lastGeneratePresignedPostResponse = await postUrlResult.json()
     }
 
     try {
