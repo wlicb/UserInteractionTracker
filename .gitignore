@@ -7,3 +7,4 @@ dist.crx
 dist.pem
 backend/config.py
 uploads*
+src/_config.ts
