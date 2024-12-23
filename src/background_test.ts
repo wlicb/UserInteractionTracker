@@ -641,6 +641,29 @@ const customFetch = async (url, options) => {
   return response
 }
 
+async function gzipHtml(content) {
+  // Create a new GZIP compression stream
+  const cs = new CompressionStream('gzip')
+
+  // Create a writable stream to which we'll write the compressed data
+  const writer = cs.writable.getWriter()
+
+  // Encode the content to Uint8Array
+  const encoder = new TextEncoder()
+  const encodedContent = encoder.encode(content)
+
+  // Write the encoded content into the compression stream
+  writer.write(encodedContent)
+
+  // Close the writer to finish compression
+  writer.close()
+
+  // Get the compressed data as a Blob
+  const compressedBlob = await new Response(cs.readable).blob()
+
+  return compressedBlob
+}
+
 async function uploadDataToServer() {
   stopPeriodicUpload()
   try {
@@ -692,7 +715,7 @@ async function uploadDataToServer() {
 
     if (
       !lastGeneratePresignedPostResponse ||
-      lastGeneratePresignedPostResponse?.timestamp < Date.now() / 1000 || // prevent from requesting for post url over and over
+      lastGeneratePresignedPostResponse?.expire_timestamp < Date.now() / 1000 || // prevent from requesting for post url over and over
       !lastGeneratePresignedPostResponse?.fields?.key.includes(user_id)
     ) {
       console.log('getting new post url')
@@ -703,7 +726,7 @@ async function uploadDataToServer() {
       lastGeneratePresignedPostResponse = await postUrlResult.json()
       console.log(
         'new post url received',
-        Date.now() / 1000 - lastGeneratePresignedPostResponse?.timestamp
+        lastGeneratePresignedPostResponse?.expire_timestamp - Date.now() / 1000
       )
     }
     try {
@@ -728,8 +751,9 @@ async function uploadDataToServer() {
       // Upload HTML snapshots as separate files
       console.log('uploading html snapshots')
       for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
-        const htmlBlob = new Blob([htmlContent], { type: 'text/html' })
-        const formData = presignedFormData(`${folderName}/html/${snapshotId}.html`)
+        // const htmlBlob = new Blob([htmlContent], { type: 'text/html' })
+        const htmlBlob = await gzipHtml(htmlContent)
+        const formData = presignedFormData(`${folderName}/html/${snapshotId}.html.gz`)
         formData.append('file', htmlBlob)
 
         await customFetch(lastGeneratePresignedPostResponse.url, {
