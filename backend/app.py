@@ -212,31 +212,44 @@ def get_interactions_by_date(user_id, date=None, return_data=None ):
     end_of_day = (date + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00.000Z")
 
     if return_data:
-        interactions = interaction_collection.find({
+        interactions_date = interaction_collection.find({
             "user_id": ObjectId(user_id),
             "timestamp": {
                 "$gte": start_of_day,
                 "$lt": end_of_day
             }
         })
-        interactions = list(interactions)
-        for interaction in interactions:
+        interactions_date = list(interactions_date)
+        for interaction in interactions_date:
             interaction["_id"] = str(interaction["_id"])
             if "user_id" in interaction:
                 interaction["user_id"] = str(interaction["user_id"])
-        return list(interactions)
+
+        interactions_all_time = interaction_collection.find({
+            "user_id": ObjectId(user_id),
+        })
+        interactions_all_time = list(interactions_all_time)
+        for interaction in interactions_all_time:
+            interaction["_id"] = str(interaction["_id"])
+            if "user_id" in interaction:
+                interaction["user_id"] = str(interaction["user_id"])
+
+        return {"on_date":interactions_date, "all_time":interactions_all_time}
+
     else:
-        n_documents= interaction_collection.count_documents({
+        n_documents_date= interaction_collection.count_documents({
             "user_id": ObjectId(user_id),
             "timestamp": {
                 "$gte": start_of_day,
                 "$lt": end_of_day
             }
         })
+        n_documents= interaction_collection.count_documents({
+            "user_id": ObjectId(user_id),
+        })
         return{
-            "start_of_day":start_of_day,
-            "end_of_day":end_of_day,
-            "number_of_documents" : n_documents
+            "on_date" : n_documents_date,
+            "all_time": n_documents
         }
 
 @app.route('/get_interactions', methods=['GET'])
