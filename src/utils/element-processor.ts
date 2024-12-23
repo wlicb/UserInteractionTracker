@@ -22,6 +22,8 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
   elementText = elementText.replace(/\s+/g, ' ').trim()
   if (recipe.text_format && elementText) {
     elementText = recipe.text_format.replace('{}', elementText)
+  } else {
+    elementText = recipe.text_format
   }
 
   if (elementText && recipe.add_text) {
