@@ -3,7 +3,7 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import { v4 as uuidv4 } from 'uuid'
-import { nav, refinement_option, recipes } from './recipe'
+import { nav, refinement_option, recipes } from './recipe_new'
 import JSZip from 'jszip'
 
 let interactions: any[] = []
@@ -204,7 +204,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         interactions = []
         screenshots = []
         reasonsAnnotation = []
-
         actionSequenceId = 0
         interactions.length = 0
         screenshots.length = 0
@@ -297,6 +296,7 @@ const saveInteraction = async (
   storeInteractions.push(data)
   await chrome.storage.local.set({ interactions: storeInteractions })
 }
+
 
 const saveScreenshot = async (windowId: number, timestamp: string) => {
   const screenshotDataUrl = await chrome.tabs.captureVisibleTab(windowId, {
@@ -883,3 +883,4 @@ if (uploadTimer == null) {
   console.log('--initializing interval--')
   startPeriodicUpload()
 }
+

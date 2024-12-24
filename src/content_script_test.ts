@@ -1,4 +1,5 @@
 import { isFromPopup } from './utils/util'
+import { recipes } from './recipe_new'
 
 window.addEventListener('message', async (event) => {
   if (event.source !== window) return
@@ -119,28 +120,46 @@ declare global {
 let lastScrollTime = 0 // Track last scroll timestamp
 const SCROLL_THRESHOLD = 1500 // Minimum time in ms between screenshots for scroll actions
 
+function selectRecipe() {
+  const parsedUrl = new URL(window.location.href)
+  const path = parsedUrl.pathname
+
+  for (const recipe of recipes) {
+    const matchMethod = recipe.match_method || 'text'
+
+    if (matchMethod === 'text') {
+      try {
+        // Execute script in tab to check for matching element
+        const element = document.querySelector(recipe.selector)
+        const hasMatch =
+          element &&
+          (!recipe.match_text ||
+            (element.textContent?.toLowerCase().includes(recipe.match_text.toLowerCase()) ?? false))
+
+        if (hasMatch) {
+          return recipe
+        }
+      } catch (error) {
+        console.error('Error checking text match:', error)
+      }
+    } else if (matchMethod === 'url' && recipe.match === path) {
+      return recipe
+    }
+  }
+
+  throw new Error(`No matching recipe found for path: ${path}`)
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('DOMContentLoaded')
 
   const url = window.location.href
   try {
-    const response = await new Promise<{ recipe?: any }>((resolve) => {
-      chrome.runtime.sendMessage(
-        {
-          action: 'getRecipe',
-          url: url
-        },
-        resolve
-      )
-    })
-    console.log('response')
-    if (response && response.recipe) {
-      const recipe = response.recipe
-      const rootElement = document.querySelector(recipe.selector)
-      if (rootElement) {
-        const newRoot = processElement(rootElement, recipe)
-        console.log(newRoot.outerHTML)
-      }
+    const recipe = selectRecipe()
+    const rootElement = document.querySelector(recipe.selector)
+    if (rootElement) {
+      const newRoot = processElement(rootElement, recipe)
+      console.log(newRoot.outerHTML)
     }
   } catch (error) {
     console.error('Error initializing clickable elements:', error)
@@ -219,10 +238,10 @@ async function captureInteraction(
       eventType,
       timestamp: timestamp,
       target: target,
-    //   targetOuterHTML: target.outerHTML,
-    //   targetClass: target.className,
-    //   targetId: target.id,
-    //   targetText: target.innerText || target.value || '',
+      //   targetOuterHTML: target.outerHTML,
+      //   targetClass: target.className,
+      //   targetId: target.id,
+      //   targetText: target.innerText || target.value || '',
       htmlSnapshotId: currentSnapshotId, // Use the new snapshot ID
       // clickableElements: clickableElements,
       selector: selector || '',
