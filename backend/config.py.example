@@ -1,0 +1,9 @@
+MONGO_URI = "mongodb://localhost:27017/"
+DATABASE_NAME = "db_name"
+INTERACTION_COLLECTION_NAME = "***"
+USER_COLLECTION_NAME = "***"
+BUCKET_NAME = "***"
+AWS_ACCESS_KEY = "***"
+AWS_SECRET_KEY = "***"
+EXPIRATION_TIME = 1*3600 # 1 hour in seconds
+UPLOAD_FOLDER= 'uploads'

@@ -10,9 +10,21 @@ let interactions: any[] = []
 let screenshots: [string, string][] = []
 let reasonsAnnotation: any[] = []
 let actionSequenceId = 0
-let uploadTimer: NodeJS.Timer | null = null
+let uploadTimer: NodeJS.Timer | null | false = null
 let userId: string = ''
-import { popup_probability, folder_name, zip, upload_url } from './config'
+
+let lastTimestamp: string | null = null
+let lastGeneratePresignedPostResponse: {
+  url: string
+  fields: { key: string; AWSAccessKeyId: string; policy: string; signature: string }
+  timestamp: number
+} | null = null
+
+import { popup_probability, folder_name, zip, base_url, data_collector_secret_id } from './config'
+
+const upload_url = `${base_url}/upload`
+const interactions_url = `${base_url}/interactions`
+const generate_presigned_post_url = `${base_url}/generate_presigned_post`
 
 interface TabHistory {
   backStack: string[]
@@ -160,7 +172,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const screenshotDataUrl = await captureScreenshot()
         if (screenshotDataUrl) {
           const success = await saveScreenshot_1(screenshotDataUrl, message.screenshotId)
-          sendResponse({ success, message: success ? undefined : 'Failed to capture screenshot' })
+          sendResponse({
+            success,
+            message: success ? undefined : 'Failed to capture screenshot'
+          })
         } else {
           sendResponse({ success: false, message: 'Failed to capture screenshot' })
         }
@@ -190,12 +205,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         screenshots = []
         reasonsAnnotation = []
         actionSequenceId = 0
+        interactions.length = 0
+        screenshots.length = 0
+        reasonsAnnotation.length = 0
+
         sendResponse({ success: true })
       } catch (error) {
         console.error('Error handling clearMemoryCache:', error)
         sendResponse({ success: false, error: (error as Error).message })
       }
       return true
+    }
+    if (message.action === 'getRecipe' && sender.tab?.id) {
+      try {
+        selectRecipe(sender.tab.id, message.url)
+          .then((recipe) => {
+            sendResponse({ recipe: recipe })
+          })
+          .catch((error) => {
+            sendResponse({ error: error.message })
+          })
+      } catch (error) {
+        console.error('Error handling getRecipe:', error)
+        sendResponse({ success: false, error: (error as Error).message })
+      }
+      return true // Indicate that sendResponse will be called asynchronously
     }
   })()
   return true // Keeps the message channel open for async responses
@@ -206,7 +240,10 @@ async function captureScreenshot() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
     if (tab) {
-      return await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 25 })
+      return await chrome.tabs.captureVisibleTab(tab.windowId, {
+        format: 'jpeg',
+        quality: 25
+      })
     }
   } catch (error) {
     console.error('Error capturing screenshot:', error)
@@ -260,7 +297,8 @@ const saveInteraction = async (
   await chrome.storage.local.set({ interactions: storeInteractions })
 }
 
-const captureAndSaveScreenshot = async (windowId: number, timestamp: string) => {
+
+const saveScreenshot = async (windowId: number, timestamp: string) => {
   const screenshotDataUrl = await chrome.tabs.captureVisibleTab(windowId, {
     format: 'jpeg',
     quality: 25
@@ -334,7 +372,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
             uuid,
             null
           ),
-          captureAndSaveScreenshot(tab.windowId, timestamp),
+          saveScreenshot(tab.windowId, timestamp),
           sendPopup(tabId, timestamp, 'tabActivate', currentactionSequenceId, {}, uuid)
         ])
       })
@@ -405,7 +443,7 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
           uuid,
           navigationType
         ),
-        captureAndSaveScreenshot((await chrome.tabs.get(details.tabId)).windowId, timestamp)
+        saveScreenshot((await chrome.tabs.get(details.tabId)).windowId, timestamp)
       ])
       if (navigationType !== 'new' && navigationType !== 'reload') {
         console.log('send message to popup navigation')
@@ -450,85 +488,206 @@ async function downloadDataLocally() {
 
     let htmlSnapshots = snapshots.htmlSnapshots || {}
     let storeInteractions = interact.interactions || []
-    let storeorderDetails = orderDetails.orderDetails || []
+    let storeOrderDetails = orderDetails.orderDetails || []
     let storeScreenshots = screen.screenshots || []
     let storeReasonsAnnotation = ReasonsAnnotation.reasonsAnnotation || []
 
-    // Upload session info
-    console.log('uploading session info')
-    const sessionInfoContent = `Session data for timestamp: ${timestamp}, user id: ${currentUserId},\n order details: \n ${JSON.stringify(storeorderDetails)}`
-    chrome.downloads.download({
-      url: 'data:text/plain;charset=utf-8,' + encodeURIComponent(sessionInfoContent),
-      filename: `${folderName}/session_info.txt`,
-      saveAs: false
-    })
+    // concatenating with the seen data
+    const seen_interact = await chrome.storage.local.get({ seen_interactions: [] })
+    const seen_snapshots = await chrome.storage.local.get({ seen_htmlSnapshots: [] })
+    const seen_orderDetails = await chrome.storage.local.get({ seen_orderDetails: [] })
+    const seen_screen = await chrome.storage.local.get({ seen_screenshots: [] })
+    const seen_ReasonsAnnotation = await chrome.storage.local.get({ seen_reasonsAnnotation: [] })
 
-    // Upload HTML snapshots as separate files
-    console.log('uploading html snapshots')
-    for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
-      await chrome.downloads.download({
-        url: 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent),
-        filename: `${folderName}/html/${snapshotId.replace(/[:.]/g, '-')}.html`,
-        saveAs: false
-      })
-    }
+    let seen_storeInteractions = seen_interact.interactions || []
+    let seen_htmlSnapshots = seen_snapshots.htmlSnapshots || {}
+    let seen_storeOrderDetails = seen_orderDetails.orderDetails || []
+    let seen_storeScreenshots = seen_screen.screenshots || []
+    let seen_storeReasonsAnnotation = seen_ReasonsAnnotation.reasonsAnnotation || []
 
-    // Upload interactions JSON
-    console.log('uploading interactions')
-    const fullData = {
-      interactions: storeInteractions,
-      reasons: storeReasonsAnnotation,
-      orderDetails: orderDetails
-    }
-    const interactionsData = JSON.stringify(fullData, null, 2)
-    chrome.downloads.download({
-      url: 'data:text/json;charset=utf-8,' + encodeURIComponent(interactionsData),
-      filename: `${folderName}/interactions.json`,
-      saveAs: false
-    })
+    storeInteractions = [...seen_storeInteractions, ...storeInteractions]
+    htmlSnapshots = { ...seen_htmlSnapshots, ...htmlSnapshots }
+    storeOrderDetails = [...seen_storeOrderDetails, ...storeOrderDetails]
+    storeScreenshots = [...seen_storeScreenshots, ...storeScreenshots]
+    storeReasonsAnnotation = [...seen_storeReasonsAnnotation, ...storeReasonsAnnotation]
 
-    // Upload screenshots
-    console.log('uploading screenshots')
-    for (const [screenshotData, screenshotId] of storeScreenshots) {
+    if (!zip) {
+      // Upload session info
+      console.log('downloading session info')
+      const sessionInfoContent = `Session data for timestamp: ${timestamp}, user id: ${currentUserId},\n order details: \n ${JSON.stringify(
+        storeorderDetails
+      )}`
       chrome.downloads.download({
-        url: screenshotData,
-        filename: `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`,
+        url: 'data:text/plain;charset=utf-8,' + encodeURIComponent(sessionInfoContent),
+        filename: `${folderName}/session_info.txt`,
         saveAs: false
       })
+
+      // Upload HTML snapshots as separate files
+      console.log('downloading html snapshots')
+      for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
+        await chrome.downloads.download({
+          url: 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent),
+          filename: `${folderName}/html/${snapshotId.replace(/[:.]/g, '-')}.html`,
+          saveAs: false
+        })
+      }
+
+      // Upload interactions JSON
+      console.log('downloading interactions')
+      const fullData = {
+        interactions: storeInteractions,
+        reasons: storeReasonsAnnotation,
+        orderDetails: orderDetails
+      }
+      const interactionsData = JSON.stringify(fullData, null, 2)
+      chrome.downloads.download({
+        url: 'data:text/json;charset=utf-8,' + encodeURIComponent(interactionsData),
+        filename: `${folderName}/interactions.json`,
+        saveAs: false
+      })
+
+      // Upload screenshots
+      console.log('downloading screenshots')
+      for (const [screenshotData, screenshotId] of storeScreenshots) {
+        chrome.downloads.download({
+          url: screenshotData,
+          filename: `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`,
+          saveAs: false
+        })
+      }
+    } else {
+      console.log('downloading zip file')
+      const zip = new JSZip()
+      zip.file(
+        'session_info.txt',
+        `Session data for timestamp: ${timestamp}
+          \n user id: ${user_id}
+                \n order details:
+                \n ${JSON.stringify(orderDetails)}`
+      )
+
+      const fullData = {
+        interactions: storeInteractions,
+        reasons: storeReasonsAnnotation,
+        orderDetails: orderDetails
+      }
+
+      const interactions_json = JSON.stringify(fullData, null, 2)
+      zip.file('interactions.json', interactions_json)
+      const screenshotsFolder = zip.folder('screenshots')
+      for (const [screenshotData, screenshotId] of storeScreenshots) {
+        const response = await fetch(screenshotData)
+        const blob = await response.blob()
+        screenshotsFolder.file(screenshotId.replace(/[:.]/g, '-') + '.jpg', blob)
+      }
+
+      const htmlSnapshotsFolder = zip.folder('htmlSnapshots')
+      for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
+        htmlSnapshotsFolder.file(snapshotId + '.html', htmlContent)
+      }
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      console.log('zip file is generated')
+
+      const reader = new FileReader()
+      reader.onloadend = function () {
+        const base64Zip = reader.result.split(',')[1] // Get the base64 part
+        chrome.downloads.download({
+          url: 'data:application/zip;base64,' + base64Zip,
+          filename: `${folderName}.zip`,
+          saveAs: false
+        })
+      }
+      reader.readAsDataURL(zipBlob)
     }
 
     // Clear cache after successful upload
     chrome.storage.local.remove([
-      'htmlSnapshots',
-      'interactions',
-      'orderDetails',
-      'screenshots',
-      'reasonsAnnotation'
+      'seen_htmlSnapshots',
+      'seen_interactions',
+      'seen_orderDetails',
+      'seen_screenshots',
+      'seen_reasonsAnnotation'
     ])
-    interactions.length = 0
-    screenshots.length = 0
-    reasonsAnnotation.length = 0
 
     return true
   } catch (error) {
-    console.error('Error uploading data:', error)
+    console.error('Error download data:', error)
     return false
   }
 }
 let lastUploadTimestamp = ''
 
+function presignedFormData(name) {
+  const formData = new FormData()
+  formData.append('key', name)
+
+  Object.keys(lastGeneratePresignedPostResponse.fields).forEach((key) => {
+    if (key != 'key') formData.append(key, lastGeneratePresignedPostResponse.fields[key])
+  })
+
+  return formData
+}
+
+const customFetch = async (url, options) => {
+  const response = await fetch(url, options)
+
+  // If response is not OK (status code not in 200-299 range), throw an error
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`)
+  }
+
+  return response
+}
+
+async function gzipHtml(content) {
+  // Create a new GZIP compression stream
+  const cs = new CompressionStream('gzip')
+
+  // Create a writable stream to which we'll write the compressed data
+  const writer = cs.writable.getWriter()
+
+  // Encode the content to Uint8Array
+  const encoder = new TextEncoder()
+  const encodedContent = encoder.encode(content)
+
+  // Write the encoded content into the compression stream
+  writer.write(encodedContent)
+
+  // Close the writer to finish compression
+  writer.close()
+
+  // Get the compressed data as a Blob
+  const compressedBlob = await new Response(cs.readable).blob()
+
+  return compressedBlob
+}
+
 async function uploadDataToServer() {
+  stopPeriodicUpload()
   try {
-    console.log('uploadDataToServer')
     const interact = await chrome.storage.local.get({ interactions: [] })
     const storeInteractions = interact.interactions || []
 
     // Check if there are any interactions and get the latest timestamp
     if (storeInteractions.length === 0) {
       console.log('No interactions to upload')
+      startPeriodicUpload()
       return false
     }
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    lastTimestamp = await chrome.storage.local.get({
+      user_interaction_tracker_last_timestamp: null
+    })
+    lastTimestamp = lastTimestamp.user_interaction_tracker_last_timestamp || null
+
+    if (lastTimestamp) console.log('lastTimestamp restored: ', lastTimestamp)
+
+    const timestamp = lastTimestamp || new Date().toISOString().replace(/[:.]/g, '-')
+
+    await chrome.storage.local.set({
+      user_interaction_tracker_last_timestamp: timestamp
+    }) // making sure with reopening the browser, it continues from left point and rewrites the information
 
     // Get userId and data from storage
     const userIdResult = await chrome.storage.local.get({ userId: '' })
@@ -544,124 +703,161 @@ async function uploadDataToServer() {
     const ReasonsAnnotation = await chrome.storage.local.get({ reasonsAnnotation: [] })
 
     let htmlSnapshots = snapshots.htmlSnapshots || {}
-    let storeorderDetails = orderDetails.orderDetails || []
+    let storeOrderDetails = orderDetails.orderDetails || []
     let storeScreenshots = screen.screenshots || []
     let storeReasonsAnnotation = ReasonsAnnotation.reasonsAnnotation || []
 
     const fullData = {
       interactions: storeInteractions,
       reasons: storeReasonsAnnotation,
-      orderDetails: storeorderDetails
+      orderDetails: storeOrderDetails
     }
-    if (!zip) {
-      try {
-        // Upload session info
-        const sessionInfo = new Blob(
-          [
-            `Session data for timestamp: ${timestamp}
+
+    if (
+      !lastGeneratePresignedPostResponse ||
+      lastGeneratePresignedPostResponse?.expire_timestamp < Date.now() / 1000 || // prevent from requesting for post url over and over
+      !lastGeneratePresignedPostResponse?.fields?.key.includes(user_id)
+    ) {
+      console.log('getting new post url')
+      let postUrlResult = await customFetch(`${generate_presigned_post_url}?user_id=${user_id}`, {
+        method: 'GET'
+      })
+
+      lastGeneratePresignedPostResponse = await postUrlResult.json()
+      console.log(
+        'new post url received',
+        lastGeneratePresignedPostResponse?.expire_timestamp - Date.now() / 1000
+      )
+    }
+    try {
+      const sessionInfo = new Blob(
+        [
+          `Session data for timestamp: ${timestamp}
                     \n user id: ${user_id}
                     \n order details:
                     \n ${JSON.stringify(orderDetails)}`
-          ],
-          { type: 'text/plain' }
+        ],
+        { type: 'text/plain' }
+      )
+      const sessionFormData = presignedFormData(`${folderName}/session_info.txt`)
+      sessionFormData.append('file', sessionInfo)
+
+      console.log('uploading session info')
+      await customFetch(lastGeneratePresignedPostResponse.url, {
+        method: 'POST',
+        body: sessionFormData
+      })
+
+      // Upload HTML snapshots as separate files
+      console.log('uploading html snapshots')
+      for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
+        // const htmlBlob = new Blob([htmlContent], { type: 'text/html' })
+        const htmlBlob = await gzipHtml(htmlContent)
+        const formData = presignedFormData(`${folderName}/html/${snapshotId}.html.gz`)
+        formData.append('file', htmlBlob)
+
+        await customFetch(lastGeneratePresignedPostResponse.url, {
+          method: 'POST',
+          body: formData
+        })
+      }
+
+      // Upload screenshots
+      console.log('uploading screenshots')
+      for (const [screenshotData, screenshotId] of storeScreenshots) {
+        const response = await customFetch(screenshotData)
+        const blob = await response.blob()
+        const formData = presignedFormData(
+          `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`
         )
-        const sessionFormData = new FormData()
-        sessionFormData.append('file', sessionInfo, `${folderName}/session_info.txt`)
-        console.log('uploading session info')
-        await fetch(upload_url, {
-          method: 'POST',
-          body: sessionFormData
-        })
+        formData.append('file', blob)
 
-        // Upload HTML snapshots as separate files
-        console.log('uploading html snapshots')
-        for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
-          const htmlBlob = new Blob([htmlContent], { type: 'text/html' })
-          const formData = new FormData()
-          formData.append('file', htmlBlob, `${folderName}/html/${snapshotId}.html`)
-          await fetch(upload_url, { method: 'POST', body: formData })
-        }
-
-        // Upload interactions JSON
-        console.log('uploading interactions')
-
-        const interactionsBlob = new Blob([JSON.stringify(fullData, null, 2)], {
-          type: 'application/json'
-        })
-        const jsonFormData = new FormData()
-
-        jsonFormData.append('file', interactionsBlob, `${folderName}/interactions.json`)
-        await fetch(upload_url, {
-          method: 'POST',
-          body: jsonFormData
-        })
-
-        // Upload screenshots
         console.log('uploading screenshots')
-        for (const [screenshotData, screenshotId] of storeScreenshots) {
-          const response = await fetch(screenshotData)
-          const blob = await response.blob()
-          const formData = new FormData()
-          formData.append(
-            'file',
-            blob,
-            `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`
-          )
-          console.log('uploading screenshots')
-          await fetch(upload_url, {
-            method: 'POST',
-            body: formData
-          })
-        }
-      } catch (error) {
-        console.error('Error uploading data:', error)
-        return false
+        await customFetch(lastGeneratePresignedPostResponse.url, {
+          method: 'POST',
+          body: formData
+        }).catch(() => {
+          throw new Error(`Error: ${e}`)
+        })
       }
-    } else {
-      console.log('upload zip file')
-      try {
-        const zip = new JSZip()
-        zip.file(
-          'session_info.txt',
-          `Session data for timestamp: ${timestamp}
-                \n user id: ${user_id}
-                \n order details:
-                \n ${JSON.stringify(orderDetails)}`
-        )
-        zip.file('interactions.json', JSON.stringify(fullData, null, 2))
-        const screenshotsFolder = zip.folder('screenshots')
-        for (const [screenshotData, screenshotId] of storeScreenshots) {
-          const response = await fetch(screenshotData)
-          const blob = await response.blob()
-          screenshotsFolder.file(screenshotId.replace(/[:.]/g, '-') + '.jpg', blob)
-        }
-        const htmlSnapshotsFolder = zip.folder('htmlSnapshots')
-        for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
-          htmlSnapshotsFolder.file(snapshotId + '.html', htmlContent)
-        }
 
-        const zipBlob = await zip.generateAsync({ type: 'blob' })
-        const formData = new FormData()
-        formData.append('file', zipBlob, `${folderName}.zip`)
-        await fetch(upload_url, { method: 'POST', body: formData })
-      } catch (error) {
-        console.error('Error uploading data:', error)
-        return false
-      }
+      // Upload interactions JSON
+      console.log('uploading interactions')
+      const interactions_json = JSON.stringify(fullData, null, 2)
+
+      const interactionsBlob = new Blob([interactions_json], {
+        type: 'application/json'
+      })
+      const jsonFormDataFile = presignedFormData(`${folderName}/interactions.json`)
+
+      jsonFormDataFile.append('file', interactionsBlob)
+
+      await customFetch(lastGeneratePresignedPostResponse.url, {
+        method: 'POST',
+        body: jsonFormDataFile
+      })
+
+      const jsonFormData = new FormData()
+
+      jsonFormData.append('interactions', interactions_json)
+      jsonFormData.append('user_id', user_id)
+
+      console.log('uploading interactions as a json')
+      await customFetch(interactions_url, {
+        method: 'POST',
+        body: jsonFormData
+      })
+    } catch (error) {
+      startPeriodicUpload()
+      console.error('Error uploading data:', error)
+      return false
     }
+
+    if (user_id.includes(data_collector_secret_id)) {
+      const seen_interact = await chrome.storage.local.get({ seen_interactions: [] })
+      const seen_snapshots = await chrome.storage.local.get({ seen_htmlSnapshots: [] })
+      const seen_orderDetails = await chrome.storage.local.get({ seen_orderDetails: [] })
+      const seen_screen = await chrome.storage.local.get({ seen_screenshots: [] })
+      const seen_ReasonsAnnotation = await chrome.storage.local.get({ seen_reasonsAnnotation: [] })
+
+      let seen_storeInteractions = seen_interact.interactions || []
+      let seen_htmlSnapshots = seen_snapshots.htmlSnapshots || {}
+      let seen_storeOrderDetails = seen_orderDetails.orderDetails || []
+      let seen_storeScreenshots = seen_screen.screenshots || []
+      let seen_storeReasonsAnnotation = seen_ReasonsAnnotation.reasonsAnnotation || []
+
+      seen_storeInteractions = [...seen_storeInteractions, ...storeInteractions]
+      seen_htmlSnapshots = { ...seen_htmlSnapshots, ...htmlSnapshots }
+      seen_storeOrderDetails = [...seen_storeOrderDetails, ...storeOrderDetails]
+      seen_storeScreenshots = [...seen_storeScreenshots, ...storeScreenshots]
+      seen_storeReasonsAnnotation = [...seen_storeReasonsAnnotation, ...storeReasonsAnnotation]
+
+      await chrome.storage.local.set({ seen_interactions: seen_storeInteractions })
+      await chrome.storage.local.set({ seen_htmlSnapshots })
+      await chrome.storage.local.set({ seen_orderDetails: seen_storeOrderDetails })
+      await chrome.storage.local.set({ seen_screenshots: seen_storeScreenshots })
+      await chrome.storage.local.set({ seen_reasonsAnnotation: seen_storeReasonsAnnotation })
+    }
+
+    lastTimestamp = null
+
     chrome.storage.local.remove([
       'htmlSnapshots',
-      'interactions',
       'orderDetails',
       'screenshots',
-      'reasonsAnnotation'
+      'reasonsAnnotation',
+      'interactions',
+      'user_interaction_tracker_last_timestamp'
     ])
     interactions.length = 0
     screenshots.length = 0
     reasonsAnnotation.length = 0
 
+    startPeriodicUpload()
+
     return true
   } catch (error) {
+    startPeriodicUpload()
     console.error('Error uploading data:', error)
     return false
   }
@@ -670,6 +866,7 @@ async function uploadDataToServer() {
 // Start the periodic upload timer
 function startPeriodicUpload() {
   if (!uploadTimer) {
+    // console.log('startPeriodicUpload')
     uploadTimer = setInterval(uploadDataToServer, 10000) // 10 seconds
   }
 }
@@ -677,9 +874,13 @@ function startPeriodicUpload() {
 // Stop the periodic upload timer
 function stopPeriodicUpload() {
   if (uploadTimer) {
+    // console.log('stopPeriodicUpload')
     clearInterval(uploadTimer)
-    uploadTimer = null
+    uploadTimer = false
   }
 }
+if (uploadTimer == null) {
+  console.log('--initializing interval--')
+  startPeriodicUpload()
+}
 
-startPeriodicUpload()
