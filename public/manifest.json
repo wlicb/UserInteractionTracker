@@ -23,12 +23,12 @@
   "content_scripts": [
     {
       "js": ["js/content_script.js"],
-      "matches": ["https://www.amazon.com/*", "file://*"],
+      "matches": ["https://www.amazon.com/*"],
       "run_at": "document_start"
     },
     {
       "js": ["js/injected.js"],
-      "matches": ["https://www.amazon.com/*", "file://*"],
+      "matches": ["https://www.amazon.com/*"],
       "run_at": "document_start",
       "world": "MAIN"
     }

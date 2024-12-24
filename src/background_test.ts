@@ -20,7 +20,14 @@ let lastGeneratePresignedPostResponse: {
   timestamp: number
 } | null = null
 
-import { popup_probability, folder_name, zip, base_url, data_collector_secret_id } from './config'
+import {
+  popup_probability,
+  folder_name,
+  zip,
+  base_url,
+  data_collector_secret_id,
+  url_include
+} from './config'
 
 const upload_url = `${base_url}/upload`
 const interactions_url = `${base_url}/interactions`
@@ -79,7 +86,9 @@ function analyzeNavigation(tabId: number, url: string): 'new' | 'back' | 'forwar
 // Replace the simple question with a more detailed one based on event type
 function getCustomQuestion(eventType: string, data: any): string {
   switch (eventType) {
-    case 'click_a' || 'click_b' || 'click_c':
+    case 'click_a':
+    case 'click_b':
+    case 'click_c':
       // Check if it's a specific type of click
       if (data.target.innerText === 'Set Up Now') {
         return "Why did you choose 'Set Up Now' instead of buy once, and why do you like this particular product?"
@@ -297,7 +306,6 @@ const saveInteraction = async (
   await chrome.storage.local.set({ interactions: storeInteractions })
 }
 
-
 const saveScreenshot = async (windowId: number, timestamp: string) => {
   const screenshotDataUrl = await chrome.tabs.captureVisibleTab(windowId, {
     format: 'jpeg',
@@ -315,6 +323,12 @@ const sendPopup = async (
   data: any,
   uuid: string
 ) => {
+  if (
+    data.target?.id?.toLowerCase().includes('rufus') ||
+    data.target?.className?.toLowerCase().includes('rufus')
+  ) {
+    return
+  }
   const question = getCustomQuestion(eventType, data)
   if (Math.random() < popup_probability && tabId) {
     try {
@@ -353,7 +367,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       return
     }
     console.log(`Switched to tab ${tabId} with URL: ${tab.url}`)
-    if (tab.url && (tab.url.includes('amazon.com') || tab.url.includes('file'))) {
+    if (tab.url && tab.url.includes(url_include)) {
       const timestamp = new Date().toISOString()
       const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}`
       chrome.tabs.sendMessage(tabId, { action: 'getHTML' }, async (response) => {
@@ -422,7 +436,7 @@ async function selectRecipe(tabId: number, url: string) {
 chrome.webNavigation.onCommitted.addListener(async (details) => {
   if (details.frameId !== 0) return
   console.log('webNavigation onCommitted event triggered:', details)
-  if (details.url.includes('amazon.com') || details.url.includes('file')) {
+  if (details.url.includes(url_include)) {
     const navigationType = analyzeNavigation(details.tabId, details.url)
     console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`)
     const timestamp = new Date().toISOString()
@@ -712,13 +726,14 @@ async function uploadDataToServer() {
       reasons: storeReasonsAnnotation,
       orderDetails: storeOrderDetails
     }
-
+    console.log('user_id', user_id)
     if (
       !lastGeneratePresignedPostResponse ||
       lastGeneratePresignedPostResponse?.expire_timestamp < Date.now() / 1000 || // prevent from requesting for post url over and over
       !lastGeneratePresignedPostResponse?.fields?.key.includes(user_id)
     ) {
       console.log('getting new post url')
+      console.log(`${generate_presigned_post_url}?user_id=${user_id}`)
       let postUrlResult = await customFetch(`${generate_presigned_post_url}?user_id=${user_id}`, {
         method: 'GET'
       })
@@ -866,7 +881,7 @@ async function uploadDataToServer() {
 // Start the periodic upload timer
 function startPeriodicUpload() {
   if (!uploadTimer) {
-    // console.log('startPeriodicUpload')
+    console.log('startPeriodicUpload')
     uploadTimer = setInterval(uploadDataToServer, 10000) // 10 seconds
   }
 }
@@ -883,4 +898,3 @@ if (uploadTimer == null) {
   console.log('--initializing interval--')
   startPeriodicUpload()
 }
-

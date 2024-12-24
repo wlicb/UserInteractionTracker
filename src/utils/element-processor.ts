@@ -37,7 +37,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     if (recipe.name === 'from_text') {
       if (!elementText) {
         console.log('elementText is empty', recipe, element)
-        debugger
+        // debugger
       }
       elementName = parentName ? parentName + '.' : ''
       elementName += elementText.toLowerCase().replace(/[^\w]+/g, '_')

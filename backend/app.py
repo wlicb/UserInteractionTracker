@@ -180,7 +180,7 @@ def generate_presigned_post():
     expiration = config.EXPIRATION_TIME
     expire_timestamp = int((datetime.now(timezone.utc) + timedelta(seconds=expiration//2)).timestamp()) # to make sure at least half of the time remains
 
-    prefix = f'user_interaction_data/USER_{user_id}'
+    prefix = f'user_interaction_data/USER/{user_id}'
 
     try:
         # Generate a presigned POST URL
@@ -252,7 +252,7 @@ def get_interactions_by_date(user_id, date=None, return_data=None ):
             "all_time": n_documents
         }
 
-@app.route('/get_interactions', methods=['GET'])
+@app.route('/interactions', methods=['GET'])
 def get_interactions():
     user_id = request.args.get('user_id')
     date_str = request.args.get('date')  # in 'YYYY-MM-DD' format
@@ -275,23 +275,6 @@ def get_interactions():
     interactions = get_interactions_by_date(user_id, date, return_data)
 
     return jsonify(interactions)
-
-
-@app.route('/get_all_users', methods=['GET'])
-def get_all_users():
-    user_id = request.args.get('user_id')
-    date_str = request.args.get('date')  # in 'YYYY-MM-DD' format
-
-    result, status = check_user(user_id, user_collection=user_collection)
-
-    # if status!=200:
-    #     return result, status
-    # else: user_id = result
-
-    all_users = user_collection.find({})
-    all_users = [{**item, "_id":str(item["_id"])} for item in all_users]
-
-    return list(all_users),200
 
 
 if __name__ == '__main__':
