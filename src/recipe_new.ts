@@ -82,6 +82,28 @@ export const refinement_option = [
           return "";
         }
       },
+      generate_metadata: (element) => {
+        let text = "";
+        if (element.innerText && element.innerText.trim()) {
+          text += element.innerText.trim();
+          const aChild = element.querySelector(
+            "a.a-link-normal.s-navigation-item",
+          );
+          if (aChild && aChild.hasAttribute("title")) {
+            text += "_";
+            text += aChild.getAttribute("title");
+          }
+        } else {
+          const aChild = element.querySelector(
+            "a.a-link-normal.s-navigation-item",
+          );
+          if (aChild && aChild.hasAttribute("title")) {
+            text += aChild.getAttribute("title");
+          }
+        }
+        const checked = element.querySelector("input[type='checkbox']")?.getAttribute('checked');
+        return {title: text, checked: (checked !== null)};
+      },
       children: [
         {
           selector: "input[type='checkbox']",
@@ -132,6 +154,28 @@ export const refinement_option = [
               console.log(e);
               return "";
             }
+          },
+          generate_metadata: (element) => {
+            let text = "";
+            if (element.innerText && element.innerText.trim()) {
+              text += element.innerText.trim();
+              const aChild = element.querySelector(
+                "a.a-link-normal.s-navigation-item",
+              );
+              if (aChild && aChild.hasAttribute("title")) {
+                text += "_";
+                text += aChild.getAttribute("title");
+              }
+            } else {
+              const aChild = element.querySelector(
+                "a.a-link-normal.s-navigation-item",
+              );
+              if (aChild && aChild.hasAttribute("title")) {
+                text += aChild.getAttribute("title");
+              }
+            }
+            const checked = element.querySelector("input[type='checkbox']")?.getAttribute('checked');
+            return {title: text, checked};
           },
           children: [
             {
@@ -385,6 +429,10 @@ export const recipes = [
       match: "/s",
       match_method: "url",
       selector: "html",
+      generate_metadata: (em) => {
+        const term = em.querySelector('#navbar-main #nav-search-bar-form input#twotabsearchtextbox')?.value;
+        return {search_term: term};
+      },
       children: [
         {
           selector: "head",
@@ -408,6 +456,10 @@ export const recipes = [
                   name: "from_text",
                   text_selector: "span.a-size-base.a-color-base.puis-bold-weight-text",
                   children: refinement_option,
+                  generate_metadata: (em) => {
+                    const title = em.querySelector('span.a-size-base.a-color-base.puis-bold-weight-text')?.innerHTML;
+                    return {title};
+                  },
                 },
                 {
                   selector: "#departments",
@@ -528,6 +580,12 @@ export const recipes = [
       selector: "html",
       terminate: function () { return !!arguments[0] },
       terminate_callback: function () { return arguments[0] },
+      generate_metadata: (em) => {
+        const title = em.querySelector("#title").innerText
+        const price = em.querySelector("#apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[class='offersConsistencyEnabled'] > div:not([style='display:none;']):not([style=\"display: none;\"]) #corePriceDisplay_desktop_feature_div span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay, #apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[data-csa-c-content-id='apex_with_rio_cx'] #corePriceDisplay_desktop_feature_div div.a-section.a-spacing-none.aok-align-center.aok-relative > span.aok-offscreen")?.innerText.replace(/[\n]/g, "").trim();
+        const asin = em.querySelector("input#ASIN").value
+        return {title, price, asin};
+      },
       children: [
         {
           selector: "head",
@@ -583,6 +641,25 @@ export const recipes = [
                         "div.a-row:has(label.a-form-label) > label.a-form-label",
                       name: "from_text",
                       direct_child: true,
+                      generate_metadata: (em) => {
+                        const label = em.querySelector("div.a-row:has(label.a-form-label) label.a-form-label")?.innerHTML.replace(/[:\n]/g, "").trim();
+                        let value = em.querySelector("div.a-row:has(label.a-form-label) span.selection")?.innerHTML;
+                        if (value === undefined || value === "") {
+                          const options = em.querySelector("select")?.querySelectorAll("option");
+                          // console.log(options);
+                          if (options) {
+                            for (const option of options) {
+                              // console.log(option);
+                              if (option && option.getAttribute("selected") !== null) {
+                                value = option.innerHTML.trim();
+                              }
+                            }
+                          }
+                          // console.log(value);
+
+                        }
+                        return {label, value};
+                      },
                       children: [
                         {
                           selector: "div.a-row:has(label.a-form-label)",
@@ -674,18 +751,6 @@ export const recipes = [
                   ],
                 },
               ],
-              before_hook: function() {
-                const title = document.querySelector("#title").innerText
-                const price = document.querySelector("#apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[class='offersConsistencyEnabled'] > div:not([style='display:none;']):not([style=\"display: none;\"]) #corePriceDisplay_desktop_feature_div span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay, #apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[data-csa-c-content-id='apex_with_rio_cx'] #corePriceDisplay_desktop_feature_div div.a-section.a-spacing-none.aok-align-center.aok-relative > span.aok-offscreen")?.innerText;
-                const options = Array.from(document.querySelectorAll("#twister div.a-row:has(label.a-form-label):has(span.selection)")).map(a => ({label: a.querySelector("label.a-form-label").innerText, value: a.querySelector("span.selection").innerText}))
-                const options_dict = {}
-                for (const option of options) {
-                options_dict[option["label"].replace(": ", "")] = option["value"]
-                }
-                const asin = document.querySelector("input#ASIN").value
-                console.log({title, price, options: options_dict, asin})
-                return {title, price, options: options_dict, asin}
-              },
             },
             {
               selector: "#buybox:not(:has(div.a-tab-container))",
@@ -694,18 +759,6 @@ export const recipes = [
                 buy_box_with_accordion,
                 buy_box_without_accordion_delivery
               ],
-              before_hook: function() {
-                const title = document.querySelector("#title").innerText
-                const price = document.querySelector("#apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[class='offersConsistencyEnabled'] > div:not([style='display:none;']):not([style=\"display: none;\"]) #corePriceDisplay_desktop_feature_div span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay, #apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[data-csa-c-content-id='apex_with_rio_cx'] #corePriceDisplay_desktop_feature_div div.a-section.a-spacing-none.aok-align-center.aok-relative > span.aok-offscreen")?.innerText;
-                const options = Array.from(document.querySelectorAll("#twister div.a-row:has(label.a-form-label):has(span.selection)")).map(a => ({label: a.querySelector("label.a-form-label").innerText, value: a.querySelector("span.selection").innerText}))
-                const options_dict = {}
-                for (const option of options) {
-                  options_dict[option["label"].replace(": ", "")] = option["value"]
-                }
-                const asin = document.querySelector("input#ASIN").value
-                console.log({title, price, options: options_dict, asin})
-                return {title, price, options: options_dict, asin}
-              },
             },
             {
               selector: "#attach-warranty-pane #attach-warranty-display",

@@ -1,4 +1,5 @@
 export function processElement(element: any, recipe: any, parentName = '', nthChild = 0) {
+  // console.log("processing element: ", element, recipe);
   // Create a new element using the DOM API
   let tagName = recipe.tag_name || element.tagName.toLowerCase()
   // Handle underscored tags
@@ -10,30 +11,42 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
   // Extract text content based on the recipe
   let elementText = ''
   if (recipe.text_selector) {
+
     const textElement = element.querySelector(recipe.text_selector)
     if (textElement) {
       elementText = textElement.innerText || textElement.textContent || ''
     }
   } else if (recipe.text_js) {
-    elementText = eval(recipe.text_js)
+    elementText = recipe.text_js(element);
+    if (elementText === '' || elementText === undefined) {
+      console.log("text js does not detect text for element", element);
+    }
   } else if (recipe.add_text) {
     elementText = element.innerText || element.textContent || ''
   }
   elementText = elementText.replace(/\s+/g, ' ').trim()
   if (recipe.text_format && elementText) {
     elementText = recipe.text_format.replace('{}', elementText)
+  } else if (recipe.text_format) {
+    elementText = recipe.text_format
   }
 
   if (elementText && recipe.add_text) {
     newElement.textContent = elementText
   }
 
+
   // Build the node attributes
   let elementName = ''
   if (recipe.name) {
     if (recipe.name === 'from_text') {
       elementName = parentName ? parentName + '.' : ''
-      elementName += elementText.toLowerCase().replace(/[^\w]+/g, '_')
+      if (!elementText) {
+        // console.log("element text not found");
+        elementName = '';
+      } else {
+        elementName += elementText.toLowerCase().replace(/[^\w]+/g, '_');
+      }
     } else if (recipe.name === 'from_nth_child') {
       elementName = parentName ? parentName + '.' : ''
       elementName += nthChild.toString()
@@ -43,6 +56,11 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     }
     newElement.setAttribute('name', elementName)
     parentName = elementName
+  }
+
+  if (recipe.generate_metadata) {
+    const metadata = JSON.stringify(recipe.generate_metadata(element))
+    element.setAttribute('data-element-meta', metadata);
   }
 
   // Handle clickables and inputs
@@ -73,9 +91,9 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
       newElement.setAttribute('value', element.value)
       element.setAttribute('data-input-id', elementName)
     } else if (inputType === 'checkbox') {
-      newElement.setAttribute('checked', element.checked.toString())
+      newElement.setAttribute('checked', element.checked)
     } else if (inputType === 'radio') {
-      newElement.setAttribute('checked', element.checked.toString())
+      newElement.setAttribute('checked', element.checked)
       element.setAttribute('data-clickable-id', elementName)
     }
     if (!window.input_recipes) {
