@@ -1,4 +1,7 @@
 export function processElement(element: any, recipe: any, parentName = '', nthChild = 0) {
+  if (recipe.debugger) {
+    debugger
+  }
   // Create a new element using the DOM API
   let tagName = recipe.tag_name || element.tagName.toLowerCase()
   // Handle underscored tags
@@ -15,15 +18,13 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
       elementText = textElement.innerText || textElement.textContent || ''
     }
   } else if (recipe.text_js) {
-    elementText = recipe.text_js();
+    elementText = recipe.text_js()
   } else if (recipe.add_text) {
     elementText = element.innerText || element.textContent || ''
   }
   elementText = elementText.replace(/\s+/g, ' ').trim()
-  if (recipe.text_format && elementText) {
+  if (recipe.text_format) {
     elementText = recipe.text_format.replace('{}', elementText)
-  } else {
-    elementText = recipe.text_format
   }
 
   if (elementText && recipe.add_text) {
@@ -34,6 +35,10 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
   let elementName = ''
   if (recipe.name) {
     if (recipe.name === 'from_text') {
+      if (!elementText) {
+        console.log('elementText is empty', recipe, element)
+        debugger
+      }
       elementName = parentName ? parentName + '.' : ''
       elementName += elementText.toLowerCase().replace(/[^\w]+/g, '_')
     } else if (recipe.name === 'from_nth_child') {
@@ -48,8 +53,8 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
   }
 
   if (recipe.generate_metadata) {
-    const metadata = JSON.stringify(recipe.generate_metadata());
-    newElement.setAttribute('data-element-meta', metadata);
+    const metadata = JSON.stringify(recipe.generate_metadata())
+    newElement.setAttribute('data-element-meta', metadata)
   }
 
   // Handle clickables and inputs
