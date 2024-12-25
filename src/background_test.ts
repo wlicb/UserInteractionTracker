@@ -649,7 +649,8 @@ const customFetch = async (url, options) => {
 
   // If response is not OK (status code not in 200-299 range), throw an error
   if (!response.ok) {
-    throw new Error(`HTTP error! Status: ${response.status}`)
+    console.log('response', response)
+    throw new Error(`HTTP error! Status: ${response}`)
   }
 
   return response
@@ -709,7 +710,7 @@ async function uploadDataToServer() {
 
     let user_id = currentUserId || 'unknown'
 
-    const folderName = `${folder_name}/USER_${user_id}/SESSION_${timestamp}`
+    const folderName = `${folder_name}/USER/${user_id}/SESSION_${timestamp}`
 
     const snapshots = await chrome.storage.local.get({ htmlSnapshots: [] })
     const orderDetails = await chrome.storage.local.get({ orderDetails: [] })
@@ -726,7 +727,6 @@ async function uploadDataToServer() {
       reasons: storeReasonsAnnotation,
       orderDetails: storeOrderDetails
     }
-    console.log('user_id', user_id)
     if (
       !lastGeneratePresignedPostResponse ||
       lastGeneratePresignedPostResponse?.expire_timestamp < Date.now() / 1000 || // prevent from requesting for post url over and over
