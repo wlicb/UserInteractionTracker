@@ -25,9 +25,355 @@ export const refinement_option = [
     clickable: true,
     click_selector: 'a',
     direct_child: true,
-    children: [{ selector: "input[type='checkbox']" }]
-  }
-]
+    text_js: function (element) {
+      try {
+        let text = "";
+        if (!element) {
+          return text;
+        }
+        if (element.innerText && element.innerText.trim()) {
+          text += element.innerText.trim();
+          const aChild = element.querySelector(
+            "a.a-link-normal.s-navigation-item",
+          );
+          if (aChild && aChild.hasAttribute("title")) {
+            text += " ";
+            text += aChild.getAttribute("title");
+          }
+        } else {
+          const aChild = element.querySelector(
+            "a.a-link-normal.s-navigation-item",
+          );
+          if (aChild && aChild.hasAttribute("title")) {
+            text += aChild.getAttribute("title");
+          }
+        }
+        return text;
+      } catch (e) {
+        console.log(e);
+        return "";
+      }
+    },
+    generate_metadata: (element) => {
+      let text = "";
+      if (element.innerText && element.innerText.trim()) {
+        text += element.innerText.trim();
+        const aChild = element.querySelector(
+          "a.a-link-normal.s-navigation-item",
+        );
+        if (aChild && aChild.hasAttribute("title")) {
+          text += "_";
+          text += aChild.getAttribute("title");
+        }
+      } else {
+        const aChild = element.querySelector(
+          "a.a-link-normal.s-navigation-item",
+        );
+        if (aChild && aChild.hasAttribute("title")) {
+          text += aChild.getAttribute("title");
+        }
+      }
+      const checked = element.querySelector("input[type='checkbox']").getAttribute('checked');
+      return {title: text, checked};
+    },
+    children: [
+      {
+        selector: "input[type='checkbox']",
+      },
+    ],
+  },
+  {
+    selector:
+      "ul:nth-of-type(1) > span.a-declarative > li > span > div[data-a-expander-name='filter-content-expander']",
+    name: "more_options",
+    children: [
+      {
+        selector: "a[data-csa-c-func-deps='aui-da-a-expander-toggle']",
+        name: "toggle_expansion",
+        add_text: true,
+      },
+      {
+        selector: "li",
+        add_text: true,
+        name: "from_text",
+        clickable: true,
+        click_selector: "a",
+        text_js: function (element) {
+          try {
+            let text = "";
+            if (!element) {
+              return text;
+            }
+            if (element.innerText && element.innerText.trim()) {
+              text += element.innerText.trim();
+              const aChild = element.querySelector(
+                "a.a-link-normal.s-navigation-item",
+              );
+              if (aChild && aChild.hasAttribute("title")) {
+                text += " ";
+                text += aChild.getAttribute("title");
+              }
+            } else {
+              const aChild = element.querySelector(
+                "a.a-link-normal.s-navigation-item",
+              );
+              if (aChild && aChild.hasAttribute("title")) {
+                text += aChild.getAttribute("title");
+              }
+            }
+            return text;
+          } catch (e) {
+            console.log(e);
+            return "";
+          }
+        },
+        generate_metadata: (element) => {
+          let text = "";
+          if (element.innerText && element.innerText.trim()) {
+            text += element.innerText.trim();
+            const aChild = element.querySelector(
+              "a.a-link-normal.s-navigation-item",
+            );
+            if (aChild && aChild.hasAttribute("title")) {
+              text += "_";
+              text += aChild.getAttribute("title");
+            }
+          } else {
+            const aChild = element.querySelector(
+              "a.a-link-normal.s-navigation-item",
+            );
+            if (aChild && aChild.hasAttribute("title")) {
+              text += aChild.getAttribute("title");
+            }
+          }
+          const checked = element.querySelector("input[type='checkbox']").getAttribute('checked');
+          return {title: text, checked};
+        },
+        children: [
+          {
+            selector: "input[type='checkbox']",
+          },
+        ],
+      },
+    ],
+  },
+];
+
+export const product_facts = {
+  selector: "#productFactsDesktopExpander",
+  add_text: true,
+  class: "product-facts",
+};
+
+export const product_delivery = {
+  selector: "div.mir-layout-DELIVERY_BLOCK-slot-PRIMARY_DELIVERY_MESSAGE_LARGE",
+  add_text: true,
+  class: "product-delivery",
+};
+
+export const quantity_selector = {
+  selector: "#selectQuantity",
+  name: "quantity_selector",
+  children: [
+    {
+      selector: "label",
+      add_text: true,
+    },
+    {
+      selector: "select",
+      clickable: true,
+      name: "drop_down_list",
+    },
+  ],
+};
+
+export const delivery_frequency_selector = {
+  selector: "#replenishmentFrequency_feature_div",
+  name: "delivery_frequency_selector",
+  text_selector: "div.a-section.a-spacing-micro > span",
+  add_text: true,
+  children: [
+    {
+      selector: "#rcxOrdFreqOnmlWrapper select",
+      clickable: true,
+      name: "drop_down_list",
+    },
+  ],
+};
+
+export const set_up_now_button = {
+  selector: "#rcx-subscribe-submit-button-announce",
+  add_text: true,
+  clickable: true,
+  name: "set_up_now",
+  class: "product-set-up-now",
+};
+
+export const add_to_cart_button = {
+  selector:
+    "input[name='submit.add-to-cart'], input[name='submit.add-to-cart-ubb']",
+  add_text: true,
+  clickable: true,
+  name: "add_to_cart",
+  class: "product-add-to-cart",
+};
+
+export const buy_now_button = {
+  selector: "input[name='submit.buy-now']",
+  add_text: true,
+  clickable: true,
+  name: "buy_now",
+  class: "product-buy-now",
+};
+
+export const buy_box_with_accordion = {
+  selector: "#buyBoxAccordion > div.a-box.celwidget",
+  name: "from_text",
+  text_selector: "div.accordion-caption > span",
+  children: [
+    {
+      selector:
+        "div[data-csa-c-content-id='offer_display_desktop_accordion_header']",
+      name: "accordion_selector",
+      add_text: true,
+      clickable: true,
+      text_selector: "h5 span.a-text-bold",
+    },
+    {
+      selector: "div.a-accordion-inner.accordion-row-content",
+      name: "purchase_form",
+      children: [
+        product_facts,
+        product_delivery,
+        quantity_selector,
+        delivery_frequency_selector,
+        set_up_now_button,
+        add_to_cart_button,
+        buy_now_button
+      ],
+    },
+  ],
+};
+
+export const buy_box_without_accordion_delivery = {
+  selector: "#gsod_singleOfferDisplay_Desktop",
+  children: [
+    {
+      selector: "#addToCart",
+      name: "purchase_form",
+      children: [
+        product_facts,
+        product_delivery,
+        quantity_selector,
+        add_to_cart_button,
+        buy_now_button
+      ],
+    },
+  ],
+};
+
+export const buy_box_without_accordion_pick_up = {
+  selector: "#gsod_singleOfferDisplay_group_2_Desktop",
+  children: [
+    {
+      selector: "#pickUpOfferDisplay",
+      name: "purchase_form",
+      children: [
+        product_facts,
+        product_delivery,
+        quantity_selector,
+        add_to_cart_button,
+        buy_now_button
+      ],
+    },
+  ],
+};
+
+export const cart = [
+  nav,
+  {
+    selector: "div[data-name='Active Items']",
+    name: "active_item_list",
+    children: [
+      {
+        selector: "div.sc-list-item-content",
+        text_selector:
+          "div.sc-item-content-group ul > li > span.a-list-item > a.sc-product-title span.a-truncate-full",
+        name: "from_text",
+        children: [
+          {
+            selector: "div.sc-item-check-checkbox-selector input",
+            clickable: true,
+            name: "checkbox",
+          },
+          {
+            selector:
+              "div.sc-item-content-group ul > li > span.a-list-item > a.sc-product-title",
+            clickable: true,
+            text_selector: "span.a-truncate-full",
+            add_text: true,
+            name: "product_detail",
+          },
+          {
+            selector: "div.sc-item-content-group span.sc-quantity-stepper",
+            children: [
+              {
+                selector: "button[aria-label='Decrease quantity by one']",
+                add_text: true,
+                text_js: function (element) {
+                  if (element.hasAttribute("aria-label")) {
+                    return element.getAttribute("aria-label");
+                  }
+                  return "";
+                },
+
+                clickable: true,
+                name: "decrease_quantity_by_one",
+              },
+              {
+                selector: "div[role='spinbutton']",
+                add_text: true,
+                text_format: "Current Quantity: {}",
+              },
+              {
+                selector: "button[aria-label='Increase quantity by one']",
+                add_text: true,
+                text_js: function (element) {
+                  if (element.hasAttribute("aria-label")) {
+                    return element.getAttribute("aria-label");
+                  }
+                  return "";
+                },
+                clickable: true,
+                name: "increase_quantity_by_one",
+              },
+            ],
+          },
+          {
+            selector: "div.sc-item-content-group input[data-action='delete']",
+            add_text: true,
+            clickable: true,
+            name: "delete",
+          },
+          {
+            selector:
+              "div.sc-item-content-group input[data-action='save-for-later']",
+            add_text: true,
+            clickable: true,
+            name: "save_for_later",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    selector: "#sc-buy-box-ptc-button input",
+    add_text: true,
+    clickable: true,
+    name: "check_out",
+  },
+];
+
 export const recipes = [
   {
     match: '/',
@@ -56,11 +402,14 @@ export const recipes = [
             name: 'refinements',
             children: [
               {
-                selector:
-                  'div.a-section.a-spacing-none:not(:has(#n-title)):has(span.a-size-base.a-color-base.puis-bold-weight-text):has(ul span.a-declarative > span > li):not(#reviewsRefinements):not(#departments):not(#priceRefinements):not(#filters)',
-                name: 'from_text',
-                text_selector: 'span.a-size-base.a-color-base.puis-bold-weight-text',
-                children: refinement_option
+                selector: "div.a-section.a-spacing-none:not(:has(#n-title)):has(span.a-size-base.a-color-base.puis-bold-weight-text):has(ul span.a-declarative > span > li):not(#reviewsRefinements):not(#departments):not(#priceRefinements):not(#filters)",
+                name: "from_text",
+                text_selector: "span.a-size-base.a-color-base.puis-bold-weight-text",
+                children: refinement_option,
+                generate_metadata: (em) => {
+                  const title = em.querySelector('span.a-size-base.a-color-base.puis-bold-weight-text');
+                  return {title};
+                },
               },
               {
                 selector: '#departments',
@@ -161,11 +510,17 @@ export const recipes = [
     ]
   },
   {
-    match: '#productTitle',
-    match_text: '',
-    selector: 'html',
-    terminate: 'return !!arguments[0]',
-    terminate_callback: 'return arguments[0]',
+    match: "#productTitle",
+    match_text: "",
+    selector: "html",
+    terminate: function () { return !!arguments[0] },
+    terminate_callback: function () { return arguments[0] },
+    generate_metadata: (em) => {
+      const title = em.querySelector("#title").innerText
+      const price = em.querySelector("#apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[class='offersConsistencyEnabled'] > div:not([style='display:none;']):not([style=\"display: none;\"]) #corePriceDisplay_desktop_feature_div span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay, #apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[data-csa-c-content-id='apex_with_rio_cx'] #corePriceDisplay_desktop_feature_div div.a-section.a-spacing-none.aok-align-center.aok-relative > span.aok-offscreen")?.innerText;
+      const asin = em.querySelector("input#ASIN").value
+      return {title, price, asin};
+    },
     children: [
       { selector: 'head', children: [{ selector: 'title', add_text: true }] },
       {
@@ -210,22 +565,67 @@ export const recipes = [
                     selector: 'div.a-row:has(label.a-form-label):has(span.selection)',
                     children: [
                       {
-                        selector: 'label.a-form-label',
-                        add_text: true
+                        selector: "div.a-row:has(label.a-form-label)",
+                        children: [
+                          {
+                            selector: "label.a-form-label",
+                            add_text: true,
+                          },
+                          {
+                            selector: "span.selection",
+                            add_text: true,
+                          },
+                        ],
+                        generate_metadata: (em) => {
+                          const label = em.querySelector("label.a-form-label")?.innerHTML;
+                          const value = em.querySelector("span.selection")?.innerHTML;
+                          return {label, value};
+                        }
                       },
                       {
-                        selector: 'span.selection',
-                        add_text: true
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
+                        selector: "select",
+                        add_text: true,
+                        clickable: true,
+                        name: "drop_down_list",
+                      },
+                      {
+                        selector: "ul",
+                        name: "button_list",
+                        children: [
+                          {
+                            selector: "li button",
+                            add_text: true,
+                            clickable: true,
+                            name: "from_text",
+                            text_js: function (element) {
+                              let text = "";
+                              if (element.innerText.trim()) {
+                                text += element.innerText.trim();
+                                const imgChild = element.querySelector("img");
+                                if (imgChild && imgChild.alt) {
+                                  text += " ";
+                                  text += imgChild.alt;
+                                }
+                              } else {
+                                const imgChild = element.querySelector("img");
+                                if (imgChild && imgChild.alt) {
+                                  text += imgChild.alt;
+                                }
+                              }
+                              return text;
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
           },
           {
-            selector: '#addToCart:has(#buy-now-button)',
-            name: 'add_to_cart',
+            selector: "#buybox:has(div.a-tab-container)",
+            name: "buybox",
             children: [
               {
                 selector: '#productFactsDesktopExpander',

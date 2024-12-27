@@ -101,8 +101,16 @@ export const refinement_option = [
             text += aChild.getAttribute("title");
           }
         }
-        const checked = element.querySelector("input[type='checkbox']")?.getAttribute('checked');
-        return {title: text, checked: (checked !== null)};
+        const checkBox = element.querySelector("input[type='checkbox']")
+        if (!checkBox) {
+          return {title: text, selected: false};
+        }
+        const checked = checkBox?.getAttribute('checked');
+        console.log(checked, "checked for element", element);
+        if (checked !== null) {
+          return {title: text, selected: true};
+        }
+        return {title: text, selected: false};
       },
       children: [
         {
@@ -174,8 +182,16 @@ export const refinement_option = [
                 text += aChild.getAttribute("title");
               }
             }
-            const checked = element.querySelector("input[type='checkbox']")?.getAttribute('checked');
-            return {title: text, checked};
+            const checkBox = element.querySelector("input[type='checkbox']")
+            if (!checkBox) {
+              return {title: text, selected: false};
+            }
+            const checked = checkBox?.getAttribute('checked');
+            console.log(checked, "checked for element", element);
+            if (checked !== null) {
+              return {title: text, selected: true};
+            }
+            return {title: text, selected: false};
           },
           children: [
             {
@@ -464,27 +480,143 @@ export const recipes = [
                 {
                   selector: "#departments",
                   name: "departments",
+                  add_text: true,
+                  text_format: "Department",
                   children: [
-                      {
-                          selector: "li a",
-                          add_text: true,
-                          name: "from_text",
-                          clickable: true,
-                      }
+                    {
+                        selector: "li a",
+                        add_text: true,
+                        name: "from_text",
+                        clickable: true,
+                    }
                   ],
+                  generate_metadata: (element) => {
+                    const selection = element.querySelectorAll("li a[aria-current='true']") as NodeListOf<HTMLElement>;
+                    if (!selection) {
+                      return {title: "Department", selection: null}
+                    } else {
+                      let selection_string = ""
+                      for (const s of selection) {
+                        if (s) {
+                          selection_string += s.innerText
+                          selection_string += ","
+                        }
+                      }
+                      return {title: "Department", selection: selection_string}
+                    }
+                  },
                 },
                 {
                     selector: "#reviewsRefinements",
                     name: "reviews_refinements",
+                    add_text: true,
+                    text_format: "Customer Reviews",
                     children: [
-                        {
-                            selector: "li a",
-                            add_text: true,
-                            name: "from_text",
-                            clickable: true,
-                        }
+                      {
+                        selector: "a.s-navigation-clear-link",
+                        add_text: true,
+                        name: "from_text",
+                        clickable: true,
+                      },
+                      {
+                        selector: "li a[aria-current='true']",
+                        add_text: true,
+                        name: "from_text",
+                        clickable: true,
+                        text_format: "Clear Option {}"
+                      },
+                      {
+                        selector: "li a[aria-current='false']",
+                        add_text: true,
+                        name: "from_text",
+                        clickable: true,
+                      },
                     ],
+                    generate_metadata: (element) => {
+                      const selection = element.querySelectorAll("li a[aria-current='true']") as NodeListOf<HTMLElement>;
+                      if (!selection) {
+                        return {title: "Customer Reviews", selection: null}
+                      } else {
+                        let selection_string = ""
+                        for (const s of selection) {
+                          if (s) {
+                            selection_string += s.innerText
+                            selection_string += ","
+                          }
+                        }
+                        return {title: "Customer Reviews", selection: selection_string}
+                      }
+                    },
                 },
+                {
+                  selector: "#priceRefinements",
+                  name: "price_refinements",
+                  children: [
+                    {
+                      selector: "#p_36-title",
+                      add_text: true,
+                      name: "price_heading",
+                    },
+                    {
+                      selector: "div[aria-labelledby='p_36-title'] > a",
+                      add_text: true,
+                      name: "clear_price_selection",
+                      clickable: true,
+                    },
+                    {
+                      selector: "ul[aria-labelledby='p_36-title'] a[aria-current='true']",
+                      add_text: true,
+                      name: "from_text",
+                      clickable: true,
+                      text_format: "Clear Option {}"
+                    },
+                    {
+                      selector: "ul[aria-labelledby='p_36-title'] a[aria-current='false']",
+                      add_text: true,
+                      name: "from_text",
+                      clickable: true,
+                    },
+                    {
+                      selector: "#p_n_deal_type-title",
+                      add_text: true,
+                      name: "deals_discounts_heading",
+                    },
+                    {
+                      selector: "div[aria-labelledby='p_n_deal_type-title'] > a",
+                      add_text: true,
+                      name: "clear_deals_discount_selection",
+                      clickable: true,
+                    },
+                    {
+                      selector: "ul[aria-labelledby='p_n_deal_type-title'] a[aria-current='true']",
+                      add_text: true,
+                      name: "from_text",
+                      clickable: true,
+                      text_format: "Clear Option {}"
+                    },
+                    {
+                      selector: "ul[aria-labelledby='p_n_deal_type-title'] a[aria-current='false']",
+                      add_text: true,
+                      name: "from_text",
+                      clickable: true,
+                    },
+                  ],
+                  generate_metadata: (element) => {
+                    const selection = element.querySelectorAll("li a[aria-current='true']") as NodeListOf<HTMLElement>;
+                    if (!selection) {
+                      return {title: "Price, Discounts & Deals", selection: null}
+                    } else {
+                      let selection_string = ""
+                      for (const s of selection) {
+                        if (s) {
+                          selection_string += s.innerText
+                          selection_string += ","
+                        }
+                      }
+                      return {title: "Price, Discounts & Deals", selection: selection_string}
+                    }
+                  },
+                }
               ],
             },
             {

@@ -19,7 +19,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
   } else if (recipe.text_js) {
     elementText = recipe.text_js(element);
     if (elementText === '' || elementText === undefined) {
-      console.log("text js does not detect text for element", element);
+      console.log("text js does not detect text for element ", element);
     }
   } else if (recipe.add_text) {
     elementText = element.innerText || element.textContent || ''
@@ -61,6 +61,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
   if (recipe.generate_metadata) {
     const metadata = JSON.stringify(recipe.generate_metadata(element))
     element.setAttribute('data-element-meta', metadata);
+    console.log('metadata generated from element ', element, ": ", metadata);
   }
 
   // Handle clickables and inputs
