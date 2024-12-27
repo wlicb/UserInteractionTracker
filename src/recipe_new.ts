@@ -790,7 +790,7 @@ export const recipes = [
                           // console.log(value);
 
                         }
-                        return {label, value};
+                        return {label, value: value.trim()};
                       },
                       children: [
                         {
@@ -836,7 +836,7 @@ export const recipes = [
                                     text += imgChild.alt;
                                   }
                                 }
-                                return text;
+                                return text.trim();
                               },
                             },
                           ],
@@ -845,6 +845,111 @@ export const recipes = [
                     },
                   ],
                 },
+              ],
+            },
+            // handle new twisters
+            {
+              selector: "#twister-plus-inline-twister",
+              class: "product-options",
+              name: "product_options",
+              children: [
+                {
+                  selector: "div.inline-twister-row",
+                  text_selector:
+                    "div.inline-twister-dim-title-value-truncate-expanded span.a-size-base.a-color-secondary",
+                  name: "from_text",
+                  direct_child: true,
+                  generate_metadata: (em) => {
+                    const label = em.querySelector("div.inline-twister-dim-title-value-truncate-expanded span.a-size-base.a-color-secondary")?.innerHTML.replace(/[:\n]/g, "").trim();
+                    let value = em.querySelector("div.inline-twister-dim-title-value-truncate-expanded span.inline-twister-dim-title-value")?.innerHTML;
+                    if (value === undefined || value === "") {
+                      const options = em.querySelector("select")?.querySelectorAll("option");
+                      // console.log(options);
+                      if (options) {
+                        for (const option of options) {
+                          // console.log(option);
+                          if (option && option.getAttribute("selected") !== null) {
+                            value = option.innerHTML.trim();
+                          }
+                        }
+                      }
+                      // console.log(value);
+
+                    }
+                    return {label, value: value.trim()};
+                  },
+                  children: [
+                    {
+                      selector: "div.inline-twister-dim-title-value-truncate-expanded",
+                      children: [
+                        {
+                          selector: "span.a-size-base.a-color-secondary",
+                          add_text: true,
+                        },
+                        {
+                          selector: "span.inline-twister-dim-title-value",
+                          add_text: true,
+                        },
+                      ],
+                    },
+                    {
+                      selector: "select",
+                      add_text: true,
+                      clickable: true,
+                      name: "drop_down_list",
+                    },
+                    {
+                      selector: "ul",
+                      name: "button_list",
+                      children: [
+                        {
+                          selector: "li span:not(.aok-hidden) input",
+                          add_text: true,
+                          clickable: true,
+                          name: "from_text",
+                          text_js: function (element) {
+                            const textEm = element.nextElementSibling;
+                            let text = "";
+                            if (textEm.innerText.trim()) {
+                              text += textEm.innerText.trim();
+                              const imgChild = textEm.querySelector("img");
+                              if (imgChild && imgChild.alt) {
+                                text += " ";
+                                text += imgChild.alt;
+                              }
+                            } else {
+                              const imgChild = textEm.querySelector("img");
+                              if (imgChild && imgChild.alt) {
+                                text += imgChild.alt;
+                              }
+                            }
+                            return text.trim();
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  selector: "div.inline-twister-singleton-header",
+                  text_selector: "span.a-size-base.a-color-secondary",
+                  name: "from_text",
+                  children: [
+                    {
+                      selector: "span.a-size-base.a-color-secondary",
+                      add_text: true,
+                    },
+                    {
+                      selector: "span.inline-twister-dim-title-value-truncate",
+                      add_text: true,
+                    },
+                  ],
+                  generate_metadata: (em) => {
+                    const label = em.querySelector("span.a-size-base.a-color-secondary")?.innerHTML.replace(/[:\n]/g, "").trim();
+                    const value = em.querySelector("span.inline-twister-dim-title-value-truncate")?.innerHTML;
+                    return {label, value};
+                  },
+                }
               ],
             },
             {
