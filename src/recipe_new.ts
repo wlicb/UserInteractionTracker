@@ -1153,7 +1153,7 @@ export const recipes = [
                   name: "from_text",
                   children: [
                     {
-                      selector: "input[aria-label='Select warranty option']",
+                      selector: "input[type='checkbox']",
                       name: "select",
                       clickable: true,
                     },
