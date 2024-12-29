@@ -144,9 +144,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         actionSequenceId++
         const currentactionSequenceId = actionSequenceId
         console.log(currentactionSequenceId)
-        message.data.actionSequenceId = currentactionSequenceId
-        const uuid = uuidv4()
-        message.data.uuid = uuid
+        // message.data.actionSequenceId = currentactionSequenceId
+        const uuid = message.data.uuid
         const saveData = async () => {
           console.log('saveData ', message.data.eventType)
           let result = await chrome.storage.local.get({ interactions: [] })
@@ -162,7 +161,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sender.tab?.id,
             message.data.timestamp,
             message.data.eventType,
-            currentactionSequenceId,
+            // currentactionSequenceId,
             message.data,
             uuid
           )
@@ -292,7 +291,7 @@ const saveInteraction = async (
     timestamp,
     target_url,
     htmlSnapshotId,
-    actionSequenceId: currentactionSequenceId,
+    // actionSequenceId: currentactionSequenceId,
     uuid
   }
 
@@ -307,20 +306,20 @@ const saveInteraction = async (
   await chrome.storage.local.set({ interactions: storeInteractions })
 }
 
-const saveScreenshot = async (windowId: number, timestamp: string) => {
+const saveScreenshot = async (windowId: number, timestamp: string, uuid: string) => {
   const screenshotDataUrl = await chrome.tabs.captureVisibleTab(windowId, {
     format: 'jpeg',
     quality: 25
   })
 
-  const screenshotId = `screenshot_${timestamp}`
+  const screenshotId = `screenshot_${timestamp}_${uuid}`
   await saveScreenshot_1(screenshotDataUrl, screenshotId)
 }
 const sendPopup = async (
   tabId: number,
   timestamp: string,
   eventType: string,
-  currentactionSequenceId: number,
+  // action_uuid: string,
   data: any,
   uuid: string
 ) => {
@@ -339,11 +338,11 @@ const sendPopup = async (
       })
       if (reason && reason.input !== null) {
         const newitem = {
-          actionSequenceId: currentactionSequenceId,
+          action_uuid: uuid,
           timestamp: timestamp,
           eventType: eventType,
-          reason: reason,
-          uuid: uuid
+          reason: reason
+          // uuid: uuid
         }
         let result = await chrome.storage.local.get({ reasonsAnnotation: [] })
         let storeReasonsAnnotation = result.reasonsAnnotation || []
@@ -375,12 +374,12 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       !filter_url.some((excludeUrl) => tab.url.includes(excludeUrl))
     ) {
       const timestamp = new Date().toISOString()
-      const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}`
+      const uuid = uuidv4()
+      const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}_${uuid}`
       chrome.tabs.sendMessage(tabId, { action: 'getHTML' }, async (response) => {
         const htmlContent = response?.html
         actionSequenceId++
         const currentactionSequenceId = actionSequenceId
-        const uuid = uuidv4()
         await Promise.all([
           saveHTML(htmlContent, currentSnapshotId),
           saveInteraction(
@@ -392,8 +391,8 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
             uuid,
             null
           ),
-          saveScreenshot(tab.windowId, timestamp),
-          sendPopup(tabId, timestamp, 'tabActivate', currentactionSequenceId, {}, uuid)
+          saveScreenshot(tab.windowId, timestamp, uuid),
+          sendPopup(tabId, timestamp, 'tabActivate', {}, uuid)
         ])
       })
     }
@@ -450,12 +449,13 @@ chrome.webNavigation.onCompleted.addListener(async (details) => {
     const navigationType = analyzeNavigation(details.tabId, details.url)
     console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`)
     const timestamp = new Date().toISOString()
+    const uuid = uuidv4()
     chrome.tabs.sendMessage(details.tabId, { action: 'getHTML' }, async (response) => {
       const htmlContent = response?.html
-      const currentSnapshotId = `html_${hashCode(details.url)}_${timestamp}`
+      const currentSnapshotId = `html_${hashCode(details.url)}_${timestamp}_${uuid}`
       actionSequenceId++
       const currentactionSequenceId = actionSequenceId
-      const uuid = uuidv4()
+
       await Promise.all([
         saveHTML(htmlContent, currentSnapshotId),
         saveInteraction(
@@ -467,7 +467,7 @@ chrome.webNavigation.onCompleted.addListener(async (details) => {
           uuid,
           navigationType
         ),
-        saveScreenshot((await chrome.tabs.get(details.tabId)).windowId, timestamp)
+        saveScreenshot((await chrome.tabs.get(details.tabId)).windowId, timestamp, uuid)
       ])
       if (navigationType !== 'new' && navigationType !== 'reload') {
         console.log('send message to popup navigation')
@@ -475,7 +475,7 @@ chrome.webNavigation.onCompleted.addListener(async (details) => {
           details.tabId,
           timestamp,
           'navigation',
-          currentactionSequenceId,
+          // currentactionSequenceId,
           {
             navigationType: navigationType
           },

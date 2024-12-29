@@ -1,4 +1,5 @@
 import { isFromPopup } from './utils/util'
+import { v4 as uuidv4 } from 'uuid'
 // extend window
 declare global {
   interface Window {
@@ -66,7 +67,8 @@ const monkeyPatch = () => {
     target: any,
     timestamp: string,
     selector: string,
-    url: string
+    url: string,
+    uuid: string
   ) {
     function findClickableParent(
       element: HTMLElement | null,
@@ -97,6 +99,7 @@ const monkeyPatch = () => {
     }
 
     const data = {
+      uuid: uuid,
       eventType,
       timestamp: timestamp,
       target: serializedTarget, // Replace direct DOM element with serializable object
@@ -224,6 +227,7 @@ const monkeyPatch = () => {
           event.my_default_prevented = false
           console.log('after patch event', event)
           // const targetHref = anchor.href
+          const uuid = uuidv4()
           try {
             const screenshotComplete = new Promise((resolve, reject) => {
               function handleMessage(event: MessageEvent) {
@@ -275,13 +279,17 @@ const monkeyPatch = () => {
               event.target,
               timestamp,
               generateSelector(event.target),
-              window.location.href
+              window.location.href,
+              uuid
             )
             // await sleep 5 seconds
             // await new Promise(resolve => setTimeout(resolve, 5000));
             // alert("1")
-            window.postMessage({ type: 'CAPTURE_SCREENSHOT', timestamp: timestamp }, '*')
-            window.postMessage({ type: 'SAVE_INTERACTION_DATA', data: data }, '*')
+            window.postMessage(
+              { type: 'CAPTURE_SCREENSHOT', timestamp: timestamp, uuid: uuid },
+              '*'
+            )
+            window.postMessage({ type: 'SAVE_INTERACTION_DATA', data: data, uuid: uuid }, '*')
             // alert("3")
             // Wait for screenshot to complete
             await screenshotComplete

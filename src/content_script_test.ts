@@ -1,17 +1,19 @@
 import { isFromPopup } from './utils/util'
 import { recipes } from './recipe_new'
+import { v4 as uuidv4 } from 'uuid'
 
 window.addEventListener('message', async (event) => {
   if (event.source !== window) return
 
   if (event.data.type && event.data.type === 'CAPTURE_SCREENSHOT') {
-    await captureScreenshot(event.data.timestamp)
+    await captureScreenshot(event.data.timestamp, event.data.uuid)
   }
   if (event.data.type && event.data.type === 'SAVE_INTERACTION_DATA') {
     try {
       const result = await chrome.storage.local.get(['htmlSnapshots'])
       const htmlSnapshots = result.htmlSnapshots || {}
-      htmlSnapshots[event.data.data.htmlSnapshotId] = event.data.data.htmlContent
+      const html_id = event.data.data.htmlSnapshotId + '_' + event.data.uuid
+      htmlSnapshots[html_id] = event.data.data.htmlContent
       chrome.storage.local.set({ htmlSnapshots })
       const dataForBackground = { ...event.data.data }
       delete dataForBackground.htmlContent
@@ -47,9 +49,9 @@ window.addEventListener('message', async (event) => {
   }
 })
 
-async function captureScreenshot(timestamp: string) {
+async function captureScreenshot(timestamp: string, uuid: string) {
   try {
-    const screenshotId = `screenshot_${timestamp}`
+    const screenshotId = `screenshot_${timestamp}_${uuid}`
     const response = await chrome.runtime.sendMessage({
       action: 'captureScreenshot',
       screenshotId
@@ -166,10 +168,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 })
 
-function generateHtmlSnapshotId() {
+function generateHtmlSnapshotId(uuid: string) {
   const url = window.location.href
   const timestamp = new Date().toISOString()
-  return `html_${hashCode(url)}_${timestamp}`
+  return `html_${hashCode(url)}_${timestamp}_${uuid}`
 }
 function hashCode(str: string) {
   let hash = 0
@@ -219,11 +221,12 @@ async function captureInteraction(
   timestamp: string,
   selector: string,
   clickableId: string,
-  url: string
+  url: string,
+  uuid: string
 ) {
   try {
     // Generate new HTML snapshot ID
-    const currentSnapshotId = generateHtmlSnapshotId()
+    const currentSnapshotId = generateHtmlSnapshotId(uuid)
 
     // Save HTML snapshot and wait for it to complete
     // await new Promise((resolve, reject) => {
@@ -246,7 +249,8 @@ async function captureInteraction(
       // clickableElements: clickableElements,
       selector: selector || '',
       clickableId: clickableId || '',
-      url: url || ''
+      url: url || '',
+      uuid: uuid
     }
 
     await chrome.runtime.sendMessage({ action: 'saveData', data })
@@ -266,8 +270,9 @@ document.addEventListener('scroll', async (event) => {
     if (currentTime - lastScrollTime >= SCROLL_THRESHOLD) {
       lastScrollTime = currentTime
       const timestamp = new Date().toISOString()
-      await captureInteraction('scroll', event.target, timestamp, '', '', '')
-      await captureScreenshot(timestamp)
+      const uuid = uuidv4()
+      await captureInteraction('scroll', event.target, timestamp, '', '', '', uuid)
+      await captureScreenshot(timestamp, uuid)
     }
   } catch (error) {
     console.error('Error during scroll event handling:', error)
@@ -285,8 +290,9 @@ document.addEventListener(
         target.tagName === 'TEXTAREA')
     ) {
       const timestamp = new Date().toISOString()
-      await captureScreenshot(timestamp)
-      await captureInteraction('input', target, timestamp, '', '', '')
+      const uuid = uuidv4()
+      await captureScreenshot(timestamp, uuid)
+      await captureInteraction('input', target, timestamp, '', '', '', uuid)
     }
   },
   true
