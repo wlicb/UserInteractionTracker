@@ -26,9 +26,11 @@
       "matches": ["https://www.amazon.com/*"],
       "exclude_matches": [
         "https://www.amazon.com/checkout/*",
+        "https://www.amazon.com/checkout/p/*",
         "https://www.amazon.com/gp/buy/*",
+        "https://www.amazon.com/gp/buy/spc/*",
         "https://www.amazon.com/a/addresses*",
-        "https://www.amazon.com/cpe/yourpayments/*"
+        "https://www.amazon.com/cpe/yourpayments*"
       ],
       "run_at": "document_start"
     },
@@ -37,9 +39,11 @@
       "matches": ["https://www.amazon.com/*"],
       "exclude_matches": [
         "https://www.amazon.com/checkout/*",
+        "https://www.amazon.com/checkout/p/*",
         "https://www.amazon.com/gp/buy/*",
+        "https://www.amazon.com/gp/buy/spc/*",
         "https://www.amazon.com/a/addresses*",
-        "https://www.amazon.com/cpe/yourpayments/*"
+        "https://www.amazon.com/cpe/yourpayments*"
       ],
       "run_at": "document_start",
       "world": "MAIN"
