@@ -5,7 +5,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import { nav, refinement_option, recipes } from './recipe_new'
 import JSZip from 'jszip'
-
+import { update_icon } from './utils/util'
 let interactions: any[] = []
 let screenshots: [string, string][] = []
 let reasonsAnnotation: any[] = []
@@ -26,7 +26,8 @@ import {
   zip,
   base_url,
   data_collector_secret_id,
-  url_include
+  url_include,
+  filter_url
 } from './config'
 
 const upload_url = `${base_url}/upload`
@@ -367,7 +368,12 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       return
     }
     console.log(`Switched to tab ${tabId} with URL: ${tab.url}`)
-    if (tab.url && tab.url.includes(url_include)) {
+    update_icon(tab.url)
+    if (
+      tab.url &&
+      tab.url.includes(url_include) &&
+      !filter_url.some((excludeUrl) => tab.url.includes(excludeUrl))
+    ) {
       const timestamp = new Date().toISOString()
       const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}`
       chrome.tabs.sendMessage(tabId, { action: 'getHTML' }, async (response) => {
@@ -433,10 +439,14 @@ async function selectRecipe(tabId: number, url: string) {
   throw new Error(`No matching recipe found for path: ${path}`)
 }
 
-chrome.webNavigation.onCommitted.addListener(async (details) => {
+chrome.webNavigation.onCompleted.addListener(async (details) => {
   if (details.frameId !== 0) return
-  console.log('webNavigation onCommitted event triggered:', details)
-  if (details.url.includes(url_include)) {
+  console.log('webNavigation onCompleted event triggered:', details)
+  update_icon(details.url)
+  if (
+    details.url.includes(url_include) &&
+    !filter_url.some((excludeUrl) => details.url.includes(excludeUrl))
+  ) {
     const navigationType = analyzeNavigation(details.tabId, details.url)
     console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`)
     const timestamp = new Date().toISOString()
@@ -710,7 +720,7 @@ async function uploadDataToServer() {
 
     let user_id = currentUserId || 'unknown'
 
-    const folderName = `${folder_name}/USER/${user_id}/SESSION_${timestamp}`
+    const folderName = `${folder_name}/USER/${user_id}`
 
     const snapshots = await chrome.storage.local.get({ htmlSnapshots: [] })
     const orderDetails = await chrome.storage.local.get({ orderDetails: [] })
@@ -754,7 +764,7 @@ async function uploadDataToServer() {
         ],
         { type: 'text/plain' }
       )
-      const sessionFormData = presignedFormData(`${folderName}/session_info.txt`)
+      const sessionFormData = presignedFormData(`${folderName}/order_info_${timestamp}.txt`)
       sessionFormData.append('file', sessionInfo)
 
       console.log('uploading session info')
@@ -803,7 +813,7 @@ async function uploadDataToServer() {
       const interactionsBlob = new Blob([interactions_json], {
         type: 'application/json'
       })
-      const jsonFormDataFile = presignedFormData(`${folderName}/interactions.json`)
+      const jsonFormDataFile = presignedFormData(`${folderName}/interactions_${timestamp}.json`)
 
       jsonFormDataFile.append('file', interactionsBlob)
 
