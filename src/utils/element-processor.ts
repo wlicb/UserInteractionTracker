@@ -92,9 +92,9 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
       newElement.setAttribute('value', element.value)
       element.setAttribute('data-input-id', elementName)
     } else if (inputType === 'checkbox') {
-      newElement.setAttribute('checked', element.checked)
+      newElement.setAttribute('checked', element.checked.toString())
     } else if (inputType === 'radio') {
-      newElement.setAttribute('checked', element.checked)
+      newElement.setAttribute('checked', element.checked.toString())
       element.setAttribute('data-clickable-id', elementName)
     }
     if (!window.input_recipes) {
@@ -138,8 +138,10 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     }
   })
   if (recipe.keep_attr) {
-    for (const key in recipe.keep_attr) {
+    // console.log("attributes to keep: ", recipe.keep_attr);
+    for (const key of recipe.keep_attr) {
       const value = element.getAttribute(key)
+      console.log(key, value);
       if (value) {
         newElement.setAttribute(key, value)
       }
@@ -155,7 +157,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
   // Override attributes if specified
   if (recipe.override_attr) {
     for (const key in recipe.override_attr) {
-      newElement.setAttribute(key, eval(recipe.override_attr[key]))
+      newElement.setAttribute(key, recipe.override_attr[key](element))
     }
   }
 

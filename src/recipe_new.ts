@@ -46,6 +46,12 @@ export const refinement_option = [
       class: "refinement-title",
     },
     {
+      selector: "a.s-navigation-clear-link",
+      add_text: true,
+      name: "clear_selection",
+      clickable: true,
+    },
+    {
       selector:
         "ul:nth-of-type(1) > span.a-declarative > span > li:has(a.a-link-normal.s-navigation-item)",
       add_text: true,
@@ -59,11 +65,11 @@ export const refinement_option = [
           if (!element) {
             return text;
           }
+          const aChild = element.querySelector(
+            "a.a-link-normal.s-navigation-item",
+          );
           if (element.innerText && element.innerText.trim()) {
             text += element.innerText.trim();
-            const aChild = element.querySelector(
-              "a.a-link-normal.s-navigation-item",
-            );
             if (aChild && aChild.hasAttribute("title")) {
               text += " ";
               text += aChild.getAttribute("title");
@@ -75,6 +81,15 @@ export const refinement_option = [
             if (aChild && aChild.hasAttribute("title")) {
               text += aChild.getAttribute("title");
             }
+          }
+          const checkBox = element.querySelector("input[type='checkbox']")
+          if (!checkBox) {
+            return text;
+          }
+          const checked = checkBox?.getAttribute('checked');
+          // console.log(checked, "checked for element", element);
+          if (checked !== null) {
+            return "Clear Option " + text;
           }
           return text;
         } catch (e) {
@@ -106,7 +121,7 @@ export const refinement_option = [
           return {title: text, selected: false};
         }
         const checked = checkBox?.getAttribute('checked');
-        console.log(checked, "checked for element", element);
+        // console.log(checked, "checked for element", element);
         if (checked !== null) {
           return {title: text, selected: true};
         }
@@ -140,11 +155,11 @@ export const refinement_option = [
               if (!element) {
                 return text;
               }
+              const aChild = element.querySelector(
+                "a.a-link-normal.s-navigation-item",
+              );
               if (element.innerText && element.innerText.trim()) {
                 text += element.innerText.trim();
-                const aChild = element.querySelector(
-                  "a.a-link-normal.s-navigation-item",
-                );
                 if (aChild && aChild.hasAttribute("title")) {
                   text += " ";
                   text += aChild.getAttribute("title");
@@ -156,6 +171,18 @@ export const refinement_option = [
                 if (aChild && aChild.hasAttribute("title")) {
                   text += aChild.getAttribute("title");
                 }
+              }
+              if (aChild && aChild.getAttribute("aria-current") === true) {
+                text = "Clear Option " + text;
+              }
+              const checkBox = element.querySelector("input[type='checkbox']")
+              if (!checkBox) {
+                return text;
+              }
+              const checked = checkBox?.getAttribute('checked');
+              // console.log(checked, "checked for element", element);
+              if (checked !== null) {
+                return "Clear Option " + text;
               }
               return text;
             } catch (e) {
@@ -187,7 +214,7 @@ export const refinement_option = [
               return {title: text, selected: false};
             }
             const checked = checkBox?.getAttribute('checked');
-            console.log(checked, "checked for element", element);
+            // console.log(checked, "checked for element", element);
             if (checked !== null) {
               return {title: text, selected: true};
             }
@@ -515,7 +542,7 @@ export const recipes = [
                       {
                         selector: "a.s-navigation-clear-link",
                         add_text: true,
-                        name: "from_text",
+                        name: "clear_selection",
                         clickable: true,
                       },
                       {
@@ -552,11 +579,14 @@ export const recipes = [
                   selector: "#priceRefinements",
                   name: "price_refinements",
                   children: [
+                    // 2 cases: selection / slider
                     {
-                      selector: "#p_36-title",
+                      selector: "#p_36-title, div.sf-refinement-heading span",
                       add_text: true,
                       name: "price_heading",
                     },
+
+                    // case 1: selection
                     {
                       selector: "div[aria-labelledby='p_36-title'] > a",
                       add_text: true,
@@ -600,11 +630,127 @@ export const recipes = [
                       name: "from_text",
                       clickable: true,
                     },
+                    
+                    // case 2: slider
+                    {
+                      selector: "div.sf-range-slider-row:nth-of-type(1)",
+                      add_text: true,
+                    },
+                    {
+                      selector: "div.sf-range-slider-row:nth-of-type(2) div.s-lower-bound input",
+                      name: "price_min_value",
+                      add_text: true,
+                      // text_js: (element) => {
+                      //   const text = element.getAttribute("aria-valuetext")
+                      //   console.log(text)
+                      //   if (text) {
+                      //     return text;
+                      //   } else {
+                      //     return "";
+                      //   }
+                      // },
+                      clickable: true,
+                      keep_attr: [
+                        'min', 'max', 'step'
+                      ],
+                      override_attr: {
+                        step_values: (em) => {
+                          const formEm = em.closest('form');
+                          if (formEm) {
+                            const prop = formEm.getAttribute('data-slider-props');
+                            if (prop) {
+                              const steps = JSON.parse(prop).stepLabels;
+                              return steps;
+                            }
+                          }
+                          return "";
+                        },
+                        current_value: (em) => {
+                          const value = Number.parseInt(em.getAttribute('value'));
+                          if (value !== null) {
+                            const formEm = em.closest('form');
+                            if (formEm) {
+                              const prop = formEm.getAttribute('data-slider-props');
+                              if (prop) {
+                                const steps = JSON.parse(prop).stepLabels;
+                                return steps[value];
+                              }
+                            }
+                          }
+                          return "";
+
+                        }
+                      }
+                    },
+                    {
+                      selector: "div.sf-range-slider-row:nth-of-type(2) div.s-upper-bound input",
+                      name: "price_max_value",
+                      add_text: true,
+                      // text_js: (element) => {
+                      //   const text = element.getAttribute("aria-valuetext")
+                      //   if (text) {
+                      //     return text;
+                      //   } else {
+                      //     return "";
+                      //   }
+                      // },
+                      clickable: true,
+                      keep_attr: [
+                        'min', 'max', 'step'
+                      ],
+                      override_attr: {
+                        step_values: (em) => {
+                          const formEm = em.closest('form');
+                          if (formEm) {
+                            const prop = formEm.getAttribute('data-slider-props');
+                            if (prop) {
+                              const steps = JSON.parse(prop).stepLabels;
+                              return steps;
+                            }
+                          }
+                          return "";
+                        },
+                        current_value: (em) => {
+                          const value = Number.parseInt(em.getAttribute('value'));
+                          if (value !== null) {
+                            const formEm = em.closest('form');
+                            if (formEm) {
+                              const prop = formEm.getAttribute('data-slider-props');
+                              if (prop) {
+                                const steps = JSON.parse(prop).stepLabels;
+                                return steps[value];
+                              }
+                            }
+                          }
+                          return "";
+
+                        }
+                      }
+                    },
+                    {
+                      selector: "div.sf-submit-range-button input",
+                      name: "submit_price_range",
+                      add_text: true,
+                      text_format: "Go",
+                      clickable: true,
+                    },
+                    {
+                      selector: "div.sf-reset-range-link a",
+                      name: "reset_price_selection",
+                      add_text: true,
+                      clickable: true,
+                    }
                   ],
                   generate_metadata: (element) => {
+                    // case 2
+                    const rangeEm = element.querySelector("div.sf-range-slider-row:nth-of-type(1)") as HTMLElement;
+                    if (rangeEm) {
+                      return {title: "Price", selection: rangeEm.innerText?.replace(/[\n]/g, "")}
+                    }
+                    // case 1
                     const selection = element.querySelectorAll("li a[aria-current='true']") as NodeListOf<HTMLElement>;
                     if (!selection) {
-                      return {title: "Price, Discounts & Deals", selection: null}
+                      return {title: "Price", selection: ""}
                     } else {
                       let selection_string = ""
                       for (const s of selection) {
