@@ -57,7 +57,7 @@ export const refinement_option = [
       add_text: true,
       name: "from_text",
       clickable: true,
-      click_selector: "a",
+      // click_selector: "a",
       direct_child: true,
       text_js: function (element) {
         try {
@@ -82,14 +82,8 @@ export const refinement_option = [
               text += aChild.getAttribute("title");
             }
           }
-          const checkBox = element.querySelector("input[type='checkbox']")
-          if (!checkBox) {
-            return text;
-          }
-          const checked = checkBox?.getAttribute('checked');
-          // console.log(checked, "checked for element", element);
-          if (checked !== null) {
-            return "Clear Option " + text;
+          if (aChild && aChild.getAttribute("aria-current") === 'true') {
+            text = "Clear Option " + text;
           }
           return text;
         } catch (e) {
@@ -99,11 +93,11 @@ export const refinement_option = [
       },
       generate_metadata: (element) => {
         let text = "";
+        const aChild = element.querySelector(
+          "a.a-link-normal.s-navigation-item",
+        );
         if (element.innerText && element.innerText.trim()) {
           text += element.innerText.trim();
-          const aChild = element.querySelector(
-            "a.a-link-normal.s-navigation-item",
-          );
           if (aChild && aChild.hasAttribute("title")) {
             text += "_";
             text += aChild.getAttribute("title");
@@ -116,13 +110,7 @@ export const refinement_option = [
             text += aChild.getAttribute("title");
           }
         }
-        const checkBox = element.querySelector("input[type='checkbox']")
-        if (!checkBox) {
-          return {title: text, selected: false};
-        }
-        const checked = checkBox?.getAttribute('checked');
-        // console.log(checked, "checked for element", element);
-        if (checked !== null) {
+        if (aChild && aChild.getAttribute("aria-current") === 'true') {
           return {title: text, selected: true};
         }
         return {title: text, selected: false};
@@ -148,7 +136,7 @@ export const refinement_option = [
           add_text: true,
           name: "from_text",
           clickable: true,
-          click_selector: "a",
+          // click_selector: "a",
           text_js: function (element) {
             try {
               let text = "";
@@ -172,17 +160,8 @@ export const refinement_option = [
                   text += aChild.getAttribute("title");
                 }
               }
-              if (aChild && aChild.getAttribute("aria-current") === true) {
+              if (aChild && aChild.getAttribute("aria-current") === 'true') {
                 text = "Clear Option " + text;
-              }
-              const checkBox = element.querySelector("input[type='checkbox']")
-              if (!checkBox) {
-                return text;
-              }
-              const checked = checkBox?.getAttribute('checked');
-              // console.log(checked, "checked for element", element);
-              if (checked !== null) {
-                return "Clear Option " + text;
               }
               return text;
             } catch (e) {
@@ -192,11 +171,11 @@ export const refinement_option = [
           },
           generate_metadata: (element) => {
             let text = "";
+            const aChild = element.querySelector(
+              "a.a-link-normal.s-navigation-item",
+            );
             if (element.innerText && element.innerText.trim()) {
               text += element.innerText.trim();
-              const aChild = element.querySelector(
-                "a.a-link-normal.s-navigation-item",
-              );
               if (aChild && aChild.hasAttribute("title")) {
                 text += "_";
                 text += aChild.getAttribute("title");
@@ -209,13 +188,7 @@ export const refinement_option = [
                 text += aChild.getAttribute("title");
               }
             }
-            const checkBox = element.querySelector("input[type='checkbox']")
-            if (!checkBox) {
-              return {title: text, selected: false};
-            }
-            const checked = checkBox?.getAttribute('checked');
-            // console.log(checked, "checked for element", element);
-            if (checked !== null) {
+            if (aChild && aChild.getAttribute("aria-current") === 'true') {
               return {title: text, selected: true};
             }
             return {title: text, selected: false};
@@ -252,7 +225,7 @@ export const quantity_selector = {
       },
       {
         selector: "select",
-        clickable: true,
+        // clickable: true,
         name: "drop_down_list",
       },
     ],
@@ -266,7 +239,7 @@ export const delivery_frequency_selector = {
     children: [
       {
         selector: "#rcxOrdFreqOnmlWrapper select",
-        clickable: true,
+        // clickable: true,
         name: "drop_down_list",
       },
     ],
@@ -955,7 +928,7 @@ export const recipes = [
                         {
                           selector: "select",
                           add_text: true,
-                          clickable: true,
+                          // clickable: true,
                           name: "drop_down_list",
                         },
                         {
@@ -1041,7 +1014,7 @@ export const recipes = [
                     {
                       selector: "select",
                       add_text: true,
-                      clickable: true,
+                      // clickable: true,
                       name: "drop_down_list",
                     },
                     {
