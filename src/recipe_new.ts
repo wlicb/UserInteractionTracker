@@ -53,11 +53,80 @@ export const refinement_option = [
     },
     {
       selector:
-        "ul:nth-of-type(1) > span.a-declarative > span > li:has(a.a-link-normal.s-navigation-item)",
+        "ul:nth-of-type(1) > span.a-declarative > span > li:has(a.a-link-normal.s-navigation-item):has(input[type='checkbox'])",
       add_text: true,
       name: "from_text",
       clickable: true,
-      // click_selector: "a",
+      click_selector: "a",
+      direct_child: true,
+      text_js: function (element) {
+        try {
+          let text = "";
+          if (!element) {
+            return text;
+          }
+          const aChild = element.querySelector(
+            "a.a-link-normal.s-navigation-item",
+          );
+          if (element.innerText && element.innerText.trim()) {
+            text += element.innerText.trim();
+            if (aChild && aChild.hasAttribute("title")) {
+              text += " ";
+              text += aChild.getAttribute("title");
+            }
+          } else {
+            const aChild = element.querySelector(
+              "a.a-link-normal.s-navigation-item",
+            );
+            if (aChild && aChild.hasAttribute("title")) {
+              text += aChild.getAttribute("title");
+            }
+          }
+          if (aChild && aChild.getAttribute("aria-current") === 'true') {
+            text = "Clear Option " + text;
+          }
+          return text;
+        } catch (e) {
+          console.log(e);
+          return "";
+        }
+      },
+      generate_metadata: (element) => {
+        let text = "";
+        const aChild = element.querySelector(
+          "a.a-link-normal.s-navigation-item",
+        );
+        if (element.innerText && element.innerText.trim()) {
+          text += element.innerText.trim();
+          if (aChild && aChild.hasAttribute("title")) {
+            text += "_";
+            text += aChild.getAttribute("title");
+          }
+        } else {
+          const aChild = element.querySelector(
+            "a.a-link-normal.s-navigation-item",
+          );
+          if (aChild && aChild.hasAttribute("title")) {
+            text += aChild.getAttribute("title");
+          }
+        }
+        if (aChild && aChild.getAttribute("aria-current") === 'true') {
+          return {title: text, selected: true};
+        }
+        return {title: text, selected: false};
+      },
+      children: [
+        {
+          selector: "input[type='checkbox']",
+        },
+      ],
+    },
+    {
+      selector:
+        "ul:nth-of-type(1) > span.a-declarative > span > li:has(a.a-link-normal.s-navigation-item):not(:has(input[type='checkbox']))",
+      add_text: true,
+      name: "from_text",
+      clickable: true,
       direct_child: true,
       text_js: function (element) {
         try {
@@ -132,11 +201,78 @@ export const refinement_option = [
           add_text: true,
         },
         {
-          selector: "li",
+          selector: "li:has(input[type='checkbox'])",
           add_text: true,
           name: "from_text",
           clickable: true,
-          // click_selector: "a",
+          click_selector: "a",
+          text_js: function (element) {
+            try {
+              let text = "";
+              if (!element) {
+                return text;
+              }
+              const aChild = element.querySelector(
+                "a.a-link-normal.s-navigation-item",
+              );
+              if (element.innerText && element.innerText.trim()) {
+                text += element.innerText.trim();
+                if (aChild && aChild.hasAttribute("title")) {
+                  text += " ";
+                  text += aChild.getAttribute("title");
+                }
+              } else {
+                const aChild = element.querySelector(
+                  "a.a-link-normal.s-navigation-item",
+                );
+                if (aChild && aChild.hasAttribute("title")) {
+                  text += aChild.getAttribute("title");
+                }
+              }
+              if (aChild && aChild.getAttribute("aria-current") === 'true') {
+                text = "Clear Option " + text;
+              }
+              return text;
+            } catch (e) {
+              console.log(e);
+              return "";
+            }
+          },
+          generate_metadata: (element) => {
+            let text = "";
+            const aChild = element.querySelector(
+              "a.a-link-normal.s-navigation-item",
+            );
+            if (element.innerText && element.innerText.trim()) {
+              text += element.innerText.trim();
+              if (aChild && aChild.hasAttribute("title")) {
+                text += "_";
+                text += aChild.getAttribute("title");
+              }
+            } else {
+              const aChild = element.querySelector(
+                "a.a-link-normal.s-navigation-item",
+              );
+              if (aChild && aChild.hasAttribute("title")) {
+                text += aChild.getAttribute("title");
+              }
+            }
+            if (aChild && aChild.getAttribute("aria-current") === 'true') {
+              return {title: text, selected: true};
+            }
+            return {title: text, selected: false};
+          },
+          children: [
+            {
+              selector: "input[type='checkbox']",
+            },
+          ],
+        },
+        {
+          selector: "li:not(:has(input[type='checkbox']))",
+          add_text: true,
+          name: "from_text",
+          clickable: true,
           text_js: function (element) {
             try {
               let text = "";
