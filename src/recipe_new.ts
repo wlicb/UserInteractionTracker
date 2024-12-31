@@ -46,8 +46,14 @@ export const refinement_option = [
     class: 'refinement-title'
   },
   {
+    selector: 'a.s-navigation-clear-link',
+    add_text: true,
+    name: 'clear_selection',
+    clickable: true
+  },
+  {
     selector:
-      'ul:nth-of-type(1) > span.a-declarative > span > li:has(a.a-link-normal.s-navigation-item)',
+      "ul:nth-of-type(1) > span.a-declarative > span > li:has(a.a-link-normal.s-navigation-item):has(input[type='checkbox'])",
     add_text: true,
     name: 'from_text',
     clickable: true,
@@ -59,9 +65,9 @@ export const refinement_option = [
         if (!element) {
           return text
         }
+        const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
         if (element.innerText && element.innerText.trim()) {
           text += element.innerText.trim()
-          const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
           if (aChild && aChild.hasAttribute('title')) {
             text += ' '
             text += aChild.getAttribute('title')
@@ -72,11 +78,95 @@ export const refinement_option = [
             text += aChild.getAttribute('title')
           }
         }
+        if (aChild && aChild.getAttribute('aria-current') === 'true') {
+          text = 'Clear Option ' + text
+        }
         return text
       } catch (e) {
         console.log(e)
         return ''
       }
+    },
+    generate_metadata: (element) => {
+      let text = ''
+      const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+      if (element.innerText && element.innerText.trim()) {
+        text += element.innerText.trim()
+        if (aChild && aChild.hasAttribute('title')) {
+          text += '_'
+          text += aChild.getAttribute('title')
+        }
+      } else {
+        const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+        if (aChild && aChild.hasAttribute('title')) {
+          text += aChild.getAttribute('title')
+        }
+      }
+      if (aChild && aChild.getAttribute('aria-current') === 'true') {
+        return { title: text, selected: true }
+      }
+      return { title: text, selected: false }
+    },
+    children: [
+      {
+        selector: "input[type='checkbox']"
+      }
+    ]
+  },
+  {
+    selector:
+      "ul:nth-of-type(1) > span.a-declarative > span > li:has(a.a-link-normal.s-navigation-item):not(:has(input[type='checkbox']))",
+    add_text: true,
+    name: 'from_text',
+    clickable: true,
+    direct_child: true,
+    text_js: function (element) {
+      try {
+        let text = ''
+        if (!element) {
+          return text
+        }
+        const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+        if (element.innerText && element.innerText.trim()) {
+          text += element.innerText.trim()
+          if (aChild && aChild.hasAttribute('title')) {
+            text += ' '
+            text += aChild.getAttribute('title')
+          }
+        } else {
+          const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+          if (aChild && aChild.hasAttribute('title')) {
+            text += aChild.getAttribute('title')
+          }
+        }
+        if (aChild && aChild.getAttribute('aria-current') === 'true') {
+          text = 'Clear Option ' + text
+        }
+        return text
+      } catch (e) {
+        console.log(e)
+        return ''
+      }
+    },
+    generate_metadata: (element) => {
+      let text = ''
+      const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+      if (element.innerText && element.innerText.trim()) {
+        text += element.innerText.trim()
+        if (aChild && aChild.hasAttribute('title')) {
+          text += '_'
+          text += aChild.getAttribute('title')
+        }
+      } else {
+        const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+        if (aChild && aChild.hasAttribute('title')) {
+          text += aChild.getAttribute('title')
+        }
+      }
+      if (aChild && aChild.getAttribute('aria-current') === 'true') {
+        return { title: text, selected: true }
+      }
+      return { title: text, selected: false }
     },
     children: [
       {
@@ -95,7 +185,7 @@ export const refinement_option = [
         add_text: true
       },
       {
-        selector: 'li',
+        selector: "li:has(input[type='checkbox'])",
         add_text: true,
         name: 'from_text',
         clickable: true,
@@ -106,9 +196,9 @@ export const refinement_option = [
             if (!element) {
               return text
             }
+            const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
             if (element.innerText && element.innerText.trim()) {
               text += element.innerText.trim()
-              const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
               if (aChild && aChild.hasAttribute('title')) {
                 text += ' '
                 text += aChild.getAttribute('title')
@@ -119,11 +209,93 @@ export const refinement_option = [
                 text += aChild.getAttribute('title')
               }
             }
+            if (aChild && aChild.getAttribute('aria-current') === 'true') {
+              text = 'Clear Option ' + text
+            }
             return text
           } catch (e) {
             console.log(e)
             return ''
           }
+        },
+        generate_metadata: (element) => {
+          let text = ''
+          const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+          if (element.innerText && element.innerText.trim()) {
+            text += element.innerText.trim()
+            if (aChild && aChild.hasAttribute('title')) {
+              text += '_'
+              text += aChild.getAttribute('title')
+            }
+          } else {
+            const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+            if (aChild && aChild.hasAttribute('title')) {
+              text += aChild.getAttribute('title')
+            }
+          }
+          if (aChild && aChild.getAttribute('aria-current') === 'true') {
+            return { title: text, selected: true }
+          }
+          return { title: text, selected: false }
+        },
+        children: [
+          {
+            selector: "input[type='checkbox']"
+          }
+        ]
+      },
+      {
+        selector: "li:not(:has(input[type='checkbox']))",
+        add_text: true,
+        name: 'from_text',
+        clickable: true,
+        text_js: function (element) {
+          try {
+            let text = ''
+            if (!element) {
+              return text
+            }
+            const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+            if (element.innerText && element.innerText.trim()) {
+              text += element.innerText.trim()
+              if (aChild && aChild.hasAttribute('title')) {
+                text += ' '
+                text += aChild.getAttribute('title')
+              }
+            } else {
+              const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+              if (aChild && aChild.hasAttribute('title')) {
+                text += aChild.getAttribute('title')
+              }
+            }
+            if (aChild && aChild.getAttribute('aria-current') === 'true') {
+              text = 'Clear Option ' + text
+            }
+            return text
+          } catch (e) {
+            console.log(e)
+            return ''
+          }
+        },
+        generate_metadata: (element) => {
+          let text = ''
+          const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+          if (element.innerText && element.innerText.trim()) {
+            text += element.innerText.trim()
+            if (aChild && aChild.hasAttribute('title')) {
+              text += '_'
+              text += aChild.getAttribute('title')
+            }
+          } else {
+            const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+            if (aChild && aChild.hasAttribute('title')) {
+              text += aChild.getAttribute('title')
+            }
+          }
+          if (aChild && aChild.getAttribute('aria-current') === 'true') {
+            return { title: text, selected: true }
+          }
+          return { title: text, selected: false }
         },
         children: [
           {
@@ -157,7 +329,7 @@ export const quantity_selector = {
     },
     {
       selector: 'select',
-      clickable: true,
+      // clickable: true,
       name: 'drop_down_list'
     }
   ]
@@ -171,7 +343,7 @@ export const delivery_frequency_selector = {
   children: [
     {
       selector: '#rcxOrdFreqOnmlWrapper select',
-      clickable: true,
+      // clickable: true,
       name: 'drop_down_list'
     }
   ]
@@ -371,6 +543,12 @@ export const recipes = [
     match: '/s',
     match_method: 'url',
     selector: 'html',
+    generate_metadata: (em) => {
+      const term = em.querySelector(
+        '#navbar-main #nav-search-bar-form input#twotabsearchtextbox'
+      )?.value
+      return { search_term: term }
+    },
     children: [
       {
         selector: 'head',
@@ -394,11 +572,19 @@ export const recipes = [
                   'div.a-section.a-spacing-none:not(:has(#n-title)):has(span.a-size-base.a-color-base.puis-bold-weight-text):has(ul span.a-declarative > span > li):not(#reviewsRefinements):not(#departments):not(#priceRefinements):not(#filters)',
                 name: 'from_text',
                 text_selector: 'span.a-size-base.a-color-base.puis-bold-weight-text',
-                children: refinement_option
+                children: refinement_option,
+                generate_metadata: (em) => {
+                  const title = em.querySelector(
+                    'span.a-size-base.a-color-base.puis-bold-weight-text'
+                  )?.innerHTML
+                  return { title }
+                }
               },
               {
                 selector: '#departments',
                 name: 'departments',
+                add_text: true,
+                text_format: 'Department',
                 children: [
                   {
                     selector: 'li a',
@@ -406,19 +592,254 @@ export const recipes = [
                     name: 'from_text',
                     clickable: true
                   }
-                ]
+                ],
+                generate_metadata: (element) => {
+                  const selection = element.querySelectorAll(
+                    "li a[aria-current='true']"
+                  ) as NodeListOf<HTMLElement>
+                  if (!selection) {
+                    return { title: 'Department', selection: null }
+                  } else {
+                    let selection_string = ''
+                    for (const s of selection) {
+                      if (s) {
+                        selection_string += s.innerText
+                        selection_string += ','
+                      }
+                    }
+                    return { title: 'Department', selection: selection_string }
+                  }
+                }
               },
               {
                 selector: '#reviewsRefinements',
                 name: 'reviews_refinements',
+                add_text: true,
+                text_format: 'Customer Reviews',
                 children: [
                   {
-                    selector: 'li a',
+                    selector: 'a.s-navigation-clear-link',
+                    add_text: true,
+                    name: 'clear_selection',
+                    clickable: true
+                  },
+                  {
+                    selector: "li a[aria-current='true']",
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true,
+                    text_format: 'Clear Option {}'
+                  },
+                  {
+                    selector: "li a[aria-current='false']",
                     add_text: true,
                     name: 'from_text',
                     clickable: true
                   }
-                ]
+                ],
+                generate_metadata: (element) => {
+                  const selection = element.querySelectorAll(
+                    "li a[aria-current='true']"
+                  ) as NodeListOf<HTMLElement>
+                  if (!selection) {
+                    return { title: 'Customer Reviews', selection: null }
+                  } else {
+                    let selection_string = ''
+                    for (const s of selection) {
+                      if (s) {
+                        selection_string += s.innerText
+                        selection_string += ','
+                      }
+                    }
+                    return { title: 'Customer Reviews', selection: selection_string }
+                  }
+                }
+              },
+              {
+                selector: '#priceRefinements',
+                name: 'price_refinements',
+                children: [
+                  // 2 cases: selection / slider
+                  {
+                    selector: '#p_36-title, div.sf-refinement-heading span',
+                    add_text: true,
+                    name: 'price_heading'
+                  },
+
+                  // case 1: selection
+                  {
+                    selector: "div[aria-labelledby='p_36-title'] > a",
+                    add_text: true,
+                    name: 'clear_price_selection',
+                    clickable: true
+                  },
+                  {
+                    selector: "ul[aria-labelledby='p_36-title'] a[aria-current='true']",
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true,
+                    text_format: 'Clear Option {}'
+                  },
+                  {
+                    selector: "ul[aria-labelledby='p_36-title'] a[aria-current='false']",
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true
+                  },
+                  {
+                    selector: '#p_n_deal_type-title',
+                    add_text: true,
+                    name: 'deals_discounts_heading'
+                  },
+                  {
+                    selector: "div[aria-labelledby='p_n_deal_type-title'] > a",
+                    add_text: true,
+                    name: 'clear_deals_discount_selection',
+                    clickable: true
+                  },
+                  {
+                    selector: "ul[aria-labelledby='p_n_deal_type-title'] a[aria-current='true']",
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true,
+                    text_format: 'Clear Option {}'
+                  },
+                  {
+                    selector: "ul[aria-labelledby='p_n_deal_type-title'] a[aria-current='false']",
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true
+                  },
+
+                  // case 2: slider
+                  {
+                    selector: 'div.sf-range-slider-row:nth-of-type(1)',
+                    add_text: true
+                  },
+                  {
+                    selector: 'div.sf-range-slider-row:nth-of-type(2) div.s-lower-bound input',
+                    name: 'price_min_value',
+                    add_text: true,
+                    // text_js: (element) => {
+                    //   const text = element.getAttribute("aria-valuetext")
+                    //   console.log(text)
+                    //   if (text) {
+                    //     return text;
+                    //   } else {
+                    //     return "";
+                    //   }
+                    // },
+                    clickable: true,
+                    keep_attr: ['min', 'max', 'step'],
+                    override_attr: {
+                      step_values: (em) => {
+                        const formEm = em.closest('form')
+                        if (formEm) {
+                          const prop = formEm.getAttribute('data-slider-props')
+                          if (prop) {
+                            const steps = JSON.parse(prop).stepLabels
+                            return steps
+                          }
+                        }
+                        return ''
+                      },
+                      current_value: (em) => {
+                        const value = Number.parseInt(em.getAttribute('value'))
+                        if (value !== null) {
+                          const formEm = em.closest('form')
+                          if (formEm) {
+                            const prop = formEm.getAttribute('data-slider-props')
+                            if (prop) {
+                              const steps = JSON.parse(prop).stepLabels
+                              return steps[value]
+                            }
+                          }
+                        }
+                        return ''
+                      }
+                    }
+                  },
+                  {
+                    selector: 'div.sf-range-slider-row:nth-of-type(2) div.s-upper-bound input',
+                    name: 'price_max_value',
+                    add_text: true,
+                    // text_js: (element) => {
+                    //   const text = element.getAttribute("aria-valuetext")
+                    //   if (text) {
+                    //     return text;
+                    //   } else {
+                    //     return "";
+                    //   }
+                    // },
+                    clickable: true,
+                    keep_attr: ['min', 'max', 'step'],
+                    override_attr: {
+                      step_values: (em) => {
+                        const formEm = em.closest('form')
+                        if (formEm) {
+                          const prop = formEm.getAttribute('data-slider-props')
+                          if (prop) {
+                            const steps = JSON.parse(prop).stepLabels
+                            return steps
+                          }
+                        }
+                        return ''
+                      },
+                      current_value: (em) => {
+                        const value = Number.parseInt(em.getAttribute('value'))
+                        if (value !== null) {
+                          const formEm = em.closest('form')
+                          if (formEm) {
+                            const prop = formEm.getAttribute('data-slider-props')
+                            if (prop) {
+                              const steps = JSON.parse(prop).stepLabels
+                              return steps[value]
+                            }
+                          }
+                        }
+                        return ''
+                      }
+                    }
+                  },
+                  {
+                    selector: 'div.sf-submit-range-button input',
+                    name: 'submit_price_range',
+                    add_text: true,
+                    text_format: 'Go',
+                    clickable: true
+                  },
+                  {
+                    selector: 'div.sf-reset-range-link a',
+                    name: 'reset_price_selection',
+                    add_text: true,
+                    clickable: true
+                  }
+                ],
+                generate_metadata: (element) => {
+                  // case 2
+                  const rangeEm = element.querySelector(
+                    'div.sf-range-slider-row:nth-of-type(1)'
+                  ) as HTMLElement
+                  if (rangeEm) {
+                    return { title: 'Price', selection: rangeEm.innerText?.replace(/[\n]/g, '') }
+                  }
+                  // case 1
+                  const selection = element.querySelectorAll(
+                    "li a[aria-current='true']"
+                  ) as NodeListOf<HTMLElement>
+                  if (!selection) {
+                    return { title: 'Price', selection: '' }
+                  } else {
+                    let selection_string = ''
+                    for (const s of selection) {
+                      if (s) {
+                        selection_string += s.innerText
+                        selection_string += ','
+                      }
+                    }
+                    return { title: 'Price, Discounts & Deals', selection: selection_string }
+                  }
+                }
               }
             ]
           },
@@ -517,6 +938,17 @@ export const recipes = [
     terminate_callback: function () {
       return arguments[0]
     },
+    generate_metadata: (em) => {
+      const title = em.querySelector('#title').innerText
+      const price = em
+        .querySelector(
+          "#apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[class='offersConsistencyEnabled'] > div:not([style='display:none;']):not([style=\"display: none;\"]) #corePriceDisplay_desktop_feature_div span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay, #apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[data-csa-c-content-id='apex_with_rio_cx'] #corePriceDisplay_desktop_feature_div div.a-section.a-spacing-none.aok-align-center.aok-relative > span.aok-offscreen"
+        )
+        ?.innerText.replace(/[\n]/g, '')
+        .trim()
+      const asin = em.querySelector('input#ASIN').value
+      return { title, price, asin }
+    },
     children: [
       {
         selector: 'head',
@@ -571,6 +1003,29 @@ export const recipes = [
                     text_selector: 'div.a-row:has(label.a-form-label) > label.a-form-label',
                     name: 'from_text',
                     direct_child: true,
+                    generate_metadata: (em) => {
+                      const label = em
+                        .querySelector('div.a-row:has(label.a-form-label) label.a-form-label')
+                        ?.innerHTML.replace(/[:\n]/g, '')
+                        .trim()
+                      let value = em.querySelector(
+                        'div.a-row:has(label.a-form-label) span.selection'
+                      )?.innerHTML
+                      if (value === undefined || value === '') {
+                        const options = em.querySelector('select')?.querySelectorAll('option')
+                        // console.log(options);
+                        if (options) {
+                          for (const option of options) {
+                            // console.log(option);
+                            if (option && option.getAttribute('selected') !== null) {
+                              value = option.innerHTML.trim()
+                            }
+                          }
+                        }
+                        // console.log(value);
+                      }
+                      return { label, value: value.trim() }
+                    },
                     children: [
                       {
                         selector: 'div.a-row:has(label.a-form-label)',
@@ -588,7 +1043,7 @@ export const recipes = [
                       {
                         selector: 'select',
                         add_text: true,
-                        clickable: true,
+                        // clickable: true,
                         name: 'drop_down_list'
                       },
                       {
@@ -615,7 +1070,7 @@ export const recipes = [
                                   text += imgChild.alt
                                 }
                               }
-                              return text
+                              return text.trim()
                             }
                           }
                         ]
@@ -623,6 +1078,122 @@ export const recipes = [
                     ]
                   }
                 ]
+              }
+            ]
+          },
+          // handle new twisters
+          {
+            selector: '#twister-plus-inline-twister',
+            class: 'product-options',
+            name: 'product_options',
+            children: [
+              {
+                selector: 'div.inline-twister-row',
+                text_selector:
+                  'div.inline-twister-dim-title-value-truncate-expanded span.a-size-base.a-color-secondary',
+                name: 'from_text',
+                direct_child: true,
+                generate_metadata: (em) => {
+                  const label = em
+                    .querySelector(
+                      'div.inline-twister-dim-title-value-truncate-expanded span.a-size-base.a-color-secondary'
+                    )
+                    ?.innerHTML.replace(/[:\n]/g, '')
+                    .trim()
+                  let value = em.querySelector(
+                    'div.inline-twister-dim-title-value-truncate-expanded span.inline-twister-dim-title-value'
+                  )?.innerHTML
+                  if (value === undefined || value === '') {
+                    const options = em.querySelector('select')?.querySelectorAll('option')
+                    // console.log(options);
+                    if (options) {
+                      for (const option of options) {
+                        // console.log(option);
+                        if (option && option.getAttribute('selected') !== null) {
+                          value = option.innerHTML.trim()
+                        }
+                      }
+                    }
+                    // console.log(value);
+                  }
+                  return { label, value: value.trim() }
+                },
+                children: [
+                  {
+                    selector: 'div.inline-twister-dim-title-value-truncate-expanded',
+                    children: [
+                      {
+                        selector: 'span.a-size-base.a-color-secondary',
+                        add_text: true
+                      },
+                      {
+                        selector: 'span.inline-twister-dim-title-value',
+                        add_text: true
+                      }
+                    ]
+                  },
+                  {
+                    selector: 'select',
+                    add_text: true,
+                    // clickable: true,
+                    name: 'drop_down_list'
+                  },
+                  {
+                    selector: 'ul',
+                    name: 'button_list',
+                    children: [
+                      {
+                        selector: 'li span:not(.aok-hidden) input',
+                        add_text: true,
+                        clickable: true,
+                        name: 'from_text',
+                        text_js: function (element) {
+                          const textEm = element.nextElementSibling
+                          let text = ''
+                          if (textEm.innerText.trim()) {
+                            text += textEm.innerText.trim()
+                            const imgChild = textEm.querySelector('img')
+                            if (imgChild && imgChild.alt) {
+                              text += ' '
+                              text += imgChild.alt
+                            }
+                          } else {
+                            const imgChild = textEm.querySelector('img')
+                            if (imgChild && imgChild.alt) {
+                              text += imgChild.alt
+                            }
+                          }
+                          return text.trim()
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                selector: 'div.inline-twister-singleton-header',
+                text_selector: 'span.a-size-base.a-color-secondary',
+                name: 'from_text',
+                children: [
+                  {
+                    selector: 'span.a-size-base.a-color-secondary',
+                    add_text: true
+                  },
+                  {
+                    selector: 'span.inline-twister-dim-title-value-truncate',
+                    add_text: true
+                  }
+                ],
+                generate_metadata: (em) => {
+                  const label = em
+                    .querySelector('span.a-size-base.a-color-secondary')
+                    ?.innerHTML.replace(/[:\n]/g, '')
+                    .trim()
+                  const value = em.querySelector(
+                    'span.inline-twister-dim-title-value-truncate'
+                  )?.innerHTML
+                  return { label, value }
+                }
               }
             ]
           },
@@ -656,54 +1227,12 @@ export const recipes = [
                 text_format: 'Pick Up',
                 children: [buy_box_without_accordion_pick_up]
               }
-            ],
-            before_hook: function () {
-              const title = document.querySelector('#title').innerText
-              const price = document.querySelector(
-                "#apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[class='offersConsistencyEnabled'] > div:not([style='display:none;']):not([style=\"display: none;\"]) #corePriceDisplay_desktop_feature_div span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay, #apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[data-csa-c-content-id='apex_with_rio_cx'] #corePriceDisplay_desktop_feature_div div.a-section.a-spacing-none.aok-align-center.aok-relative > span.aok-offscreen"
-              )?.innerText
-              const options = Array.from(
-                document.querySelectorAll(
-                  '#twister div.a-row:has(label.a-form-label):has(span.selection)'
-                )
-              ).map((a) => ({
-                label: a.querySelector('label.a-form-label').innerText,
-                value: a.querySelector('span.selection').innerText
-              }))
-              const options_dict = {}
-              for (const option of options) {
-                options_dict[option['label'].replace(': ', '')] = option['value']
-              }
-              const asin = document.querySelector('input#ASIN').value
-              console.log({ title, price, options: options_dict, asin })
-              return { title, price, options: options_dict, asin }
-            }
+            ]
           },
           {
             selector: '#buybox:not(:has(div.a-tab-container))',
             name: 'buybox',
-            children: [buy_box_with_accordion, buy_box_without_accordion_delivery],
-            before_hook: function () {
-              const title = document.querySelector('#title').innerText
-              const price = document.querySelector(
-                "#apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[class='offersConsistencyEnabled'] > div:not([style='display:none;']):not([style=\"display: none;\"]) #corePriceDisplay_desktop_feature_div span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay, #apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[data-csa-c-content-id='apex_with_rio_cx'] #corePriceDisplay_desktop_feature_div div.a-section.a-spacing-none.aok-align-center.aok-relative > span.aok-offscreen"
-              )?.innerText
-              const options = Array.from(
-                document.querySelectorAll(
-                  '#twister div.a-row:has(label.a-form-label):has(span.selection)'
-                )
-              ).map((a) => ({
-                label: a.querySelector('label.a-form-label').innerText,
-                value: a.querySelector('span.selection').innerText
-              }))
-              const options_dict = {}
-              for (const option of options) {
-                options_dict[option['label'].replace(': ', '')] = option['value']
-              }
-              const asin = document.querySelector('input#ASIN').value
-              console.log({ title, price, options: options_dict, asin })
-              return { title, price, options: options_dict, asin }
-            }
+            children: [buy_box_with_accordion, buy_box_without_accordion_delivery]
           },
           {
             selector: '#attach-warranty-pane #attach-warranty-display',
@@ -715,7 +1244,7 @@ export const recipes = [
                 name: 'from_text',
                 children: [
                   {
-                    selector: "input[aria-label='Select warranty option']",
+                    selector: "input[type='checkbox']",
                     name: 'select',
                     clickable: true
                   },
