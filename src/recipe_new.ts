@@ -979,7 +979,9 @@ export const recipes = [
                     const title = titleEm?.innerText
                     const urlEm = em.querySelector("div[data-cy='title-recipe'] a.a-link-normal.s-link-style.a-text-normal")
                     const url = urlEm?.getAttribute('href')
-                    return { name: "search_results", data: { title, asin, price, url } };
+                    const deliveryEm = em.querySelector("div[data-cy='delivery-recipe']")
+                    const delivery = deliveryEm?.innerText.replace(/[\n]/g, " ")
+                    return { name: "search_results", data: { title, asin, price, url, delivery } };
                   })
                 },
               ],
