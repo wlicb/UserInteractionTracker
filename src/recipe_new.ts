@@ -57,7 +57,7 @@ export const refinement_option = [
       add_text: true,
       name: "from_text",
       clickable: true,
-      click_selector: "a",
+      // click_selector: "a",
       direct_child: true,
       text_js: function (element) {
         try {
@@ -110,10 +110,19 @@ export const refinement_option = [
             text += aChild.getAttribute("title");
           }
         }
-        if (aChild && aChild.getAttribute("aria-current") === 'true') {
-          return {title: text, selected: true};
+        const nameEm = element.closest("ul")?.previousElementSibling;
+        const name = nameEm?.innerText;
+
+        let url = ""
+
+        if (aChild && aChild.hasAttribute("href")) {
+          url = aChild.getAttribute("href")
         }
-        return {title: text, selected: false};
+
+        if (aChild && aChild.getAttribute("aria-current") === 'true') {
+          return { name: "refinements." + name, data: { title: text, selected: true, url}};
+        }
+        return { name: "refinements." + name, data: { title: text, selected: false, url}};
       },
       children: [
         {
@@ -179,16 +188,20 @@ export const refinement_option = [
             text += aChild.getAttribute("title");
           }
         }
-        if (aChild && aChild.getAttribute("aria-current") === 'true') {
-          return {title: text, selected: true};
+        const nameEm = element.closest("ul")?.previousElementSibling;
+        const name = nameEm?.innerText;
+
+        let url = ""
+
+        if (aChild && aChild.hasAttribute("href")) {
+          url = aChild.getAttribute("href")
         }
-        return {title: text, selected: false};
+
+        if (aChild && aChild.getAttribute("aria-current") === 'true') {
+          return { name: "refinements." + name, data: { title: text, selected: true, url}};
+        }
+        return { name: "refinements." + name, data: { title: text, selected: false, url}};
       },
-      children: [
-        {
-          selector: "input[type='checkbox']",
-        },
-      ],
     },
     {
       selector:
@@ -205,7 +218,7 @@ export const refinement_option = [
           add_text: true,
           name: "from_text",
           clickable: true,
-          click_selector: "a",
+          // click_selector: "a",
           text_js: function (element) {
             try {
               let text = "";
@@ -257,10 +270,19 @@ export const refinement_option = [
                 text += aChild.getAttribute("title");
               }
             }
-            if (aChild && aChild.getAttribute("aria-current") === 'true') {
-              return {title: text, selected: true};
+            const nameEm = element.closest("ul")?.previousElementSibling;
+            const name = nameEm?.innerText;
+    
+            let url = ""
+
+            if (aChild && aChild.hasAttribute("href")) {
+              url = aChild.getAttribute("href")
             }
-            return {title: text, selected: false};
+    
+            if (aChild && aChild.getAttribute("aria-current") === 'true') {
+              return { name: "refinements." + name, data: { title: text, selected: true, url}};
+            }
+            return { name: "refinements." + name, data: { title: text, selected: false, url}};
           },
           children: [
             {
@@ -324,16 +346,20 @@ export const refinement_option = [
                 text += aChild.getAttribute("title");
               }
             }
-            if (aChild && aChild.getAttribute("aria-current") === 'true') {
-              return {title: text, selected: true};
+            const nameEm = element.closest("ul")?.previousElementSibling;
+            const name = nameEm?.innerText;
+    
+            let url = ""
+
+            if (aChild && aChild.hasAttribute("href")) {
+              url = aChild.getAttribute("href")
             }
-            return {title: text, selected: false};
+    
+            if (aChild && aChild.getAttribute("aria-current") === 'true') {
+              return { name: "refinements." + name, data: { title: text, selected: true, url}};
+            }
+            return { name: "refinements." + name, data: { title: text, selected: false, url}};
           },
-          children: [
-            {
-              selector: "input[type='checkbox']",
-            },
-          ],
         },
       ],
     },
@@ -583,7 +609,7 @@ export const recipes = [
       selector: "html",
       generate_metadata: (em) => {
         const term = em.querySelector('#navbar-main #nav-search-bar-form input#twotabsearchtextbox')?.value;
-        return {search_term: term};
+        return {name: "search_term", data: {term}};
       },
       children: [
         {
@@ -608,10 +634,6 @@ export const recipes = [
                   name: "from_text",
                   text_selector: "span.a-size-base.a-color-base.puis-bold-weight-text",
                   children: refinement_option,
-                  generate_metadata: (em) => {
-                    const title = em.querySelector('span.a-size-base.a-color-base.puis-bold-weight-text')?.innerHTML;
-                    return {title};
-                  },
                 },
                 {
                   selector: "#departments",
@@ -629,7 +651,7 @@ export const recipes = [
                   generate_metadata: (element) => {
                     const selection = element.querySelectorAll("li a[aria-current='true']") as NodeListOf<HTMLElement>;
                     if (!selection) {
-                      return {title: "Department", selection: null}
+                      return {name: "refinements.department", data: {selection: null}}
                     } else {
                       let selection_string = ""
                       for (const s of selection) {
@@ -638,7 +660,7 @@ export const recipes = [
                           selection_string += ","
                         }
                       }
-                      return {title: "Department", selection: selection_string}
+                      return {name: "refinements.department", data: {selection: selection_string}}
                     }
                   },
                 },
@@ -671,7 +693,7 @@ export const recipes = [
                     generate_metadata: (element) => {
                       const selection = element.querySelectorAll("li a[aria-current='true']") as NodeListOf<HTMLElement>;
                       if (!selection) {
-                        return {title: "Customer Reviews", selection: null}
+                        return {name: "refinements.reviews", data: {selection: null}}
                       } else {
                         let selection_string = ""
                         for (const s of selection) {
@@ -680,7 +702,7 @@ export const recipes = [
                             selection_string += ","
                           }
                         }
-                        return {title: "Customer Reviews", selection: selection_string}
+                        return {name: "refinements.reviews", data: {selection: selection_string}}
                       }
                     },
                 },
@@ -854,7 +876,7 @@ export const recipes = [
                     // case 2
                     const rangeEm = element.querySelector("div.sf-range-slider-row:nth-of-type(1)") as HTMLElement;
                     if (rangeEm) {
-                      return {title: "Price", selection: rangeEm.innerText?.replace(/[\n]/g, "")}
+                      return {name: "refinements.price", data: {selection: rangeEm.innerText?.replace(/[\n]/g, "")}}
                     }
                     // case 1
                     const selection = element.querySelectorAll("li a[aria-current='true']") as NodeListOf<HTMLElement>;
@@ -868,7 +890,7 @@ export const recipes = [
                           selection_string += ","
                         }
                       }
-                      return {title: "Price, Discounts & Deals", selection: selection_string}
+                      return {name: "refinements.price", data: {selection:selection_string}}
                     }
                   },
                 }
@@ -893,7 +915,14 @@ export const recipes = [
                       add_text: true,
                       class: "product-name",
                       clickable: true,
-                      name: "view_product",
+                      name: "product_name",
+                    },
+                    {
+                      selector: "div.s-product-image-container",
+                      add_text: true,
+                      name: "product_image",
+                      clickable: true,
+                      text_format: "Product Image",
                     },
                     {
                       selector: "div[data-cy='reviews-block']",
@@ -942,6 +971,16 @@ export const recipes = [
                       name: "see_options",
                     },
                   ],
+                  generate_metadata: ((em) => {
+                    const asin = em.getAttribute('data-asin')
+                    const priceEm = em.querySelector("div[data-cy='price-recipe'] a.a-link-normal > span.a-price > span.a-offscreen")
+                    const price = priceEm?.innerText
+                    const titleEm = em.querySelector("span.a-color-base.a-text-normal, h2.a-color-base.a-text-normal span")
+                    const title = titleEm?.innerText
+                    const urlEm = em.querySelector("div[data-cy='title-recipe'] a.a-link-normal.s-link-style.a-text-normal")
+                    const url = urlEm?.getAttribute('href')
+                    return { name: "search_results", data: { title, asin, price, url } };
+                  })
                 },
               ],
             },
@@ -971,7 +1010,8 @@ export const recipes = [
         const title = em.querySelector("#title").innerText
         const price = em.querySelector("#apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[class='offersConsistencyEnabled'] > div:not([style='display:none;']):not([style=\"display: none;\"]) #corePriceDisplay_desktop_feature_div span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay, #apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[data-csa-c-content-id='apex_with_rio_cx'] #corePriceDisplay_desktop_feature_div div.a-section.a-spacing-none.aok-align-center.aok-relative > span.aok-offscreen")?.innerText.replace(/[\n]/g, "").trim();
         const asin = em.querySelector("input#ASIN").value
-        return {title, price, asin};
+        const bullet_list = em.querySelector("#productFactsDesktopExpander ul, #featurebullets_feature_div ul")?.innerText?.replace(/[\n]/g, " ")
+        return {name: "product_detail", data: {title, price, asin, bullet_list}};
       },
       children: [
         {
@@ -1045,7 +1085,7 @@ export const recipes = [
                           // console.log(value);
 
                         }
-                        return {label, value: value.trim()};
+                        return {name: "product_options", data: {label, value: value.trim()}};
                       },
                       children: [
                         {
@@ -1100,157 +1140,172 @@ export const recipes = [
                     },
                   ],
                 },
-              ],
-            },
-            // handle new twisters
-            {
-              selector: "#twister-plus-inline-twister",
-              class: "product-options",
-              name: "product_options",
-              children: [
+                // handle new twisters
                 {
-                  selector: "div.inline-twister-row",
-                  text_selector:
-                    "div.inline-twister-dim-title-value-truncate-expanded span.a-size-base.a-color-secondary",
-                  name: "from_text",
-                  direct_child: true,
-                  generate_metadata: (em) => {
-                    const label = em.querySelector("div.inline-twister-dim-title-value-truncate-expanded span.a-size-base.a-color-secondary")?.innerHTML.replace(/[:\n]/g, "").trim();
-                    let value = em.querySelector("div.inline-twister-dim-title-value-truncate-expanded span.inline-twister-dim-title-value")?.innerHTML;
-                    if (value === undefined || value === "") {
-                      const options = em.querySelector("select")?.querySelectorAll("option");
-                      // console.log(options);
-                      if (options) {
-                        for (const option of options) {
-                          // console.log(option);
-                          if (option && option.getAttribute("selected") !== null) {
-                            value = option.innerHTML.trim();
-                          }
-                        }
-                      }
-                      // console.log(value);
-
-                    }
-                    return {label, value: value.trim()};
-                  },
+                  selector: "#twister-plus-inline-twister",
+                  class: "product-options",
+                  name: "product_options",
                   children: [
                     {
-                      selector: "div.inline-twister-dim-title-value-truncate-expanded",
+                      selector: "div.inline-twister-row",
+                      text_selector:
+                        "div.inline-twister-dim-title-value-truncate-expanded span.a-size-base.a-color-secondary",
+                      name: "from_text",
+                      direct_child: true,
+                      generate_metadata: (em) => {
+                        const label = em.querySelector("div.inline-twister-dim-title-value-truncate-expanded span.a-size-base.a-color-secondary")?.innerHTML.replace(/[:\n]/g, "").trim();
+                        let value = em.querySelector("div.inline-twister-dim-title-value-truncate-expanded span.inline-twister-dim-title-value")?.innerHTML;
+                        if (value === undefined || value === "") {
+                          const options = em.querySelector("select")?.querySelectorAll("option");
+                          // console.log(options);
+                          if (options) {
+                            for (const option of options) {
+                              // console.log(option);
+                              if (option && option.getAttribute("selected") !== null) {
+                                value = option.innerHTML.trim();
+                              }
+                            }
+                          }
+                          // console.log(value);
+
+                        }
+                        return {name: "product_options", data: {label, value: value.trim()}};
+                      },
+                      children: [
+                        {
+                          selector: "div.inline-twister-dim-title-value-truncate-expanded",
+                          children: [
+                            {
+                              selector: "span.a-size-base.a-color-secondary",
+                              add_text: true,
+                            },
+                            {
+                              selector: "span.inline-twister-dim-title-value",
+                              add_text: true,
+                            },
+                          ],
+                        },
+                        {
+                          selector: "select",
+                          add_text: true,
+                          // clickable: true,
+                          name: "drop_down_list",
+                        },
+                        {
+                          selector: "ul",
+                          name: "button_list",
+                          children: [
+                            {
+                              selector: "li span:not(.aok-hidden) input",
+                              add_text: true,
+                              clickable: true,
+                              name: "from_text",
+                              text_js: function (element) {
+                                const textEm = element.nextElementSibling;
+                                let text = "";
+                                if (textEm.innerText.trim()) {
+                                  text += textEm.innerText.trim();
+                                  const imgChild = textEm.querySelector("img");
+                                  if (imgChild && imgChild.alt) {
+                                    text += " ";
+                                    text += imgChild.alt;
+                                  }
+                                } else {
+                                  const imgChild = textEm.querySelector("img");
+                                  if (imgChild && imgChild.alt) {
+                                    text += imgChild.alt;
+                                  }
+                                }
+                                return text.trim();
+                              },
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      selector: "div.inline-twister-singleton-header",
+                      text_selector: "span.a-size-base.a-color-secondary",
+                      name: "from_text",
                       children: [
                         {
                           selector: "span.a-size-base.a-color-secondary",
                           add_text: true,
                         },
                         {
-                          selector: "span.inline-twister-dim-title-value",
+                          selector: "span.inline-twister-dim-title-value-truncate",
                           add_text: true,
                         },
                       ],
-                    },
-                    {
-                      selector: "select",
-                      add_text: true,
-                      // clickable: true,
-                      name: "drop_down_list",
-                    },
-                    {
-                      selector: "ul",
-                      name: "button_list",
-                      children: [
-                        {
-                          selector: "li span:not(.aok-hidden) input",
-                          add_text: true,
-                          clickable: true,
-                          name: "from_text",
-                          text_js: function (element) {
-                            const textEm = element.nextElementSibling;
-                            let text = "";
-                            if (textEm.innerText.trim()) {
-                              text += textEm.innerText.trim();
-                              const imgChild = textEm.querySelector("img");
-                              if (imgChild && imgChild.alt) {
-                                text += " ";
-                                text += imgChild.alt;
-                              }
-                            } else {
-                              const imgChild = textEm.querySelector("img");
-                              if (imgChild && imgChild.alt) {
-                                text += imgChild.alt;
-                              }
-                            }
-                            return text.trim();
-                          },
-                        },
-                      ],
-                    },
+                      generate_metadata: (em) => {
+                        const label = em.querySelector("span.a-size-base.a-color-secondary")?.innerHTML.replace(/[:\n]/g, "").trim();
+                        const value = em.querySelector("span.inline-twister-dim-title-value-truncate")?.innerHTML;
+                        return {name: "product_options", data: {label, value: value.trim()}};
+                      },
+                    }
                   ],
                 },
                 {
-                  selector: "div.inline-twister-singleton-header",
-                  text_selector: "span.a-size-base.a-color-secondary",
-                  name: "from_text",
-                  children: [
-                    {
-                      selector: "span.a-size-base.a-color-secondary",
-                      add_text: true,
-                    },
-                    {
-                      selector: "span.inline-twister-dim-title-value-truncate",
-                      add_text: true,
-                    },
-                  ],
-                  generate_metadata: (em) => {
-                    const label = em.querySelector("span.a-size-base.a-color-secondary")?.innerHTML.replace(/[:\n]/g, "").trim();
-                    const value = em.querySelector("span.inline-twister-dim-title-value-truncate")?.innerHTML;
-                    return {label, value};
+                  selector: "#productFactsDesktopExpander ul, #featurebullets_feature_div ul",
+                  add_text: true,
+                  name: "about_this_item",
+                  text_format: "About this item: {}",
+                },
+              ],
+            },
+            {
+                selector: "#buybox:has(div.a-tab-container):not(:has(#partialState_buybox_desktop))",
+                name: "buybox",
+                children: [
+                  {
+                    selector: "#tab_heading_desktop_buybox_group_1 a",
+                    name: "deliver_tab",
+                    clickable: true,
+                    add_text: true,
                   },
-                }
-              ],
-            },
+                  {
+                    selector: "#tab_heading_desktop_buybox_group_2 a",
+                    name: "pick_up_tab",
+                    clickable: true,
+                    add_text: true,
+                  },
+                  {
+                    selector: "#tab_desktop_buybox_group_1",
+                    name: "delivery",
+                    add_text: true,
+                    text_format: "Delivery",
+                    children: [
+                      buy_box_with_accordion,
+                      buy_box_without_accordion_delivery
+                    ],
+                  },
+                  {
+                    selector: "#tab_desktop_buybox_group_2",
+                    name: "pick_up",
+                    add_text: true,
+                    text_format: "Pick Up",
+                    children: [
+                      buy_box_without_accordion_pick_up
+                    ],
+                  },
+                ],
+              },
             {
-              selector: "#buybox:has(div.a-tab-container)",
-              name: "buybox",
-              children: [
-                {
-                  selector: "#tab_heading_desktop_buybox_group_1 a",
-                  name: "deliver_tab",
-                  clickable: true,
-                  add_text: true,
-                },
-                {
-                  selector: "#tab_heading_desktop_buybox_group_2 a",
-                  name: "pick_up_tab",
-                  clickable: true,
-                  add_text: true,
-                },
-                {
-                  selector: "#tab_desktop_buybox_group_1",
-                  name: "delivery",
-                  add_text: true,
-                  text_format: "Delivery",
-                  children: [
-                    buy_box_with_accordion,
-                    buy_box_without_accordion_delivery
-                  ],
-                },
-                {
-                  selector: "#tab_desktop_buybox_group_2",
-                  name: "pick_up",
-                  add_text: true,
-                  text_format: "Pick Up",
-                  children: [
-                    buy_box_without_accordion_pick_up
-                  ],
-                },
-              ],
-            },
-            {
-              selector: "#buybox:not(:has(div.a-tab-container))",
+              selector: "#buybox:not(:has(div.a-tab-container)):not(:has(#partialState_buybox_desktop))",
               name: "buybox",
               children: [
                 buy_box_with_accordion,
                 buy_box_without_accordion_delivery
               ],
+            },
+            {
+              "selector": "#partialState_buybox_desktop",
+              "children": [
+                  {
+                      selector: "#partialStateBuybox div.a-section.a-text-center.a-spacing-small",
+                      add_text: true,
+                  }
+              ]
             },
             {
               selector: "#attach-warranty-pane #attach-warranty-display",
