@@ -21,3 +21,13 @@ export function update_icon(url) {
     })
   }
 }
+
+export function findPageMeta() {
+  const htmlElement = document.documentElement
+  const metaData = htmlElement.getAttribute('data-element-meta-data')
+  const metaName = htmlElement.getAttribute('data-element-meta-name')
+  return {
+    metaData: metaData,
+    metaName: metaName
+  }
+}

@@ -1,4 +1,4 @@
-import { isFromPopup } from './utils/util'
+import { findPageMeta, isFromPopup } from './utils/util'
 import { recipes } from './recipe_new'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -235,9 +235,10 @@ async function captureInteraction(
     htmlSnapshots[currentSnapshotId] = document.documentElement.outerHTML
     chrome.storage.local.set({ htmlSnapshots })
     // })
-
+    const pageMeta = findPageMeta()
     // const clickableElements = getClickableElementsInViewport();
     const data = {
+      uuid: uuid,
       eventType,
       timestamp: timestamp,
       target: target,
@@ -248,9 +249,8 @@ async function captureInteraction(
       htmlSnapshotId: currentSnapshotId, // Use the new snapshot ID
       // clickableElements: clickableElements,
       selector: selector || '',
-      clickableId: clickableId || '',
       url: url || '',
-      uuid: uuid
+      pageMeta: pageMeta || ''
     }
 
     await chrome.runtime.sendMessage({ action: 'saveData', data })

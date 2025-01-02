@@ -5,7 +5,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import { nav, refinement_option, recipes } from './recipe_new'
 import JSZip from 'jszip'
-import { update_icon } from './utils/util'
+import { update_icon, findPageMeta } from './utils/util'
 let interactions: any[] = []
 let screenshots: [string, string][] = []
 let reasonsAnnotation: any[] = []
@@ -284,7 +284,8 @@ const saveInteraction = async (
   htmlSnapshotId: string,
   currentactionSequenceId: number,
   uuid: string,
-  navigationType: string | null = null
+  navigationType: string | null = null,
+  pageMeta: string | null = null
 ) => {
   const data = {
     eventType,
@@ -292,7 +293,8 @@ const saveInteraction = async (
     target_url,
     htmlSnapshotId,
     // actionSequenceId: currentactionSequenceId,
-    uuid
+    uuid,
+    pageMeta
   }
 
   // Add navigationType only if it exists
@@ -380,6 +382,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
         const htmlContent = response?.html
         actionSequenceId++
         const currentactionSequenceId = actionSequenceId
+        const pageMeta = findPageMeta()
         await Promise.all([
           saveHTML(htmlContent, currentSnapshotId),
           saveInteraction(
@@ -389,7 +392,8 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
             currentSnapshotId,
             currentactionSequenceId,
             uuid,
-            null
+            null,
+            pageMeta
           ),
           saveScreenshot(tab.windowId, timestamp, uuid),
           sendPopup(tabId, timestamp, 'tabActivate', {}, uuid)
@@ -455,7 +459,7 @@ chrome.webNavigation.onCompleted.addListener(async (details) => {
       const currentSnapshotId = `html_${hashCode(details.url)}_${timestamp}_${uuid}`
       actionSequenceId++
       const currentactionSequenceId = actionSequenceId
-
+      const pageMeta = findPageMeta()
       await Promise.all([
         saveHTML(htmlContent, currentSnapshotId),
         saveInteraction(
@@ -465,7 +469,8 @@ chrome.webNavigation.onCompleted.addListener(async (details) => {
           currentSnapshotId,
           currentactionSequenceId,
           uuid,
-          navigationType
+          navigationType,
+          pageMeta
         ),
         saveScreenshot((await chrome.tabs.get(details.tabId)).windowId, timestamp, uuid)
       ])
