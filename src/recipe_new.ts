@@ -386,6 +386,10 @@ export const quantity_selector = {
         add_text: true,
       },
       {
+        selector: "span.a-dropdown-prompt",
+        add_text: true,
+      },
+      {
         selector: "select",
         // clickable: true,
         name: "drop_down_list",
