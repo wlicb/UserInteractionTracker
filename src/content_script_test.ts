@@ -1,4 +1,4 @@
-import { findPageMeta, isFromPopup } from './utils/util'
+import { findPageMeta, isFromPopup, getClickableElementsInViewport } from './utils/util'
 import { recipes } from './recipe_new'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -159,8 +159,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const recipe = selectRecipe()
     const rootElement = document.querySelector(recipe.selector)
-    if (rootElement) {
-      const newRoot = processElement(rootElement, recipe)
+    if (!rootElement) {
+      console.warn(`Root element not found for selector: ${recipe.selector}`)
+      return
+    }
+
+    const newRoot = processElement(rootElement, recipe)
+    if (newRoot) {
       console.log(newRoot.outerHTML)
     }
   } catch (error) {
@@ -183,37 +188,6 @@ function hashCode(str: string) {
   return hash.toString()
 }
 
-// Function to get clickable elements in the viewport
-function getClickableElementsInViewport() {
-  const clickableElements: any[] = [] // Array to store clickable elements
-
-  // Select all potential clickable elements
-  const allElements = document.querySelectorAll(
-    'a, button, [onclick], input[type="button"], input[type="submit"]'
-  )
-
-  // Check if each element is in the viewport
-  allElements.forEach((element) => {
-    const rect = element.getBoundingClientRect()
-    if (
-      rect.top >= 0 &&
-      rect.left >= 0 &&
-      rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-      rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-    ) {
-      clickableElements.push({
-        tagName: element.tagName,
-        className: element.className,
-        id: element.id,
-        innerText: (element as HTMLElement).innerText.trim(),
-        outerHTML: element.outerHTML.trim()
-      })
-    }
-  })
-
-  return clickableElements
-}
-
 // Function to capture interactions
 async function captureInteraction(
   eventType: string,
@@ -232,7 +206,8 @@ async function captureInteraction(
     // await new Promise((resolve, reject) => {
     const result = await chrome.storage.local.get(['htmlSnapshots'])
     const htmlSnapshots = result.htmlSnapshots || {}
-    htmlSnapshots[currentSnapshotId] = document.documentElement.outerHTML
+    const markedDoc = getClickableElementsInViewport()
+    htmlSnapshots[currentSnapshotId] = markedDoc.documentElement.outerHTML
     chrome.storage.local.set({ htmlSnapshots })
     // })
     const pageMeta = findPageMeta()
@@ -369,6 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
           let result = await chrome.storage.local.get({ orderDetails: [] })
           const orderDetails = result.orderDetails || []
           orderDetails.push({
+            timestamp: new Date().toISOString(),
             name: productInfo.title,
             price: parseFloat(productInfo.price.replace(/[^0-9.]/g, '')),
             asin: productInfo.asin,
@@ -419,6 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
               })
 
               selectedItems.push({
+                timestamp: new Date().toISOString(),
                 name,
                 asin,
                 price,
@@ -443,8 +420,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse: (response?: any) => void) => {
   if (message.action === 'getHTML') {
-    const htmlContent = document.documentElement.outerHTML
-    sendResponse({ html: htmlContent })
+    const markedDoc = getClickableElementsInViewport()
+    const htmlContent = markedDoc.documentElement.outerHTML
+    const pageMeta = findPageMeta()
+    sendResponse({ html: htmlContent, pageMeta: pageMeta })
   }
   return true
 })

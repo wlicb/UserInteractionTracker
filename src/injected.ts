@@ -1,4 +1,4 @@
-import { findPageMeta, isFromPopup } from './utils/util'
+import { findPageMeta, getClickableElementsInViewport, isFromPopup } from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
 // extend window
 declare global {
@@ -108,7 +108,7 @@ const monkeyPatch = () => {
       innerText: target.innerText || target.value || '',
       outerHTML: target.outerHTML
     }
-
+    const markedDoc = getClickableElementsInViewport()
     const data = {
       uuid: uuid,
       eventType,
@@ -125,7 +125,7 @@ const monkeyPatch = () => {
       'element-meta-data': allAttributes['data-element-meta-data'] || '',
       'page-meta': pageMeta || '',
       url: url || '',
-      htmlContent: document.documentElement.outerHTML
+      htmlContent: markedDoc.documentElement.outerHTML
     }
 
     return data
