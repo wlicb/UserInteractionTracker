@@ -1014,8 +1014,6 @@ export const recipes = [
       match: "#productTitle",
       match_text: "",
       selector: "html",
-      terminate: function () { return !!arguments[0] },
-      terminate_callback: function () { return arguments[0] },
       generate_metadata: (em) => {
         const title = em.querySelector("#title").innerText
         const price = em.querySelector("#apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[class='offersConsistencyEnabled'] > div:not([style='display:none;']):not([style=\"display: none;\"]) #corePriceDisplay_desktop_feature_div span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay, #apex_desktop > div[data-csa-c-slot-id='apex_dp_center_column'] > div[data-csa-c-content-id='apex_with_rio_cx'] #corePriceDisplay_desktop_feature_div div.a-section.a-spacing-none.aok-align-center.aok-relative > span.aok-offscreen")?.innerText.replace(/[\n]/g, "").trim();
