@@ -404,6 +404,10 @@ export const delivery_frequency_selector = {
     add_text: true,
     children: [
       {
+        selector: "#rcxOrdFreqOnmlWrapper span.a-dropdown-prompt",
+        add_text: true,
+      },
+      {
         selector: "#rcxOrdFreqOnmlWrapper select",
         // clickable: true,
         name: "drop_down_list",
