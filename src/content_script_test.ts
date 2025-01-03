@@ -128,11 +128,11 @@ function selectRecipe() {
 
   for (const recipe of recipes) {
     const matchMethod = recipe.match_method || 'text'
-
     if (matchMethod === 'text') {
       try {
         // Execute script in tab to check for matching element
-        const element = document.querySelector(recipe.selector)
+        const element = document.querySelector(recipe.match)
+
         const hasMatch =
           element &&
           (!recipe.match_text ||
@@ -152,6 +152,8 @@ function selectRecipe() {
   throw new Error(`No matching recipe found for path: ${path}`)
 }
 
+
+
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('DOMContentLoaded')
 
@@ -159,13 +161,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const recipe = selectRecipe()
     const rootElement = document.querySelector(recipe.selector)
-    if (!rootElement) {
-      console.warn(`Root element not found for selector: ${recipe.selector}`)
-      return
-    }
 
-    const newRoot = processElement(rootElement, recipe)
-    if (newRoot) {
+    if (rootElement) {
+      const newRoot = processElement(rootElement, recipe)
+
       console.log(newRoot.outerHTML)
     }
   } catch (error) {

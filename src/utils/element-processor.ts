@@ -64,9 +64,11 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     const metaobj = recipe.generate_metadata(element)
     const metadata = JSON.stringify(metaobj.data)
     const metaname = metaobj.name
-    element.setAttribute('data-element-meta-name', metaname)
-    element.setAttribute('data-element-meta-data', metadata)
-    console.log('metadata generated: ', metadata, ' with name: ', metaname)
+
+    element.setAttribute('data-element-meta-name', metaname);
+    element.setAttribute('data-element-meta-data', metadata);
+    console.log('metadata generated: ', metadata, " with name: ", metaname);
+
   }
 
   // Handle clickables and inputs
