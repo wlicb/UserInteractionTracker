@@ -1,4 +1,5 @@
-import { isFromPopup } from './utils/util'
+import { findPageMeta, getClickableElementsInViewport, isFromPopup } from './utils/util'
+import { v4 as uuidv4 } from 'uuid'
 // extend window
 declare global {
   interface Window {
@@ -66,24 +67,36 @@ const monkeyPatch = () => {
     target: any,
     timestamp: string,
     selector: string,
-    url: string
+    url: string,
+    uuid: string
   ) {
     function findClickableParent(
       element: HTMLElement | null,
-      depth: number = 0
-    ): HTMLElement | null {
-      if (!element || depth >= 5) return null
+      depth: number = 0,
+      allAttributes: Record<string, string> = {}
+    ): Record<string, string> {
+      // Base case: if element is null or we've reached max depth
+      if (!element || depth >= 5) return allAttributes
+
+      // Check and collect all relevant attributes at current level
       if (element.hasAttribute('data-clickable-id')) {
-        return element
+        allAttributes['data-clickable-id'] = element.getAttribute('data-clickable-id') || ''
       }
-      return findClickableParent(element.parentElement, depth + 1)
+      if (element.hasAttribute('data-element-meta-name')) {
+        allAttributes['data-element-meta-name'] =
+          element.getAttribute('data-element-meta-name') || ''
+      }
+      if (element.hasAttribute('data-element-meta-data')) {
+        allAttributes['data-element-meta-data'] =
+          element.getAttribute('data-element-meta-data') || ''
+      }
+
+      // Continue searching up the tree, passing along collected attributes
+      return findClickableParent(element.parentElement, depth + 1, allAttributes)
     }
 
-    const clickableElement = findClickableParent(target as HTMLElement)
-    const clickableId = clickableElement
-      ? clickableElement.getAttribute('data-clickable-id') || ''
-      : ''
-
+    const pageMeta = findPageMeta()
+    const allAttributes = findClickableParent(target as HTMLElement)
     // Generate new HTML snapshot ID
     const currentSnapshotId = generateHtmlSnapshotId()
 
@@ -95,20 +108,24 @@ const monkeyPatch = () => {
       innerText: target.innerText || target.value || '',
       outerHTML: target.outerHTML
     }
-
+    const markedDoc = getClickableElementsInViewport()
     const data = {
+      uuid: uuid,
       eventType,
       timestamp: timestamp,
       target: serializedTarget, // Replace direct DOM element with serializable object
-    //   targetOuterHTML: target.outerHTML,
-    //   targetClass: target.className,
-    //   targetId: target.id,
-    //   targetText: target.innerText || target.value || '',
+      //   targetOuterHTML: target.outerHTML,
+      //   targetClass: target.className,
+      //   targetId: target.id,
+      //   targetText: target.innerText || target.value || '',
       htmlSnapshotId: currentSnapshotId,
       selector: selector || '',
-      clickableId: clickableId || '',
+      'data-semantic-id': allAttributes['data-clickable-id'] || '',
+      'element-meta-name': allAttributes['data-element-meta-name'] || '',
+      'element-meta-data': allAttributes['data-element-meta-data'] || '',
+      'page-meta': pageMeta || '',
       url: url || '',
-      htmlContent: document.documentElement.outerHTML
+      htmlContent: markedDoc.documentElement.outerHTML
     }
 
     return data
@@ -224,6 +241,7 @@ const monkeyPatch = () => {
           event.my_default_prevented = false
           console.log('after patch event', event)
           // const targetHref = anchor.href
+          const uuid = uuidv4()
           try {
             const screenshotComplete = new Promise((resolve, reject) => {
               function handleMessage(event: MessageEvent) {
@@ -275,13 +293,17 @@ const monkeyPatch = () => {
               event.target,
               timestamp,
               generateSelector(event.target),
-              window.location.href
+              window.location.href,
+              uuid
             )
             // await sleep 5 seconds
             // await new Promise(resolve => setTimeout(resolve, 5000));
             // alert("1")
-            window.postMessage({ type: 'CAPTURE_SCREENSHOT', timestamp: timestamp }, '*')
-            window.postMessage({ type: 'SAVE_INTERACTION_DATA', data: data }, '*')
+            window.postMessage(
+              { type: 'CAPTURE_SCREENSHOT', timestamp: timestamp, uuid: uuid },
+              '*'
+            )
+            window.postMessage({ type: 'SAVE_INTERACTION_DATA', data: data, uuid: uuid }, '*')
             // alert("3")
             // Wait for screenshot to complete
             await screenshotComplete

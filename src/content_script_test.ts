@@ -1,17 +1,19 @@
-import { isFromPopup } from './utils/util'
+import { findPageMeta, isFromPopup, getClickableElementsInViewport } from './utils/util'
 import { recipes } from './recipe_new'
+import { v4 as uuidv4 } from 'uuid'
 
 window.addEventListener('message', async (event) => {
   if (event.source !== window) return
 
   if (event.data.type && event.data.type === 'CAPTURE_SCREENSHOT') {
-    await captureScreenshot(event.data.timestamp)
+    await captureScreenshot(event.data.timestamp, event.data.uuid)
   }
   if (event.data.type && event.data.type === 'SAVE_INTERACTION_DATA') {
     try {
       const result = await chrome.storage.local.get(['htmlSnapshots'])
       const htmlSnapshots = result.htmlSnapshots || {}
-      htmlSnapshots[event.data.data.htmlSnapshotId] = event.data.data.htmlContent
+      const html_id = event.data.data.htmlSnapshotId + '_' + event.data.uuid
+      htmlSnapshots[html_id] = event.data.data.htmlContent
       chrome.storage.local.set({ htmlSnapshots })
       const dataForBackground = { ...event.data.data }
       delete dataForBackground.htmlContent
@@ -47,9 +49,9 @@ window.addEventListener('message', async (event) => {
   }
 })
 
-async function captureScreenshot(timestamp: string) {
+async function captureScreenshot(timestamp: string, uuid: string) {
   try {
-    const screenshotId = `screenshot_${timestamp}`
+    const screenshotId = `screenshot_${timestamp}_${uuid}`
     const response = await chrome.runtime.sendMessage({
       action: 'captureScreenshot',
       screenshotId
@@ -123,16 +125,19 @@ const SCROLL_THRESHOLD = 1500 // Minimum time in ms between screenshots for scro
 function selectRecipe() {
   const parsedUrl = new URL(window.location.href)
   const path = parsedUrl.pathname
+
   for (const recipe of recipes) {
     const matchMethod = recipe.match_method || 'text'
     if (matchMethod === 'text') {
       try {
         // Execute script in tab to check for matching element
         const element = document.querySelector(recipe.match)
+
         const hasMatch =
           element &&
           (!recipe.match_text ||
             (element.textContent?.toLowerCase().includes(recipe.match_text.toLowerCase()) ?? false))
+
         if (hasMatch) {
           return recipe
         }
@@ -143,8 +148,10 @@ function selectRecipe() {
       return recipe
     }
   }
+
   throw new Error(`No matching recipe found for path: ${path}`)
 }
+
 
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -154,8 +161,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const recipe = selectRecipe()
     const rootElement = document.querySelector(recipe.selector)
+
     if (rootElement) {
       const newRoot = processElement(rootElement, recipe)
+
       console.log(newRoot.outerHTML)
     }
   } catch (error) {
@@ -163,10 +172,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 })
 
-function generateHtmlSnapshotId() {
+function generateHtmlSnapshotId(uuid: string) {
   const url = window.location.href
   const timestamp = new Date().toISOString()
-  return `html_${hashCode(url)}_${timestamp}`
+  return `html_${hashCode(url)}_${timestamp}_${uuid}`
 }
 function hashCode(str: string) {
   let hash = 0
@@ -178,37 +187,6 @@ function hashCode(str: string) {
   return hash.toString()
 }
 
-// Function to get clickable elements in the viewport
-function getClickableElementsInViewport() {
-  const clickableElements: any[] = [] // Array to store clickable elements
-
-  // Select all potential clickable elements
-  const allElements = document.querySelectorAll(
-    'a, button, [onclick], input[type="button"], input[type="submit"]'
-  )
-
-  // Check if each element is in the viewport
-  allElements.forEach((element) => {
-    const rect = element.getBoundingClientRect()
-    if (
-      rect.top >= 0 &&
-      rect.left >= 0 &&
-      rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-      rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-    ) {
-      clickableElements.push({
-        tagName: element.tagName,
-        className: element.className,
-        id: element.id,
-        innerText: (element as HTMLElement).innerText.trim(),
-        outerHTML: element.outerHTML.trim()
-      })
-    }
-  })
-
-  return clickableElements
-}
-
 // Function to capture interactions
 async function captureInteraction(
   eventType: string,
@@ -216,34 +194,37 @@ async function captureInteraction(
   timestamp: string,
   selector: string,
   clickableId: string,
-  url: string
+  url: string,
+  uuid: string
 ) {
   try {
     // Generate new HTML snapshot ID
-    const currentSnapshotId = generateHtmlSnapshotId()
+    const currentSnapshotId = generateHtmlSnapshotId(uuid)
 
     // Save HTML snapshot and wait for it to complete
     // await new Promise((resolve, reject) => {
     const result = await chrome.storage.local.get(['htmlSnapshots'])
     const htmlSnapshots = result.htmlSnapshots || {}
-    htmlSnapshots[currentSnapshotId] = document.documentElement.outerHTML
+    const markedDoc = getClickableElementsInViewport()
+    htmlSnapshots[currentSnapshotId] = markedDoc.documentElement.outerHTML
     chrome.storage.local.set({ htmlSnapshots })
     // })
-
+    const pageMeta = findPageMeta()
     // const clickableElements = getClickableElementsInViewport();
     const data = {
+      uuid: uuid,
       eventType,
       timestamp: timestamp,
       target: target,
-    //   targetOuterHTML: target.outerHTML,
-    //   targetClass: target.className,
-    //   targetId: target.id,
-    //   targetText: target.innerText || target.value || '',
+      //   targetOuterHTML: target.outerHTML,
+      //   targetClass: target.className,
+      //   targetId: target.id,
+      //   targetText: target.innerText || target.value || '',
       htmlSnapshotId: currentSnapshotId, // Use the new snapshot ID
       // clickableElements: clickableElements,
       selector: selector || '',
-      clickableId: clickableId || '',
-      url: url || ''
+      url: url || '',
+      pageMeta: pageMeta || ''
     }
 
     await chrome.runtime.sendMessage({ action: 'saveData', data })
@@ -263,8 +244,9 @@ document.addEventListener('scroll', async (event) => {
     if (currentTime - lastScrollTime >= SCROLL_THRESHOLD) {
       lastScrollTime = currentTime
       const timestamp = new Date().toISOString()
-      await captureInteraction('scroll', event.target, timestamp, '', '', '')
-      await captureScreenshot(timestamp)
+      const uuid = uuidv4()
+      await captureInteraction('scroll', event.target, timestamp, '', '', '', uuid)
+      await captureScreenshot(timestamp, uuid)
     }
   } catch (error) {
     console.error('Error during scroll event handling:', error)
@@ -282,8 +264,9 @@ document.addEventListener(
         target.tagName === 'TEXTAREA')
     ) {
       const timestamp = new Date().toISOString()
-      await captureScreenshot(timestamp)
-      await captureInteraction('input', target, timestamp, '', '', '')
+      const uuid = uuidv4()
+      await captureScreenshot(timestamp, uuid)
+      await captureInteraction('input', target, timestamp, '', '', '', uuid)
     }
   },
   true
@@ -360,6 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
           let result = await chrome.storage.local.get({ orderDetails: [] })
           const orderDetails = result.orderDetails || []
           orderDetails.push({
+            timestamp: new Date().toISOString(),
             name: productInfo.title,
             price: parseFloat(productInfo.price.replace(/[^0-9.]/g, '')),
             asin: productInfo.asin,
@@ -410,6 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
               })
 
               selectedItems.push({
+                timestamp: new Date().toISOString(),
                 name,
                 asin,
                 price,
@@ -434,8 +419,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse: (response?: any) => void) => {
   if (message.action === 'getHTML') {
-    const htmlContent = document.documentElement.outerHTML
-    sendResponse({ html: htmlContent })
+    const markedDoc = getClickableElementsInViewport()
+    const htmlContent = markedDoc.documentElement.outerHTML
+    const pageMeta = findPageMeta()
+    sendResponse({ html: htmlContent, pageMeta: pageMeta })
   }
   return true
 })

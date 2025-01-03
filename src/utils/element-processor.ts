@@ -11,21 +11,20 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
   // Extract text content based on the recipe
   let elementText = ''
   if (recipe.text_selector) {
-
     const textElement = element.querySelector(recipe.text_selector)
     if (textElement) {
       elementText = textElement.innerText || textElement.textContent || ''
     }
   } else if (recipe.text_js) {
-    elementText = recipe.text_js(element);
+    elementText = recipe.text_js(element)
     if (elementText === '' || elementText === undefined) {
-      console.log("text js does not detect text for element ", element);
+      console.log('text js does not detect text for element ', element)
     }
   } else if (recipe.add_text) {
     elementText = element.innerText || element.textContent || ''
   }
   elementText = elementText.replace(/\s+/g, ' ').trim()
-  if (recipe.text_format && elementText) {
+  if (recipe.text_format) {
     elementText = recipe.text_format.replace('{}', elementText)
   } else if (recipe.text_format) {
     elementText = recipe.text_format
@@ -35,17 +34,20 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     newElement.textContent = elementText
   }
 
-
   // Build the node attributes
   let elementName = ''
   if (recipe.name) {
     if (recipe.name === 'from_text') {
+      if (!elementText) {
+        console.log('elementText is empty', recipe, element)
+        // debugger
+      }
       elementName = parentName ? parentName + '.' : ''
       if (!elementText) {
         // console.log("element text not found");
-        elementName = '';
+        elementName = ''
       } else {
-        elementName += elementText.toLowerCase().replace(/[^\w]+/g, '_');
+        elementName += elementText.toLowerCase().replace(/[^\w]+/g, '_')
       }
     } else if (recipe.name === 'from_nth_child') {
       elementName = parentName ? parentName + '.' : ''
@@ -62,9 +64,11 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     const metaobj = recipe.generate_metadata(element)
     const metadata = JSON.stringify(metaobj.data)
     const metaname = metaobj.name
+
     element.setAttribute('data-element-meta-name', metaname);
     element.setAttribute('data-element-meta-data', metadata);
     console.log('metadata generated: ', metadata, " with name: ", metaname);
+
   }
 
   // Handle clickables and inputs
@@ -144,7 +148,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     // console.log("attributes to keep: ", recipe.keep_attr);
     for (const key of recipe.keep_attr) {
       const value = element.getAttribute(key)
-      console.log(key, value);
+      console.log(key, value)
       if (value) {
         newElement.setAttribute(key, value)
       }

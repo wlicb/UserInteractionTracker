@@ -18,17 +18,33 @@
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "popup.html",
-    "default_icon": "icon.png"
+    "default_icon": "Inactive_icon.png"
   },
   "content_scripts": [
     {
       "js": ["js/content_script.js"],
-      "matches": ["https://www.amazon.com/*", "file://*"],
+      "matches": ["https://www.amazon.com/*"],
+      "exclude_matches": [
+        "https://www.amazon.com/checkout/*",
+        "https://www.amazon.com/checkout/p/*",
+        "https://www.amazon.com/gp/buy/*",
+        "https://www.amazon.com/gp/buy/spc/*",
+        "https://www.amazon.com/a/addresses*",
+        "https://www.amazon.com/cpe/yourpayments*"
+      ],
       "run_at": "document_start"
     },
     {
       "js": ["js/injected.js"],
-      "matches": ["https://www.amazon.com/*", "file://*"],
+      "matches": ["https://www.amazon.com/*"],
+      "exclude_matches": [
+        "https://www.amazon.com/checkout/*",
+        "https://www.amazon.com/checkout/p/*",
+        "https://www.amazon.com/gp/buy/*",
+        "https://www.amazon.com/gp/buy/spc/*",
+        "https://www.amazon.com/a/addresses*",
+        "https://www.amazon.com/cpe/yourpayments*"
+      ],
       "run_at": "document_start",
       "world": "MAIN"
     }
