@@ -152,8 +152,6 @@ function selectRecipe() {
   throw new Error(`No matching recipe found for path: ${path}`)
 }
 
-
-
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('DOMContentLoaded')
 
