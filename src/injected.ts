@@ -1,4 +1,9 @@
-import { findPageMeta, getClickableElementsInViewport, isFromPopup } from './utils/util'
+import {
+  findPageMeta,
+  getClickableElementsInViewport,
+  isFromPopup,
+  shouldExclude
+} from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
 import { finder } from '@medv/finder'
 // extend window
@@ -8,6 +13,10 @@ declare global {
   }
 }
 const monkeyPatch = () => {
+  const url = window.location.href
+  if (shouldExclude(url)) {
+    return
+  }
   window.monkeyPatched = true
   const originalAddEventListener = EventTarget.prototype.addEventListener
 
@@ -77,7 +86,7 @@ const monkeyPatch = () => {
       allAttributes: Record<string, string> = {}
     ): Record<string, string> {
       // Base case: if element is null or we've reached max depth
-      if (!element || depth >= 5) return allAttributes
+      if (!element || depth >= 15) return allAttributes
 
       // Check and collect all relevant attributes at current level
       if (element.hasAttribute('data-clickable-id')) {

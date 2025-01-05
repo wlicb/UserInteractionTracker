@@ -1,7 +1,12 @@
-import { findPageMeta, isFromPopup, getClickableElementsInViewport } from './utils/util'
+import {
+  findPageMeta,
+  isFromPopup,
+  getClickableElementsInViewport,
+  shouldExclude
+} from './utils/util'
 import { recipes } from './recipe_new'
 import { v4 as uuidv4 } from 'uuid'
-console.log('Content script loaded')
+
 window.addEventListener('message', async (event) => {
   if (event.source !== window) return
 
@@ -153,6 +158,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('DOMContentLoaded')
 
   const url = window.location.href
+  if (shouldExclude(url)) {
+    return
+  }
   try {
     const recipe = selectRecipe()
     const rootElement = document.querySelector(recipe.selector)
@@ -275,6 +283,10 @@ const handleScrollStop = debounce(async () => {
 
 document.addEventListener('scroll', (event) => {
   console.log('scroll event')
+  const url = window.location.href
+  if (shouldExclude(url)) {
+    return
+  }
   if (document.getElementById('reason-modal')) {
     return
   }
@@ -292,6 +304,10 @@ document.addEventListener('scroll', (event) => {
 document.addEventListener(
   'blur',
   async (event) => {
+    const url = window.location.href
+    if (shouldExclude(url)) {
+      return
+    }
     const target = event.target as HTMLElement
     if (isFromPopup(target)) return
     if (
@@ -308,28 +324,11 @@ document.addEventListener(
   true
 )
 
-// Capture click interactions
-function getUniqueSelector(element: any) {
-  if (element.id) {
-    return `#${element.id}`
-  }
-  if (element.className) {
-    const className = element.className.trim().split(/\s+/).join('.')
-    return `${element.tagName.toLowerCase()}.${className}`
-  }
-  return element.tagName.toLowerCase()
-}
-
-function getFullSelector(element: any) {
-  let path: string[] = []
-  while (element.parentElement) {
-    path.unshift(getUniqueSelector(element))
-    element = element.parentElement
-  }
-  return path.join(' > ')
-}
-
 document.addEventListener('DOMContentLoaded', () => {
+  const url = window.location.href
+  if (shouldExclude(url)) {
+    return
+  }
   // Handle all types of order buttons
   const placeOrderButtons = document.querySelectorAll(
     'input[id="placeOrder"], input[id="turbo-checkout-pyo-button"]'

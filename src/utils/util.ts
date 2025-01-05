@@ -23,13 +23,21 @@ export function update_icon(url) {
 }
 
 export function findPageMeta() {
-  const htmlElement = document.documentElement
-  const metaData = htmlElement.getAttribute('data-element-meta-data')
-  const metaName = htmlElement.getAttribute('data-element-meta-name')
-  return {
-    metaData: metaData,
-    metaName: metaName
-  }
+  const all_element_with_meta_data = document.querySelectorAll('[data-element-meta-name]')
+
+  const groupedResult = {}
+
+  all_element_with_meta_data.forEach((element) => {
+    const metaName = element.getAttribute('data-element-meta-name')
+    const metaData = element.getAttribute('data-element-meta-data')
+
+    if (!groupedResult[metaName]) {
+      groupedResult[metaName] = []
+    }
+    groupedResult[metaName].push(JSON.parse(metaData))
+  })
+
+  return groupedResult
 }
 
 export function getClickableElementsInViewport() {
@@ -60,4 +68,8 @@ export function removeClickableMarkers() {
   document.querySelectorAll('[extension-clickable-marker]').forEach((element) => {
     element.removeAttribute('extension-clickable-marker')
   })
+}
+
+export function shouldExclude(url: string) {
+  return !url.includes(url_include) || filter_url.some((excludeUrl) => url.includes(excludeUrl))
 }
