@@ -57,7 +57,7 @@ export function getClickableElementsInViewport() {
       rect.right <= (window.innerWidth || document.documentElement.clientWidth)
     ) {
       // Add marker attribute to the element
-      element.setAttribute('extension-clickable-marker', 'true')
+      element.setAttribute('visible-clickable-element-marker', 'true')
     }
   })
   return documentCopy
@@ -65,11 +65,26 @@ export function getClickableElementsInViewport() {
 
 // Add cleanup function to remove markers when needed
 export function removeClickableMarkers() {
-  document.querySelectorAll('[extension-clickable-marker]').forEach((element) => {
-    element.removeAttribute('extension-clickable-marker')
+  document.querySelectorAll('[visible-clickable-element-marker]').forEach((element) => {
+    element.removeAttribute('visible-clickable-element-marker')
   })
 }
 
 export function shouldExclude(url: string) {
   return !url.includes(url_include) || filter_url.some((excludeUrl) => url.includes(excludeUrl))
+}
+
+export function generateHtmlSnapshotId(uuid: string) {
+  const url = window.location.href
+  const timestamp = new Date().toISOString()
+  return `html_${hashCode(url)}_${timestamp}_${uuid}`
+}
+export function hashCode(str: string) {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i)
+    hash |= 0
+  }
+  console.log('Hash value before return:', hash)
+  return hash.toString()
 }

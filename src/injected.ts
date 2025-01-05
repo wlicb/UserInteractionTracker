@@ -2,7 +2,8 @@ import {
   findPageMeta,
   getClickableElementsInViewport,
   isFromPopup,
-  shouldExclude
+  shouldExclude,
+  generateHtmlSnapshotId
 } from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
 import { finder } from '@medv/finder'
@@ -24,53 +25,7 @@ const monkeyPatch = () => {
   const DEBOUNCE_DELAY = 150 // 300ms
   let lastClickTimestamp = 0
   const TimeOut = 30000
-  function generateHtmlSnapshotId() {
-    const url = window.location.href
-    const timestamp = new Date().toISOString()
-    return `html_${hashCode(url)}_${timestamp}`
-  }
-  function hashCode(str: string) {
-    let hash = 0
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash << 5) - hash + str.charCodeAt(i)
-      hash |= 0
-    }
-    console.log('Hash value before return:', hash)
-    return hash.toString()
-  }
-  // function generateSelector(element: Element): string {
-  //   if (element.id) {
-  //     return `#${element.id}`
-  //   }
-
-  //   let path = []
-  //   let current = element
-
-  //   while (current && current !== document.body && current.parentElement) {
-  //     let selector = current.tagName.toLowerCase()
-
-  //     if (current.className && typeof current.className === 'string') {
-  //       selector += '.' + current.className.trim().replace(/\s+/g, '.')
-  //     }
-
-  //     let sibling = current
-  //     let nth = 1
-  //     while (sibling.previousElementSibling) {
-  //       sibling = sibling.previousElementSibling
-  //       if (sibling.tagName === current.tagName) {
-  //         nth++
-  //       }
-  //     }
-  //     if (nth > 1) {
-  //       selector += `:nth-of-type(${nth})`
-  //     }
-
-  //     path.unshift(selector)
-  //     current = current.parentElement
-  //   }
-
-  //   return path.join(' > ')
-  // }
+  
 
   function captureInteraction(
     eventType: string,
@@ -108,7 +63,7 @@ const monkeyPatch = () => {
     const pageMeta = findPageMeta()
     const allAttributes = findClickableParent(target as HTMLElement)
     // Generate new HTML snapshot ID
-    const currentSnapshotId = generateHtmlSnapshotId()
+    const currentSnapshotId = generateHtmlSnapshotId(uuid)
 
     // Create a serializable version of the target
     const serializedTarget = {
