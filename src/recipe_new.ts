@@ -1145,7 +1145,14 @@ export const recipes = [
               },
               {
                 selector:
-                  '#apex_desktop > div[data-csa-c-slot-id="apex_dp_center_column"] > div[class="offersConsistencyEnabled"] > div:not([style="display:none;"]):not([style="display: none;"]) #corePriceDisplay_desktop_feature_div div.a-section.a-spacing-none.aok-align-center.aok-relative > span.aok-offscreen, #apex_desktop > div[data-csa-c-slot-id="apex_dp_center_column"] > div[data-csa-c-content-id="apex_with_rio_cx"] #corePriceDisplay_desktop_feature_div span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay',
+                  '#apex_desktop > div[data-csa-c-slot-id="apex_dp_center_column"]' +
+                  ' > div[class="offersConsistencyEnabled"] > div:not([style="display:none;"]):not([style="display: none;"]) ' +
+                  '#corePriceDisplay_desktop_feature_div:has(#sns-base-price) #sns-base-price span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay, ' +
+                  '#apex_desktop > div[data-csa-c-slot-id="apex_dp_center_column"]' +
+                  ' > div[class="offersConsistencyEnabled"] > div:not([style="display:none;"]):not([style="display: none;"]) ' +
+                  '#corePriceDisplay_desktop_feature_div:not(:has(#sns-base-price)) span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay, ' +
+                  '#apex_desktop > div[data-csa-c-slot-id="apex_dp_center_column"] > div[data-csa-c-content-id="apex_with_rio_cx"] ' +
+                  '#corePriceDisplay_desktop_feature_div span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay',
                 add_text: true,
                 text_format: 'Price: {}',
                 class: 'product-price',
@@ -1154,6 +1161,9 @@ export const recipes = [
                     name: 'product_details',
                     data: { label: 'price', value: em?.innerText?.replace(/\n/g, '') || '' }
                   }
+                },
+                text_js: (em) => {
+                  return em?.innerText?.replace(/\n/g, '') || ''
                 }
               },
               {
