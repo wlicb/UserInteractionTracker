@@ -256,9 +256,9 @@ const handleScrollStop = debounce(async () => {
   try {
     console.log('handle scroll event')
     const currentScrollTop = window.scrollY || document.documentElement.scrollTop
-    accumulatedScrollDistance = Math.abs(currentScrollTop - lastScrollTop)
-
-    if (accumulatedScrollDistance > 0) {
+    accumulatedScrollDistance = currentScrollTop - lastScrollTop
+    // console.log(window.scrollY, currentScrollTop, lastScrollTop, accumulatedScrollDistance)
+    if (accumulatedScrollDistance !== 0) {
       const timestamp = new Date().toISOString()
       const uuid = uuidv4()
       await captureInteraction('scroll', null, timestamp, uuid, accumulatedScrollDistance)
@@ -271,11 +271,19 @@ const handleScrollStop = debounce(async () => {
   } catch (error) {
     console.error('Error during scroll event handling:', error)
   }
-}, 200) // Using the same 1500ms threshold as before
+}, 400) // Using the 400ms threshold
 
 document.addEventListener('scroll', (event) => {
   console.log('scroll event')
   if (document.getElementById('reason-modal')) {
+    return
+  }
+  if (
+    event.target !== window &&
+    event.target !== document &&
+    event.target !== document.documentElement
+  ) {
+    console.log('Scroll event ignored from a nested scrollable container')
     return
   }
   handleScrollStop()

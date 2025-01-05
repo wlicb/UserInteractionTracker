@@ -1,5 +1,6 @@
 import { findPageMeta, getClickableElementsInViewport, isFromPopup } from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
+import { finder } from '@medv/finder'
 // extend window
 declare global {
   interface Window {
@@ -28,39 +29,39 @@ const monkeyPatch = () => {
     console.log('Hash value before return:', hash)
     return hash.toString()
   }
-  function generateSelector(element: Element): string {
-    if (element.id) {
-      return `#${element.id}`
-    }
+  // function generateSelector(element: Element): string {
+  //   if (element.id) {
+  //     return `#${element.id}`
+  //   }
 
-    let path = []
-    let current = element
+  //   let path = []
+  //   let current = element
 
-    while (current && current !== document.body && current.parentElement) {
-      let selector = current.tagName.toLowerCase()
+  //   while (current && current !== document.body && current.parentElement) {
+  //     let selector = current.tagName.toLowerCase()
 
-      if (current.className && typeof current.className === 'string') {
-        selector += '.' + current.className.trim().replace(/\s+/g, '.')
-      }
+  //     if (current.className && typeof current.className === 'string') {
+  //       selector += '.' + current.className.trim().replace(/\s+/g, '.')
+  //     }
 
-      let sibling = current
-      let nth = 1
-      while (sibling.previousElementSibling) {
-        sibling = sibling.previousElementSibling
-        if (sibling.tagName === current.tagName) {
-          nth++
-        }
-      }
-      if (nth > 1) {
-        selector += `:nth-of-type(${nth})`
-      }
+  //     let sibling = current
+  //     let nth = 1
+  //     while (sibling.previousElementSibling) {
+  //       sibling = sibling.previousElementSibling
+  //       if (sibling.tagName === current.tagName) {
+  //         nth++
+  //       }
+  //     }
+  //     if (nth > 1) {
+  //       selector += `:nth-of-type(${nth})`
+  //     }
 
-      path.unshift(selector)
-      current = current.parentElement
-    }
+  //     path.unshift(selector)
+  //     current = current.parentElement
+  //   }
 
-    return path.join(' > ')
-  }
+  //   return path.join(' > ')
+  // }
 
   function captureInteraction(
     eventType: string,
@@ -292,7 +293,7 @@ const monkeyPatch = () => {
               'click_a',
               event.target,
               timestamp,
-              generateSelector(event.target),
+              finder(event.target),
               window.location.href,
               uuid
             )
@@ -353,7 +354,7 @@ const monkeyPatch = () => {
           }
           return
         }
-
+        const uuid = uuidv4()
         try {
           // Create a promise to wait for screenshot completion
           const screenshotComplete = new Promise((resolve, reject) => {
@@ -379,12 +380,13 @@ const monkeyPatch = () => {
             'click_b',
             event.target,
             timestamp,
-            generateSelector(event.target),
-            window.location.href
+            finder(event.target),
+            window.location.href,
+            uuid
           )
           // Request screenshot
-          window.postMessage({ type: 'CAPTURE_SCREENSHOT', timestamp: timestamp }, '*')
-          window.postMessage({ type: 'SAVE_INTERACTION_DATA', data: data }, '*')
+          window.postMessage({ type: 'CAPTURE_SCREENSHOT', timestamp: timestamp, uuid: uuid }, '*')
+          window.postMessage({ type: 'SAVE_INTERACTION_DATA', data: data, uuid: uuid }, '*')
           const interactionComplete = new Promise((resolve, reject) => {
             function handleMessage1(event: MessageEvent) {
               if (
@@ -480,7 +482,7 @@ const monkeyPatch = () => {
           event.stopPropagation()
           const timestamp = new Date().toISOString()
           // const targetHref = anchor.href
-
+          const uuid = uuidv4()
           try {
             // 监听截图完成的消息
             const screenshotComplete = new Promise((resolve, reject) => {
@@ -509,15 +511,19 @@ const monkeyPatch = () => {
             })
 
             // 发送截图请求
-            window.postMessage({ type: 'CAPTURE_SCREENSHOT', timestamp: timestamp }, '*')
+            window.postMessage(
+              { type: 'CAPTURE_SCREENSHOT', timestamp: timestamp, uuid: uuid },
+              '*'
+            )
             const data = captureInteraction(
               'click_c',
               event.target,
               timestamp,
-              generateSelector(target),
-              window.location.href
+              finder(target),
+              window.location.href,
+              uuid
             )
-            window.postMessage({ type: 'SAVE_INTERACTION_DATA', data: data }, '*')
+            window.postMessage({ type: 'SAVE_INTERACTION_DATA', data: data, uuid: uuid }, '*')
             const interactionComplete = new Promise((resolve, reject) => {
               function handleMessage1(event: MessageEvent) {
                 if (
