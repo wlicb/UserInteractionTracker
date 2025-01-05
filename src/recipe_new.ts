@@ -754,8 +754,8 @@ export const recipes = [
                     selector: 'div.sf-range-slider-row:nth-of-type(1)',
                     add_text: true,
                     generate_metadata: (em) => {
-                      const range = em?.innerText
-                      return { name: 'refinements.price', data: { title: 'price-range', range } }
+                      const range = em?.innerText?.replace(/\n/g, '')
+                      return { name: 'refinements.price', data: { title: 'price_range', range } }
                     }
                   },
                   {
