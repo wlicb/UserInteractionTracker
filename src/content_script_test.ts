@@ -1,7 +1,7 @@
 import { findPageMeta, isFromPopup, getClickableElementsInViewport } from './utils/util'
 import { recipes } from './recipe_new'
 import { v4 as uuidv4 } from 'uuid'
-
+console.log('Content script loaded')
 window.addEventListener('message', async (event) => {
   if (event.source !== window) return
 
@@ -14,7 +14,7 @@ window.addEventListener('message', async (event) => {
       const htmlSnapshots = result.htmlSnapshots || {}
       const html_id = event.data.data.htmlSnapshotId + '_' + event.data.uuid
       htmlSnapshots[html_id] = event.data.data.htmlContent
-      chrome.storage.local.set({ htmlSnapshots })
+      await chrome.storage.local.set({ htmlSnapshots })
       const dataForBackground = { ...event.data.data }
       delete dataForBackground.htmlContent
 
@@ -119,9 +119,6 @@ declare global {
   }
 }
 
-let lastScrollTime = 0 // Track last scroll timestamp
-const SCROLL_THRESHOLD = 1500 // Minimum time in ms between screenshots for scroll actions
-
 function selectRecipe() {
   const parsedUrl = new URL(window.location.href)
   const path = parsedUrl.pathname
@@ -151,8 +148,6 @@ function selectRecipe() {
 
   throw new Error(`No matching recipe found for path: ${path}`)
 }
-
-
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('DOMContentLoaded')
@@ -192,10 +187,8 @@ async function captureInteraction(
   eventType: string,
   target: any,
   timestamp: string,
-  selector: string,
-  clickableId: string,
-  url: string,
-  uuid: string
+  uuid: string,
+  scrollDistance?: number
 ) {
   try {
     // Generate new HTML snapshot ID
@@ -207,50 +200,85 @@ async function captureInteraction(
     const htmlSnapshots = result.htmlSnapshots || {}
     const markedDoc = getClickableElementsInViewport()
     htmlSnapshots[currentSnapshotId] = markedDoc.documentElement.outerHTML
-    chrome.storage.local.set({ htmlSnapshots })
-    // })
+    await chrome.storage.local.set({ htmlSnapshots })
     const pageMeta = findPageMeta()
-    // const clickableElements = getClickableElementsInViewport();
-    const data = {
+    let data = {
       uuid: uuid,
       eventType,
       timestamp: timestamp,
       target: target,
-      //   targetOuterHTML: target.outerHTML,
-      //   targetClass: target.className,
-      //   targetId: target.id,
-      //   targetText: target.innerText || target.value || '',
       htmlSnapshotId: currentSnapshotId, // Use the new snapshot ID
-      // clickableElements: clickableElements,
-      selector: selector || '',
-      url: url || '',
       pageMeta: pageMeta || ''
     }
-
+    if (eventType === 'scroll') {
+      data['scrollDistance'] = scrollDistance
+    }
     await chrome.runtime.sendMessage({ action: 'saveData', data })
   } catch (error) {
     console.error(`Error during ${eventType} event handling:`, error)
   }
 }
 
-// Capture scroll interactions
-document.addEventListener('scroll', async (event) => {
+// let accumulatedScrollDistance = 0
+// let lastScrollTop = window.scrollY || document.documentElement.scrollTop
+// let lastScrollTime = 0 // Track last scroll timestamp
+// const SCROLL_THRESHOLD = 1500 // Minimum time in ms between screenshots for scroll actions
+// // Capture scroll interactions
+// document.addEventListener('scroll', async (event) => {
+//   try {
+//     // scroll don't have a specific target, so we judge whether popup is open
+//     if (document.getElementById('reason-modal')) {
+//       return
+//     }
+//     const currentScrollTop = window.scrollY || document.documentElement.scrollTop
+//     accumulatedScrollDistance += Math.abs(currentScrollTop - lastScrollTop)
+//     lastScrollTop = currentScrollTop
+//     const currentTime = Date.now()
+//     if (currentTime - lastScrollTime >= SCROLL_THRESHOLD) {
+//       lastScrollTime = currentTime
+//       const timestamp = new Date().toISOString()
+//       const uuid = uuidv4()
+//       await captureInteraction('scroll', event.target, timestamp,  uuid,accumulatedScrollDistance)
+//       await captureScreenshot(timestamp, uuid)
+//       accumulatedScrollDistance = 0
+//     }
+//   } catch (error) {
+//     console.error('Error during scroll event handling:', error)
+//   }
+// })
+
+import { debounce } from 'lodash'
+
+let lastScrollTop = window.scrollY || document.documentElement.scrollTop
+let accumulatedScrollDistance = 0
+
+const handleScrollStop = debounce(async () => {
   try {
-    // scroll don't have a specific target, so we judge whether popup is open
-    if (document.getElementById('reason-modal')) {
-      return
-    }
-    const currentTime = Date.now()
-    if (currentTime - lastScrollTime >= SCROLL_THRESHOLD) {
-      lastScrollTime = currentTime
+    console.log('handle scroll event')
+    const currentScrollTop = window.scrollY || document.documentElement.scrollTop
+    accumulatedScrollDistance = Math.abs(currentScrollTop - lastScrollTop)
+
+    if (accumulatedScrollDistance > 0) {
       const timestamp = new Date().toISOString()
       const uuid = uuidv4()
-      await captureInteraction('scroll', event.target, timestamp, '', '', '', uuid)
+      await captureInteraction('scroll', null, timestamp, uuid, accumulatedScrollDistance)
       await captureScreenshot(timestamp, uuid)
+
+      // Reset after capturing
+      lastScrollTop = currentScrollTop
+      accumulatedScrollDistance = 0
     }
   } catch (error) {
     console.error('Error during scroll event handling:', error)
   }
+}, 200) // Using the same 1500ms threshold as before
+
+document.addEventListener('scroll', (event) => {
+  console.log('scroll event')
+  if (document.getElementById('reason-modal')) {
+    return
+  }
+  handleScrollStop()
 })
 
 document.addEventListener(
@@ -266,7 +294,7 @@ document.addEventListener(
       const timestamp = new Date().toISOString()
       const uuid = uuidv4()
       await captureScreenshot(timestamp, uuid)
-      await captureInteraction('input', target, timestamp, '', '', '', uuid)
+      await captureInteraction('input', target, timestamp, uuid)
     }
   },
   true

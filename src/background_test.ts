@@ -530,11 +530,11 @@ async function downloadDataLocally() {
     const seen_screen = await chrome.storage.local.get({ seen_screenshots: [] })
     const seen_ReasonsAnnotation = await chrome.storage.local.get({ seen_reasonsAnnotation: [] })
 
-    let seen_storeInteractions = seen_interact.interactions || []
-    let seen_htmlSnapshots = seen_snapshots.htmlSnapshots || {}
-    let seen_storeOrderDetails = seen_orderDetails.orderDetails || []
-    let seen_storeScreenshots = seen_screen.screenshots || []
-    let seen_storeReasonsAnnotation = seen_ReasonsAnnotation.reasonsAnnotation || []
+    let seen_storeInteractions = seen_interact.seen_interactions || []
+    let seen_htmlSnapshots = seen_snapshots.seen_htmlSnapshots || {}
+    let seen_storeOrderDetails = seen_orderDetails.seen_orderDetails || []
+    let seen_storeScreenshots = seen_screen.seen_screenshots || []
+    let seen_storeReasonsAnnotation = seen_ReasonsAnnotation.seen_reasonsAnnotation || []
 
     storeInteractions = [...seen_storeInteractions, ...storeInteractions]
     htmlSnapshots = { ...seen_htmlSnapshots, ...htmlSnapshots }
