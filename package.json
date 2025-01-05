@@ -17,6 +17,7 @@
     "url": "https://github.com/chibat/chrome-extension-typescript-starter.git"
   },
   "dependencies": {
+    "@babel/types": "^7.26.3",
     "@medv/finder": "^4.0.2",
     "eslint": "^9.17.0",
     "jquery": "^3.7.1",
