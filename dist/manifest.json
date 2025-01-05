@@ -15,20 +15,30 @@
     "declarativeNetRequest",
     "declarativeNetRequestWithHostAccess"
   ],
-  "host_permissions": ["<all_urls>"],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "action": {
     "default_popup": "popup.html",
-    "default_icon": "Inactive_icon.png"
+    "default_icon": "inactive_icon.png"
   },
   "content_scripts": [
     {
-      "js": ["js/content_script.js"],
-      "matches": ["<all_urls>"],
+      "js": [
+        "js/content_script.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ],
       "run_at": "document_start"
     },
     {
-      "js": ["js/injected.js"],
-      "matches": ["<all_urls>"],
+      "js": [
+        "js/injected.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ],
       "run_at": "document_start",
       "world": "MAIN"
     }

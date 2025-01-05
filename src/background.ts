@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from 'uuid'
 import { nav, refinement_option, recipes } from './recipe_new'
 import JSZip from 'jszip'
 import { update_icon } from './utils/util'
+import { shouldExclude } from './utils/util'
+
 let interactions: any[] = []
 let screenshots: [string, string][] = []
 let reasonsAnnotation: any[] = []
@@ -224,21 +226,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       return true
     }
-    if (message.action === 'getRecipe' && sender.tab?.id) {
-      try {
-        selectRecipe(sender.tab.id, message.url)
-          .then((recipe) => {
-            sendResponse({ recipe: recipe })
-          })
-          .catch((error) => {
-            sendResponse({ error: error.message })
-          })
-      } catch (error) {
-        console.error('Error handling getRecipe:', error)
-        sendResponse({ success: false, error: (error as Error).message })
-      }
-      return true // Indicate that sendResponse will be called asynchronously
-    }
   })()
   return true // Keeps the message channel open for async responses
 })
@@ -371,8 +358,9 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
     update_icon(tab.url)
     if (
       tab.url &&
-      tab.url.includes(url_include) &&
-      !filter_url.some((excludeUrl) => tab.url.includes(excludeUrl))
+      // tab.url.includes(url_include) &&
+      // !filter_url.some((excludeUrl) => tab.url.includes(excludeUrl))
+      !(await shouldExclude(tab.url))
     ) {
       const timestamp = new Date().toISOString()
       const uuid = uuidv4()
@@ -405,50 +393,14 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   }
 })
 
-async function selectRecipe(tabId: number, url: string) {
-  const parsedUrl = new URL(url)
-  const path = parsedUrl.pathname
-
-  for (const recipe of recipes) {
-    const matchMethod = recipe.match_method || 'text'
-
-    if (matchMethod === 'text') {
-      try {
-        // Execute script in tab to check for matching element
-        const [{ result: hasMatch }] = await chrome.scripting.executeScript({
-          target: { tabId },
-          func: (selector, matchText) => {
-            const element = document.querySelector(selector)
-            return (
-              element &&
-              (!matchText ||
-                (element.textContent?.toLowerCase().includes(matchText.toLowerCase()) ?? false))
-            )
-          },
-          args: [recipe.match, recipe.match_text || '']
-        })
-
-        if (hasMatch) {
-          return recipe
-        }
-      } catch (error) {
-        console.error('Error checking text match:', error)
-      }
-    } else if (matchMethod === 'url' && recipe.match === path) {
-      return recipe
-    }
-  }
-
-  throw new Error(`No matching recipe found for path: ${path}`)
-}
-
 chrome.webNavigation.onCompleted.addListener(async (details) => {
   if (details.frameId !== 0) return
   console.log('webNavigation onCompleted event triggered:', details)
   update_icon(details.url)
   if (
-    details.url.includes(url_include) &&
-    !filter_url.some((excludeUrl) => details.url.includes(excludeUrl))
+    // details.url.includes(url_include) &&
+    // !filter_url.some((excludeUrl) => details.url.includes(excludeUrl))
+    !(await shouldExclude(details.url))
   ) {
     const navigationType = analyzeNavigation(details.tabId, details.url)
     console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`)
@@ -1171,3 +1123,25 @@ async function uploadDataToServer_new() {
     return false
   }
 }
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'getRecordingStatus') {
+    // get current active tab's url
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      const url = tabs[0].url
+      const isExcluded = await shouldExclude(url)
+      sendResponse({ recording: !isExcluded })
+    })
+    return true // Keep the message channel open for async response
+  }
+})
+
+// if user id change
+chrome.storage.local.onChanged.addListener((changes) => {
+  if (changes.userId) {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const url = tabs[0]?.url
+      update_icon(url)
+    })
+  }
+})

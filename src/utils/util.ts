@@ -3,13 +3,9 @@ import { filter_url, url_include } from '../config'
 export function isFromPopup(element: HTMLElement): boolean {
   return element.closest('#reason-modal') !== null
 }
-export function update_icon(url) {
+export async function update_icon(url) {
   console.log('update_icon', url)
-  if (
-    url &&
-    url.includes(url_include) &&
-    !filter_url.some((excludeUrl) => url.includes(excludeUrl))
-  ) {
+  if (!(await shouldExclude(url))) {
     console.log('active icon')
     chrome.action.setIcon({
       path: '../icon.png'
@@ -17,7 +13,7 @@ export function update_icon(url) {
   } else {
     console.log('inactive icon')
     chrome.action.setIcon({
-      path: '../Inactive_icon.png'
+      path: '../inactive_icon.png'
     })
   }
 }
@@ -70,6 +66,15 @@ export function removeClickableMarkers() {
   })
 }
 
-export function shouldExclude(url: string) {
+export async function shouldExclude(url: string) {
+  const result = await chrome.storage.local.get('userId')
+  if (!result.userId) {
+    console.log('no user id')
+    // if there is no user id, we should not be recording anything
+    return true
+  }
+  if (!url) {
+    return true
+  }
   return !url.includes(url_include) || filter_url.some((excludeUrl) => url.includes(excludeUrl))
 }
