@@ -1,5 +1,3 @@
-// src/background_test.ts
-
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import { v4 as uuidv4 } from 'uuid'
