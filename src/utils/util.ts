@@ -90,7 +90,7 @@ export async function shouldExclude(url: string, ignoreUserId: boolean = false) 
         window.addEventListener('message', handleMessage)
         window.postMessage({ type: 'GET_USER_ID' }, '*')
       })
-      console.log('userId', userId)
+      // console.log('userId', userId)
       if (!userId) {
         console.log('no user id')
         // if there is no user id, we should not be recording anything

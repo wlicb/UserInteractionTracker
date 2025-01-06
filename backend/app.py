@@ -56,6 +56,7 @@ s3_client = boto3.client('s3',
 
 app = Flask(__name__)
 CORS(app)
+app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024
 
 REMOVE_ZIP_FILE= True
 if not os.path.exists(UPLOAD_FOLDER):
