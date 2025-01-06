@@ -21,8 +21,6 @@ const work = () => {
     const originalAddEventListener = EventTarget.prototype.addEventListener
 
     // Add this at the top of the file
-    const DEBOUNCE_DELAY = 150 // 300ms
-    let lastClickTimestamp = 0
     const TimeOut = 30000
 
     function captureInteraction(
@@ -94,7 +92,19 @@ const work = () => {
       return data
     }
     // todo: patch removeEventListener support wrap
-    const blockSignals = {}
+    // const blockSignals = {}
+    // const finishSignals = {}
+    const wait_for_abort = (signal) => {
+      return new Promise((resolve, reject) => {
+        if (signal.aborted) {
+          // If already aborted, resolve immediately
+          resolve(void 0)
+        } else {
+          // Otherwise, listen for the abort event
+          signal.addEventListener('abort', () => resolve(void 0), { once: true })
+        }
+      })
+    }
 
     const hasDefaultAction = (event: Event) => {
       const element = event.target as HTMLElement
@@ -119,7 +129,7 @@ const work = () => {
       if (options && options.skip_monkey_patch) {
         return originalAddEventListener.call(this, type, listener, options)
       }
-      const callOriginalListener = () => {
+      const callOriginalListener = (event) => {
         if (typeof listener === 'function') {
           listener.call(this, event)
         } else if (listener && typeof listener.handleEvent === 'function') {
@@ -131,12 +141,12 @@ const work = () => {
         const wrappedListener = async function (event) {
           if (window.shouldExclude) {
             console.log('should exclude')
-            callOriginalListener()
+            callOriginalListener(event)
             return
           }
           const target = event.target as HTMLElement
           if (isFromPopup(target)) {
-            callOriginalListener()
+            callOriginalListener(event)
             return
           }
           if (event.just_for_default) {
@@ -144,21 +154,12 @@ const work = () => {
             return
           }
           // Add debouncing logic
-          const now = Date.now()
-          if (now - lastClickTimestamp < DEBOUNCE_DELAY) {
-            console.log('[Monkey Patch] Debouncing click event, blocking')
-            if (blockSignals[lastClickTimestamp]) {
-              const signal = blockSignals[lastClickTimestamp].signal
-              const wait_for_abort = new Promise((resolve, reject) => {
-                if (signal.aborted) {
-                  // If already aborted, resolve immediately
-                  resolve(void 0)
-                } else {
-                  // Otherwise, listen for the abort event
-                  signal.addEventListener('abort', () => resolve(void 0), { once: true })
-                }
-              })
-              await wait_for_abort
+          if (event.block_signal) {
+            const controller = new AbortController()
+            event.finish_signals.push(controller)
+            if (event.block_signal) {
+              const signal = event.block_signal.signal
+              await wait_for_abort(signal)
               console.log('[Monkey Patch] Debouncing click event, unblocking')
             } else {
               console.log('[Monkey Patch] Debouncing click event, no block signal')
@@ -168,13 +169,14 @@ const work = () => {
             } else if (listener && typeof listener.handleEvent === 'function') {
               listener.handleEvent.call(listener, event)
             }
+            controller.abort()
             return
           }
-          lastClickTimestamp = now
-          blockSignals[lastClickTimestamp] = new AbortController()
+          event.block_signal = new AbortController()
+          event.finish_signals = []
 
           console.log('[Monkey Patch] Click detected on:', event.target)
-          console.log(event.target)
+          console.log(event)
           const timestamp = new Date().toISOString()
           // const anchor = target.closest('a')
           console.log(event.target)
@@ -182,7 +184,6 @@ const work = () => {
             // console.log('[Monkey Patch] Click on <a> tag:', anchor.href)
             console.log('[Monkey Patch] Click on cancelable')
             event.preventDefault()
-            event.stopPropagation()
             event.preventDefault = () => {
               event.my_default_prevented = true
             }
@@ -236,14 +237,19 @@ const work = () => {
                   reject(new Error('Interaction timeout'))
                 }, TimeOut)
               })
+              // log before and after time
+              const selector = finder(event.target, {
+                maxNumberOfPathChecks: 0
+              })
               const data = captureInteraction(
                 'click_a',
                 event.target,
                 timestamp,
-                finder(event.target),
+                selector,
                 window.location.href,
                 uuid
               )
+
               // await sleep 5 seconds
               // await new Promise(resolve => setTimeout(resolve, 5000));
               // alert("1")
@@ -254,8 +260,9 @@ const work = () => {
               window.postMessage({ type: 'SAVE_INTERACTION_DATA', data: data, uuid: uuid }, '*')
               // alert("3")
               // Wait for screenshot to complete
-              await screenshotComplete
-              await interactionComplete
+              console.log('waiting for screenshot and interaction')
+              await Promise.all([screenshotComplete, interactionComplete])
+              console.log('screenshot and interaction complete')
               // console.log("completed")
               // debugger
               // alert("2")
@@ -266,10 +273,17 @@ const work = () => {
             } finally {
               console.log('running original listener')
               console.log(listener)
-              blockSignals[lastClickTimestamp].abort()
-              callOriginalListener()
-              console.log('re-dispatch the event if its not prevented')
+              console.log(event)
+              event.block_signal.abort()
+              // abort all finishSignals
+              await Promise.all(
+                event.finish_signals.map((controller) => wait_for_abort(controller.signal))
+              )
+              callOriginalListener(event)
+              console.log('event', event)
+              console.log('re-dispatch the event if its not prevented, 2')
               if (!event.my_default_prevented) {
+                // debugger
                 // Clone the original event
                 const newEvent = new MouseEvent(event.type, {
                   bubbles: event.bubbles,
@@ -326,7 +340,9 @@ const work = () => {
               'click_b',
               event.target,
               timestamp,
-              finder(event.target),
+              finder(event.target, {
+                maxNumberOfPathChecks: 0
+              }),
               window.location.href,
               uuid
             )
@@ -359,15 +375,23 @@ const work = () => {
               }, TimeOut)
             })
             // Wait for screenshot to complete
-            await screenshotComplete
-            await interactionComplete
+            // await ASscreenshotComplete
+            // await interactionComplete
+            console.log('waiting for screenshot and interaction')
+            await Promise.all([screenshotComplete, interactionComplete])
+            console.log('screenshot and interaction complete')
             // Execute original listener after screenshot is captured
           } catch (error) {
             console.error('Error capturing screenshot:', error)
             // Execute original listener even if screenshot fails
           } finally {
             console.log('running original listener')
-            callOriginalListener()
+            event.block_signal.abort()
+            // abort all finishSignals
+            await Promise.all(
+              event.finish_signals.map((controller) => wait_for_abort(controller.signal))
+            )
+            callOriginalListener(event)
           }
         }
 
@@ -408,28 +432,28 @@ const work = () => {
             console.log('skip monkey patch b')
             return
           }
-          // Add debouncing logic
-          const now = Date.now()
-          if (now - lastClickTimestamp < DEBOUNCE_DELAY) {
-            console.log('[Monkey Patch] Debouncing anchor click event')
-            return
-          }
-          lastClickTimestamp = now
-          blockSignals[lastClickTimestamp] = new AbortController()
-
-          const target = event.target as HTMLElement
-
           // Find the closest <a> tag in case of nested elements inside the <a>
           // const anchor = target.closest('a')
 
           if (hasDefaultAction(event)) {
+            // Add debouncing logic
+            const now = Date.now()
+            if (event.block_signal) {
+              console.log('[Monkey Patch] Anchor click event hander from our own listener')
+              console.log('should already be logged in other event listeners')
+              return
+            }
+            event.block_signal = new AbortController()
+            event.finish_signals = []
+
+            const target = event.target as HTMLElement
             // console.log('[Intercepted] Click on <a> tag:', anchor.href)
             console.log('[Intercepted] Click on cancelable')
             // if (!anchor.href.startsWith('javascript:')) {
             event.preventDefault()
             event.stopPropagation()
             const timestamp = new Date().toISOString()
-            // const targetHref = anchor.href
+            // const targetHref = anchor.hrstartPeriodicUploadef
             const uuid = uuidv4()
             try {
               // 监听截图完成的消息
@@ -467,7 +491,9 @@ const work = () => {
                 'click_c',
                 event.target,
                 timestamp,
-                finder(target),
+                finder(target, {
+                  maxNumberOfPathChecks: 0
+                }),
                 window.location.href,
                 uuid
               )
@@ -504,8 +530,11 @@ const work = () => {
               console.error('Error capturing screenshot:', error)
               // window.location.href = targetHref
             } finally {
-              blockSignals[lastClickTimestamp].abort()
-              console.log('re-dispatch the event if its not prevented')
+              event.block_signal.abort()
+              await Promise.all(
+                event.finish_signals.map((controller) => wait_for_abort(controller.signal))
+              )
+              console.log('re-dispatch the event if its not prevented, 1')
               if (!event.my_default_prevented) {
                 // Clone the original event
                 const newEvent = new MouseEvent(event.type, {
@@ -529,7 +558,6 @@ const work = () => {
                 newEvent.just_for_default = true
 
                 // Re-dispatch the new event
-                alert('re-dispatch the event')
                 target.dispatchEvent(newEvent)
               }
             }

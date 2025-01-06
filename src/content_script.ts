@@ -47,7 +47,8 @@ async function captureScreenshot(timestamp: string, uuid: string) {
 window.addEventListener('message', async (event) => {
   if (event.source !== window) return
   if (event.data.type && event.data.type === 'GET_USER_ID') {
-    const userId = await chrome.storage.local.get('userId')
+    const result = await chrome.storage.local.get('userId')
+    const userId = result.userId
     window.postMessage({ type: 'GET_USER_ID_RESPONSE', userId: userId }, '*')
   }
   if (event.data.type && event.data.type === 'CAPTURE_SCREENSHOT') {
@@ -445,13 +446,22 @@ const work = () => {
 
   chrome.runtime.onMessage.addListener(
     (message, sender, sendResponse: (response?: any) => void) => {
+      console.log('message', message)
       if (message.action === 'getHTML') {
         const markedDoc = getClickableElementsInViewport()
         const htmlContent = markedDoc.documentElement.outerHTML
         const pageMeta = findPageMeta()
         sendResponse({ html: htmlContent, pageMeta: pageMeta })
       }
-      return true
+      if (message.action === 'show_popup') {
+        console.log('show_popup', message)
+        // assert there isn't already a popup
+        if (document.getElementById('reason-modal')) {
+          return
+        }
+        createModal(message.question, sendResponse)
+        return true // Will respond asynchronously
+      }
     }
   )
 
@@ -519,19 +529,6 @@ const work = () => {
       sendResponse({ input: null })
     })
   }
-
-  // Listen for messages from background script
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === 'show_popup') {
-      console.log('show_popup', message)
-      // assert there isn't already a popup
-      if (document.getElementById('reason-modal')) {
-        return
-      }
-      createModal(message.question, sendResponse)
-      return true // Will respond asynchronously
-    }
-  })
 }
 shouldExclude(window.location.href).then((result) => {
   console.log('content script, shouldExclude', result)
