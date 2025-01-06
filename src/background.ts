@@ -716,7 +716,9 @@ async function uploadDataToServer() {
         ],
         { type: 'text/plain' }
       )
-      const sessionFormData = presignedFormData(`${folderName}/order_info_${timestamp}.txt`)
+      const sessionFormData = presignedFormData(
+        `${folderName}/order_info/order_info_${timestamp}.txt`
+      )
       sessionFormData.append('file', sessionInfo)
 
       console.log('uploading session info')
@@ -765,7 +767,9 @@ async function uploadDataToServer() {
       const interactionsBlob = new Blob([interactions_json], {
         type: 'application/json'
       })
-      const jsonFormDataFile = presignedFormData(`${folderName}/interactions_${timestamp}.json`)
+      const jsonFormDataFile = presignedFormData(
+        `${folderName}/interactions/interactions_${timestamp}.json`
+      )
 
       jsonFormDataFile.append('file', interactionsBlob)
 
@@ -966,7 +970,9 @@ async function uploadDataToServer_new() {
         ],
         { type: 'text/plain' }
       )
-      const sessionFormData = presignedFormData(`${folderName}/order_info_${timestamp}.txt`)
+      const sessionFormData = presignedFormData(
+        `${folderName}/order_info/order_info_${timestamp}.txt`
+      )
       sessionFormData.append('file', sessionInfo)
 
       console.log('uploading session info')
@@ -1014,7 +1020,9 @@ async function uploadDataToServer_new() {
       const interactionsBlob = new Blob([interactions_json], {
         type: 'application/json'
       })
-      const jsonFormDataFile = presignedFormData(`${folderName}/interactions_${timestamp}.json`)
+      const jsonFormDataFile = presignedFormData(
+        `${folderName}/interactions/interactions_${timestamp}.json`
+      )
 
       jsonFormDataFile.append('file', interactionsBlob)
 
@@ -1098,6 +1106,8 @@ async function uploadDataToServer_new() {
       )
     }
     await chrome.storage.local.set(newData)
+    chrome.storage.local.remove('user_interaction_tracker_last_timestamp')
+
     // chrome.storage.local.remove([
     //   'htmlSnapshots',
     //   'orderDetails',
