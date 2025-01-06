@@ -9,88 +9,92 @@ import { recipes } from './recipe_new'
 import { v4 as uuidv4 } from 'uuid'
 import { debounce } from 'lodash'
 
-const work = () => {
-  window.addEventListener('message', async (event) => {
-    if (event.source !== window) return
+async function captureScreenshot(timestamp: string, uuid: string) {
+  try {
+    const screenshotId = `screenshot_${timestamp}_${uuid}`
+    const response = await chrome.runtime.sendMessage({
+      action: 'captureScreenshot',
+      screenshotId
+    })
 
-    if (event.data.type && event.data.type === 'CAPTURE_SCREENSHOT') {
-      await captureScreenshot(event.data.timestamp, event.data.uuid)
+    if (!response.success) {
+      throw new Error(response.message || 'Screenshot capture failed')
     }
-    if (event.data.type && event.data.type === 'SAVE_INTERACTION_DATA') {
-      try {
-        const result = await chrome.storage.local.get(['htmlSnapshots'])
-        const htmlSnapshots = result.htmlSnapshots || {}
-        const html_id = event.data.data.htmlSnapshotId
-        htmlSnapshots[html_id] = event.data.data.htmlContent
-        await chrome.storage.local.set({ htmlSnapshots })
-        const dataForBackground = { ...event.data.data }
-        delete dataForBackground.htmlContent
 
-        const response2 = await chrome.runtime.sendMessage({
-          action: 'saveData',
-          data: dataForBackground
-        })
-        if (!response2.success) {
-          throw new Error(response2.message || 'interaction capture failed')
-        }
-        console.log(response2)
-        window.postMessage(
-          {
-            type: 'INTERACTION_COMPLETE',
-            timestamp: event.data.data.timestamp,
-            success: true
-          },
-          '*'
-        )
-      } catch (error) {
-        console.error('Error saving interaction data:', error)
-        window.postMessage(
-          {
-            type: 'INTERACTION_COMPLETE',
-            success: false,
-            error: error.message,
-            timestamp: event.data.data.timestamp
-          },
-          '*'
-        )
-      }
-    }
-  })
+    window.postMessage(
+      {
+        type: 'SCREENSHOT_COMPLETE',
+        timestamp: timestamp,
+        success: true
+      },
+      '*'
+    )
+  } catch (error) {
+    console.error('Error capturing screenshot in content script:', error)
 
-  async function captureScreenshot(timestamp: string, uuid: string) {
+    window.postMessage(
+      {
+        type: 'SCREENSHOT_COMPLETE',
+        timestamp: timestamp,
+        success: false,
+        error: error.message
+      },
+      '*'
+    )
+  }
+}
+
+window.addEventListener('message', async (event) => {
+  if (event.source !== window) return
+  if (event.data.type && event.data.type === 'GET_USER_ID') {
+    const userId = await chrome.storage.local.get('userId')
+    window.postMessage({ type: 'GET_USER_ID_RESPONSE', userId: userId }, '*')
+  }
+  if (event.data.type && event.data.type === 'CAPTURE_SCREENSHOT') {
+    await captureScreenshot(event.data.timestamp, event.data.uuid)
+  }
+  if (event.data.type && event.data.type === 'SAVE_INTERACTION_DATA') {
     try {
-      const screenshotId = `screenshot_${timestamp}_${uuid}`
-      const response = await chrome.runtime.sendMessage({
-        action: 'captureScreenshot',
-        screenshotId
+      const result = await chrome.storage.local.get(['htmlSnapshots'])
+      const htmlSnapshots = result.htmlSnapshots || {}
+      const html_id = event.data.data.htmlSnapshotId + '_' + event.data.uuid
+      htmlSnapshots[html_id] = event.data.data.htmlContent
+      await chrome.storage.local.set({ htmlSnapshots })
+      const dataForBackground = { ...event.data.data }
+      delete dataForBackground.htmlContent
+
+      const response2 = await chrome.runtime.sendMessage({
+        action: 'saveData',
+        data: dataForBackground
       })
-
-      if (!response.success) {
-        throw new Error(response.message || 'Screenshot capture failed')
+      if (!response2.success) {
+        throw new Error(response2.message || 'interaction capture failed')
       }
-
+      console.log(response2)
       window.postMessage(
         {
-          type: 'SCREENSHOT_COMPLETE',
-          timestamp: timestamp,
+          type: 'INTERACTION_COMPLETE',
+          timestamp: event.data.data.timestamp,
           success: true
         },
         '*'
       )
     } catch (error) {
-      console.error('Error capturing screenshot in content script:', error)
-
+      console.error('Error saving interaction data:', error)
       window.postMessage(
         {
-          type: 'SCREENSHOT_COMPLETE',
-          timestamp: timestamp,
+          type: 'INTERACTION_COMPLETE',
           success: false,
-          error: error.message
+          error: error.message,
+          timestamp: event.data.data.timestamp
         },
         '*'
       )
     }
   }
+})
+
+const work = () => {
   // Define interfaces for Recipe and OrderDetail
   interface Recipe {
     tag_name?: string
@@ -530,6 +534,7 @@ const work = () => {
   })
 }
 shouldExclude(window.location.href).then((result) => {
+  console.log('content script, shouldExclude', result)
   if (!result) {
     work()
   }

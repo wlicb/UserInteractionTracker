@@ -11,6 +11,7 @@ import { finder } from '@medv/finder'
 declare global {
   interface Window {
     monkeyPatched: boolean
+    shouldExclude: boolean
   }
 }
 
@@ -95,33 +96,10 @@ const work = () => {
     // todo: patch removeEventListener support wrap
     const blockSignals = {}
 
-    const executeDefaultAction = (event: Event) => {
-      console.log('executeDefaultAction')
-      const element = event.target as HTMLElement
-      console.log(element)
-      console.log(event)
-      if (event.my_default_prevented) {
-        console.log('default prevented in original listener')
-        return
-      }
-      const anchor = element.closest('a')
-      if (anchor) {
-        window.location.href = anchor.href
-      } else if (element.tagName.toLowerCase() === 'input') {
-        // if type is submit, submit the form
-        if (element.type === 'submit') {
-          console.log('submit the form')
-          element.form?.submit()
-        }
-      }
-    }
     const hasDefaultAction = (event: Event) => {
       const element = event.target as HTMLElement
       const anchor = element.closest('a')
       if (anchor) {
-        if (anchor.href.startsWith('javascript:')) {
-          return false
-        }
         return true
       }
       // if id is nav-search-submit-button
@@ -141,16 +119,24 @@ const work = () => {
       if (options && options.skip_monkey_patch) {
         return originalAddEventListener.call(this, type, listener, options)
       }
+      const callOriginalListener = () => {
+        if (typeof listener === 'function') {
+          listener.call(this, event)
+        } else if (listener && typeof listener.handleEvent === 'function') {
+          listener.handleEvent.call(listener, event)
+        }
+      }
 
       if (type === 'click' && listener) {
         const wrappedListener = async function (event) {
+          if (window.shouldExclude) {
+            console.log('should exclude')
+            callOriginalListener()
+            return
+          }
           const target = event.target as HTMLElement
           if (isFromPopup(target)) {
-            if (typeof listener === 'function') {
-              listener.call(this, event)
-            } else if (listener && typeof listener.handleEvent === 'function') {
-              listener.handleEvent.call(listener, event)
-            }
+            callOriginalListener()
             return
           }
           if (event.just_for_default) {
@@ -281,11 +267,7 @@ const work = () => {
               console.log('running original listener')
               console.log(listener)
               blockSignals[lastClickTimestamp].abort()
-              if (typeof listener === 'function') {
-                listener.call(this, event)
-              } else if (listener && typeof listener.handleEvent === 'function') {
-                listener.handleEvent.call(listener, event)
-              }
+              callOriginalListener()
               console.log('re-dispatch the event if its not prevented')
               if (!event.my_default_prevented) {
                 // Clone the original event
@@ -385,12 +367,7 @@ const work = () => {
             // Execute original listener even if screenshot fails
           } finally {
             console.log('running original listener')
-            blockSignals[lastClickTimestamp].abort()
-            if (typeof listener === 'function') {
-              listener.call(this, event)
-            } else if (listener && typeof listener.handleEvent === 'function') {
-              listener.handleEvent.call(listener, event)
-            }
+            callOriginalListener()
           }
         }
 
@@ -420,6 +397,10 @@ const work = () => {
       document.addEventListener(
         'click',
         async function (event: MouseEvent) {
+          if (window.shouldExclude) {
+            console.log('should exclude')
+            return
+          }
           if (isFromPopup(event.target)) {
             return
           }
@@ -548,6 +529,7 @@ const work = () => {
                 newEvent.just_for_default = true
 
                 // Re-dispatch the new event
+                alert('re-dispatch the event')
                 target.dispatchEvent(newEvent)
               }
             }
@@ -567,9 +549,23 @@ const work = () => {
   if (!window.monkeyPatched) {
     monkeyPatch()
   }
+  document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+      console.log('DOMContentLoaded')
+      shouldExclude(window.location.href).then((result) => {
+        console.log('shouldExclude', result)
+        window.shouldExclude = result
+      })
+    },
+    {
+      once: true
+    }
+  )
 }
 
-shouldExclude(window.location.href).then((result) => {
+// ignore user id for now, because full check would be async.
+shouldExclude(window.location.href, true).then((result) => {
   if (!result) {
     work()
   }

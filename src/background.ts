@@ -27,7 +27,6 @@ import {
   zip,
   base_url,
   data_collector_secret_id,
-  url_include,
   filter_url
 } from './config'
 
@@ -179,9 +178,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'captureScreenshot') {
       try {
         console.log('get screenshot request')
+        const start_time = new Date().getTime()
         const screenshotDataUrl = await captureScreenshot()
+        console.log('capture screenshot time: ', new Date().getTime() - start_time)
         if (screenshotDataUrl) {
           const success = await saveScreenshot_1(screenshotDataUrl, message.screenshotId)
+          console.log('save screenshot success', success)
+          console.log('time: ', new Date().getTime() - start_time)
           sendResponse({
             success,
             message: success ? undefined : 'Failed to capture screenshot'
@@ -356,12 +359,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
     }
     console.log(`Switched to tab ${tabId} with URL: ${tab.url}`)
     update_icon(tab.url)
-    if (
-      tab.url &&
-      // tab.url.includes(url_include) &&
-      // !filter_url.some((excludeUrl) => tab.url.includes(excludeUrl))
-      !(await shouldExclude(tab.url))
-    ) {
+    if (tab.url && !(await shouldExclude(tab.url))) {
       const timestamp = new Date().toISOString()
       const uuid = uuidv4()
       const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}_${uuid}`
@@ -397,11 +395,7 @@ chrome.webNavigation.onCompleted.addListener(async (details) => {
   if (details.frameId !== 0) return
   console.log('webNavigation onCompleted event triggered:', details)
   update_icon(details.url)
-  if (
-    // details.url.includes(url_include) &&
-    // !filter_url.some((excludeUrl) => details.url.includes(excludeUrl))
-    !(await shouldExclude(details.url))
-  ) {
+  if (!(await shouldExclude(details.url))) {
     const navigationType = analyzeNavigation(details.tabId, details.url)
     console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`)
     const timestamp = new Date().toISOString()
@@ -1123,18 +1117,6 @@ async function uploadDataToServer_new() {
     return false
   }
 }
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'getRecordingStatus') {
-    // get current active tab's url
-    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-      const url = tabs[0].url
-      const isExcluded = await shouldExclude(url)
-      sendResponse({ recording: !isExcluded })
-    })
-    return true // Keep the message channel open for async response
-  }
-})
 
 // if user id change
 chrome.storage.local.onChanged.addListener((changes) => {
