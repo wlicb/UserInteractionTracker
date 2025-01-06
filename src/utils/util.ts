@@ -99,13 +99,12 @@ export async function check_user_id(user_id: string) {
     const response = await fetch(`${check_user_id_url}?user_id=${user_id}`, {
       method: 'GET'
     })
-
     const data = await response.json()
 
     if (response.ok) {
       return 'success'
     } else {
-      return data.error || 'Unknown error'
+      return data || 'Unknown error'
     }
   } catch (error) {
     console.log(`Error: ${(error as Error).message}`)

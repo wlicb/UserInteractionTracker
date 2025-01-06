@@ -1145,3 +1145,9 @@ chrome.storage.local.onChanged.addListener((changes) => {
     })
   }
 })
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'invalid_user_id') {
+    console.log('invalid_user_id', message)
+  }
+})

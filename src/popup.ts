@@ -5,6 +5,7 @@ const outputDiv = document.getElementById('output') as HTMLDivElement
 const clearCacheBtn = document.getElementById('clearCache') as HTMLButtonElement
 const userIdInput = document.getElementById('userId') as HTMLInputElement
 const recordingDiv = document.getElementById('recording') as HTMLDivElement
+const user_id_valid_div = document.getElementById('user_id_valid') as HTMLDivElement
 // Add this function to fetch and display interaction stats
 async function displayInteractionStats(userId: string) {
   try {
@@ -35,20 +36,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   updateRecordingStatus()
   const check_user_id_valid = async (user_id: string) => {
-    if (!user_id) {
-      chrome.runtime.sendMessage({
-        action: 'invalid_user_id',
-        invalid_reason: 'Please enter your user id'
-      })
-      return
-    }
     const user_id_valid = await check_user_id(user_id)
 
     if (user_id_valid !== 'success') {
-      chrome.runtime.sendMessage({
-        action: 'invalid_user_id',
-        invalid_reason: 'Invalid user id, please check your user id'
-      })
+      user_id_valid_div.textContent = 'User ID is invalid, please check your user ID'
+    } else {
+      user_id_valid_div.textContent = ''
     }
   }
   chrome.storage.local.get(['userId'], async (result) => {
@@ -62,8 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       check_user_id_valid(result.userId)
     } else {
-      outputDiv.textContent = 'Please enter your user id'
-      check_user_id_valid('')
+      user_id_valid_div.textContent = 'Please enter your user id'
     }
   })
 
