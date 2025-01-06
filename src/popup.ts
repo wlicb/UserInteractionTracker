@@ -25,13 +25,23 @@ async function displayInteractionStats(userId: string) {
 }
 document.addEventListener('DOMContentLoaded', async () => {
   const updateRecordingStatus = () => {
-    chrome.runtime.sendMessage({ action: 'getRecordingStatus' }, (response) => {
-      if (response.recording) {
-        recordingDiv.textContent = 'Actions on this page will be recorded'
+    // chrome.runtime.sendMessage({ action: 'getRecordingStatus' }, (response) => {
+
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      const url = tabs[0].url
+      const isExcluded = await shouldExclude(url)
+      console.log('isExcluded', isExcluded)
+      // sendResponse({ recording: !isExcluded })
+
+      if (!isExcluded) {
+        recordingDiv.innerHTML =
+          '<img src="icon.png" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;" /> Actions on this page will be recorded'
       } else {
-        recordingDiv.textContent = 'Actions on this page will not be recorded'
+        recordingDiv.innerHTML =
+          '<img src="inactive_icon.png" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;" /> Actions on this page will not be recorded'
       }
     })
+    // })
   }
   updateRecordingStatus()
   const check_user_id_valid = async (user_id: string) => {

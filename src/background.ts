@@ -179,9 +179,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'captureScreenshot') {
       try {
         console.log('get screenshot request')
+        const start_time = new Date().getTime()
         const screenshotDataUrl = await captureScreenshot()
+        console.log('capture screenshot time: ', new Date().getTime() - start_time)
         if (screenshotDataUrl) {
           const success = await saveScreenshot_1(screenshotDataUrl, message.screenshotId)
+          console.log('save screenshot success', success)
+          console.log('time: ', new Date().getTime() - start_time)
           sendResponse({
             success,
             message: success ? undefined : 'Failed to capture screenshot'
@@ -1123,18 +1127,6 @@ async function uploadDataToServer_new() {
     return false
   }
 }
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'getRecordingStatus') {
-    // get current active tab's url
-    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-      const url = tabs[0].url
-      const isExcluded = await shouldExclude(url)
-      sendResponse({ recording: !isExcluded })
-    })
-    return true // Keep the message channel open for async response
-  }
-})
 
 // if user id change
 chrome.storage.local.onChanged.addListener((changes) => {

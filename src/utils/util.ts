@@ -66,12 +66,37 @@ export function removeClickableMarkers() {
   })
 }
 
-export async function shouldExclude(url: string) {
-  const result = await chrome.storage.local.get('userId')
-  if (!result.userId) {
-    console.log('no user id')
-    // if there is no user id, we should not be recording anything
-    return true
+export async function shouldExclude(url: string, ignoreUserId: boolean = false) {
+  console.log('shouldExclude', url)
+  console.log('ignoreUserId', ignoreUserId)
+  if (!ignoreUserId) {
+    if (chrome.storage) {
+      console.log('chrome.storage')
+      const result = await chrome.storage.local.get('userId')
+      if (!result.userId) {
+        console.log('no user id')
+        // if there is no user id, we should not be recording anything
+        return true
+      }
+    } else {
+      console.log('no chrome.storage')
+      const userId = await new Promise<string>((resolve) => {
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data.type === 'GET_USER_ID_RESPONSE') {
+            window.removeEventListener('message', handleMessage)
+            resolve(event.data.userId)
+          }
+        }
+        window.addEventListener('message', handleMessage)
+        window.postMessage({ type: 'GET_USER_ID' }, '*')
+      })
+      console.log('userId', userId)
+      if (!userId) {
+        console.log('no user id')
+        // if there is no user id, we should not be recording anything
+        return true
+      }
+    }
   }
   if (!url) {
     return true
