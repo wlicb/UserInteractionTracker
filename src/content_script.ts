@@ -2,7 +2,8 @@ import {
   findPageMeta,
   isFromPopup,
   getClickableElementsInViewport,
-  shouldExclude
+  shouldExclude,
+  generateHtmlSnapshotId
 } from './utils/util'
 import { processElement } from './utils/element-processor'
 import { recipes } from './recipe_new'
@@ -177,11 +178,11 @@ const work = () => {
     }
   })
 
-  function generateHtmlSnapshotId(uuid: string) {
-    const url = window.location.href
-    const timestamp = new Date().toISOString()
-    return `html_${hashCode(url)}_${timestamp}_${uuid}`
-  }
+  // function generateHtmlSnapshotId(uuid: string) {
+  //   const url = window.location.href
+  //   const timestamp = new Date().toISOString()
+  //   return `html_${hashCode(url)}_${timestamp}_${uuid}`
+  // }
   function hashCode(str: string) {
     let hash = 0
     for (let i = 0; i < str.length; i++) {
@@ -202,7 +203,7 @@ const work = () => {
   ) {
     try {
       // Generate new HTML snapshot ID
-      const currentSnapshotId = generateHtmlSnapshotId(uuid)
+      const currentSnapshotId = generateHtmlSnapshotId(timestamp, uuid)
 
       // Save HTML snapshot and wait for it to complete
       // await new Promise((resolve, reject) => {

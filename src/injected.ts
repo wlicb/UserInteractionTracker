@@ -59,7 +59,7 @@ const work = () => {
       const pageMeta = findPageMeta()
       const allAttributes = findClickableParent(target as HTMLElement)
       // Generate new HTML snapshot ID
-      const currentSnapshotId = generateHtmlSnapshotId(uuid)
+      const currentSnapshotId = generateHtmlSnapshotId(timestamp, uuid)
 
       // Create a serializable version of the target
       const serializedTarget = {

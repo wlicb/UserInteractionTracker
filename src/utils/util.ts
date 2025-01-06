@@ -101,9 +101,8 @@ export async function shouldExclude(url: string, ignoreUserId: boolean = false) 
   )
 }
 
-export function generateHtmlSnapshotId(uuid: string) {
+export function generateHtmlSnapshotId(timestamp: string, uuid: string) {
   const url = window.location.href
-  const timestamp = new Date().toISOString()
   return `html_${hashCode(url)}_${timestamp}_${uuid}`
 }
 export function hashCode(str: string) {
