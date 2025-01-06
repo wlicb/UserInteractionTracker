@@ -598,40 +598,6 @@ export const recipes = [
                       return { name: 'refinements.price', data: { title, selected: false, url } }
                     }
                   },
-                  {
-                    selector: '#p_n_deal_type-title',
-                    add_text: true,
-                    name: 'deals_discounts_heading'
-                  },
-                  {
-                    selector: "div[aria-labelledby='p_n_deal_type-title'] > a",
-                    add_text: true,
-                    name: 'clear_deals_discount_selection',
-                    clickable: true
-                  },
-                  {
-                    selector: "ul[aria-labelledby='p_n_deal_type-title'] a[aria-current='true']",
-                    add_text: true,
-                    name: 'from_text',
-                    clickable: true,
-                    text_format: 'Clear Option {}',
-                    generate_metadata: (em) => {
-                      const title = em?.innerText
-                      const url = em?.getAttribute('href')
-                      return { name: 'refinements.price', data: { title, selected: true, url } }
-                    }
-                  },
-                  {
-                    selector: "ul[aria-labelledby='p_n_deal_type-title'] a[aria-current='false']",
-                    add_text: true,
-                    name: 'from_text',
-                    clickable: true,
-                    generate_metadata: (em) => {
-                      const title = em?.innerText
-                      const url = em?.getAttribute('href')
-                      return { name: 'refinements.price', data: { title, selected: false, url } }
-                    }
-                  },
 
                   // case 2: slider
                   {
@@ -739,6 +705,41 @@ export const recipes = [
                     name: 'reset_price_selection',
                     add_text: true,
                     clickable: true
+                  },
+
+                  {
+                    selector: '#p_n_deal_type-title',
+                    add_text: true,
+                    name: 'deals_discounts_heading'
+                  },
+                  {
+                    selector: "div[aria-labelledby='p_n_deal_type-title'] > a",
+                    add_text: true,
+                    name: 'clear_deals_discount_selection',
+                    clickable: true
+                  },
+                  {
+                    selector: "ul[aria-labelledby='p_n_deal_type-title'] a[aria-current='true']",
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true,
+                    text_format: 'Clear Option {}',
+                    generate_metadata: (em) => {
+                      const title = em?.innerText
+                      const url = em?.getAttribute('href')
+                      return { name: 'refinements.price', data: { title, selected: true, url } }
+                    }
+                  },
+                  {
+                    selector: "ul[aria-labelledby='p_n_deal_type-title'] a[aria-current='false']",
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true,
+                    generate_metadata: (em) => {
+                      const title = em?.innerText
+                      const url = em?.getAttribute('href')
+                      return { name: 'refinements.price', data: { title, selected: false, url } }
+                    }
                   }
                 ]
               }
