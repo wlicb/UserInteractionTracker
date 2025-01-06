@@ -156,7 +156,7 @@ def interactions():
 
     if data:
         updated_interactions = [
-            {**interaction, "user_id": ObjectId(user_id)}
+            {**interaction, "user_id": user_id}
             for interaction in data["interactions"]
             ]
 
