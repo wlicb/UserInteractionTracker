@@ -322,11 +322,13 @@ const sendPopup = async (
   }
   const question = getCustomQuestion(eventType, data)
   if (Math.random() < popup_probability && tabId) {
+    console.log('send popup')
     try {
       const reason = await chrome.tabs.sendMessage(tabId, {
         action: 'show_popup',
         question: question
       })
+      console.log('reason', reason)
       if (reason && reason.input !== null) {
         const newitem = {
           action_uuid: uuid,

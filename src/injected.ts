@@ -95,6 +95,18 @@ const work = () => {
     }
     // todo: patch removeEventListener support wrap
     const blockSignals = {}
+    const finishSignals = {}
+    const wait_for_abort = (signal) => {
+      return new Promise((resolve, reject) => {
+        if (signal.aborted) {
+          // If already aborted, resolve immediately
+          resolve(void 0)
+        } else {
+          // Otherwise, listen for the abort event
+          signal.addEventListener('abort', () => resolve(void 0), { once: true })
+        }
+      })
+    }
 
     const hasDefaultAction = (event: Event) => {
       const element = event.target as HTMLElement
@@ -119,7 +131,7 @@ const work = () => {
       if (options && options.skip_monkey_patch) {
         return originalAddEventListener.call(this, type, listener, options)
       }
-      const callOriginalListener = () => {
+      const callOriginalListener = (event) => {
         if (typeof listener === 'function') {
           listener.call(this, event)
         } else if (listener && typeof listener.handleEvent === 'function') {
@@ -131,12 +143,12 @@ const work = () => {
         const wrappedListener = async function (event) {
           if (window.shouldExclude) {
             console.log('should exclude')
-            callOriginalListener()
+            callOriginalListener(event)
             return
           }
           const target = event.target as HTMLElement
           if (isFromPopup(target)) {
-            callOriginalListener()
+            callOriginalListener(event)
             return
           }
           if (event.just_for_default) {
@@ -146,19 +158,11 @@ const work = () => {
           // Add debouncing logic
           const now = Date.now()
           if (now - lastClickTimestamp < DEBOUNCE_DELAY) {
-            console.log('[Monkey Patch] Debouncing click event, blocking')
+            const controller = new AbortController()
+            finishSignals[lastClickTimestamp].push(controller)
             if (blockSignals[lastClickTimestamp]) {
               const signal = blockSignals[lastClickTimestamp].signal
-              const wait_for_abort = new Promise((resolve, reject) => {
-                if (signal.aborted) {
-                  // If already aborted, resolve immediately
-                  resolve(void 0)
-                } else {
-                  // Otherwise, listen for the abort event
-                  signal.addEventListener('abort', () => resolve(void 0), { once: true })
-                }
-              })
-              await wait_for_abort
+              await wait_for_abort(signal)
               console.log('[Monkey Patch] Debouncing click event, unblocking')
             } else {
               console.log('[Monkey Patch] Debouncing click event, no block signal')
@@ -168,10 +172,12 @@ const work = () => {
             } else if (listener && typeof listener.handleEvent === 'function') {
               listener.handleEvent.call(listener, event)
             }
+            controller.abort()
             return
           }
           lastClickTimestamp = now
           blockSignals[lastClickTimestamp] = new AbortController()
+          finishSignals[lastClickTimestamp] = []
 
           console.log('[Monkey Patch] Click detected on:', event.target)
           console.log(event.target)
@@ -182,7 +188,6 @@ const work = () => {
             // console.log('[Monkey Patch] Click on <a> tag:', anchor.href)
             console.log('[Monkey Patch] Click on cancelable')
             event.preventDefault()
-            event.stopPropagation()
             event.preventDefault = () => {
               event.my_default_prevented = true
             }
@@ -266,10 +271,19 @@ const work = () => {
             } finally {
               console.log('running original listener')
               console.log(listener)
+              console.log(event)
               blockSignals[lastClickTimestamp].abort()
-              callOriginalListener()
-              console.log('re-dispatch the event if its not prevented')
+              // abort all finishSignals
+              await Promise.all(
+                finishSignals[lastClickTimestamp].map((controller) =>
+                  wait_for_abort(controller.signal)
+                )
+              )
+              callOriginalListener(event)
+              console.log('event', event)
+              console.log('re-dispatch the event if its not prevented, 2')
               if (!event.my_default_prevented) {
+                // debugger
                 // Clone the original event
                 const newEvent = new MouseEvent(event.type, {
                   bubbles: event.bubbles,
@@ -367,7 +381,7 @@ const work = () => {
             // Execute original listener even if screenshot fails
           } finally {
             console.log('running original listener')
-            callOriginalListener()
+            callOriginalListener(event)
           }
         }
 
@@ -505,7 +519,7 @@ const work = () => {
               // window.location.href = targetHref
             } finally {
               blockSignals[lastClickTimestamp].abort()
-              console.log('re-dispatch the event if its not prevented')
+              console.log('re-dispatch the event if its not prevented, 1')
               if (!event.my_default_prevented) {
                 // Clone the original event
                 const newEvent = new MouseEvent(event.type, {

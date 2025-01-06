@@ -10,18 +10,23 @@
   </head>
   <body>
     <!-- Add your content here -->
-    <a href="https://www.google.com"> Normal A</a>
+    <a href="https://www.google.com"> Normal A</a> <br />
     <a href="https://www.google.com">
       <span> Span A </span>
     </a>
+    <br />
     <a id="a-with-listener" href="https://www.google.com">
       <span> Span A with listener </span>
     </a>
-    <a id="a" href="https://www.google.com"> A with addEventListener </a>
-    <a id="a2" href="https://www.google.com"> A with onclick </a>
-    <a id="a3" href="https://www.google.com"> A with onclick but no prevent default </a>
+    <br />
+    <a id="a" href="https://www.google.com"> A with addEventListener </a> <br />
+    <a id="a2" href="https://www.google.com"> A with onclick </a> <br />
+    <a id="a3" href="https://www.google.com"> A with onclick but no prevent default </a> <br />
+    <a id="a4" href="https://www.google.com"> A with two listenres </a> <br />
     <script>
       document.querySelector('#a').addEventListener('click', (e) => {
+        console.log('a clicked')
+        console.log(e)
         e.preventDefault()
         alert('You clicked me!')
       })
@@ -30,10 +35,18 @@
         alert('You clicked me!')
       }
       document.querySelector('#a3').onclick = (e) => {
+        debugger
         alert('You clicked me!')
       }
       document.querySelector('#a-with-listener').addEventListener('click', (e) => {
         alert('You clicked me!')
+      })
+      document.querySelector('#a4').addEventListener('click', (e) => {
+        alert('You clicked me 1!')
+      })
+      document.querySelector('#a4').addEventListener('click', (e) => {
+        e.preventDefault()
+        alert('You clicked me 2!')
       })
     </script>
   </body>
