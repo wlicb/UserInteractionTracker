@@ -21,8 +21,6 @@ const work = () => {
     const originalAddEventListener = EventTarget.prototype.addEventListener
 
     // Add this at the top of the file
-    const DEBOUNCE_DELAY = 150 // 300ms
-    let lastClickTimestamp = 0
     const TimeOut = 30000
 
     function captureInteraction(
@@ -94,8 +92,8 @@ const work = () => {
       return data
     }
     // todo: patch removeEventListener support wrap
-    const blockSignals = {}
-    const finishSignals = {}
+    // const blockSignals = {}
+    // const finishSignals = {}
     const wait_for_abort = (signal) => {
       return new Promise((resolve, reject) => {
         if (signal.aborted) {
@@ -156,12 +154,11 @@ const work = () => {
             return
           }
           // Add debouncing logic
-          const now = Date.now()
-          if (now - lastClickTimestamp < DEBOUNCE_DELAY) {
+          if (event.block_signal) {
             const controller = new AbortController()
-            finishSignals[lastClickTimestamp].push(controller)
-            if (blockSignals[lastClickTimestamp]) {
-              const signal = blockSignals[lastClickTimestamp].signal
+            event.finish_signals.push(controller)
+            if (event.block_signal) {
+              const signal = event.block_signal.signal
               await wait_for_abort(signal)
               console.log('[Monkey Patch] Debouncing click event, unblocking')
             } else {
@@ -175,12 +172,11 @@ const work = () => {
             controller.abort()
             return
           }
-          lastClickTimestamp = now
-          blockSignals[lastClickTimestamp] = new AbortController()
-          finishSignals[lastClickTimestamp] = []
+          event.block_signal = new AbortController()
+          event.finish_signals = []
 
           console.log('[Monkey Patch] Click detected on:', event.target)
-          console.log(event.target)
+          console.log(event)
           const timestamp = new Date().toISOString()
           // const anchor = target.closest('a')
           console.log(event.target)
@@ -241,14 +237,16 @@ const work = () => {
                   reject(new Error('Interaction timeout'))
                 }, TimeOut)
               })
+              const selector = finder(event.target)
               const data = captureInteraction(
                 'click_a',
                 event.target,
                 timestamp,
-                finder(event.target),
+                selector,
                 window.location.href,
                 uuid
               )
+
               // await sleep 5 seconds
               // await new Promise(resolve => setTimeout(resolve, 5000));
               // alert("1")
@@ -259,8 +257,9 @@ const work = () => {
               window.postMessage({ type: 'SAVE_INTERACTION_DATA', data: data, uuid: uuid }, '*')
               // alert("3")
               // Wait for screenshot to complete
-              await screenshotComplete
-              await interactionComplete
+              console.log('waiting for screenshot and interaction')
+              await Promise.all([screenshotComplete, interactionComplete])
+              console.log('screenshot and interaction complete')
               // console.log("completed")
               // debugger
               // alert("2")
@@ -272,12 +271,10 @@ const work = () => {
               console.log('running original listener')
               console.log(listener)
               console.log(event)
-              blockSignals[lastClickTimestamp].abort()
+              event.block_signal.abort()
               // abort all finishSignals
               await Promise.all(
-                finishSignals[lastClickTimestamp].map((controller) =>
-                  wait_for_abort(controller.signal)
-                )
+                event.finish_signals.map((controller) => wait_for_abort(controller.signal))
               )
               callOriginalListener(event)
               console.log('event', event)
@@ -373,14 +370,22 @@ const work = () => {
               }, TimeOut)
             })
             // Wait for screenshot to complete
-            await screenshotComplete
-            await interactionComplete
+            // await ASscreenshotComplete
+            // await interactionComplete
+            console.log('waiting for screenshot and interaction')
+            await Promise.all([screenshotComplete, interactionComplete])
+            console.log('screenshot and interaction complete')
             // Execute original listener after screenshot is captured
           } catch (error) {
             console.error('Error capturing screenshot:', error)
             // Execute original listener even if screenshot fails
           } finally {
             console.log('running original listener')
+            event.block_signal.abort()
+            // abort all finishSignals
+            await Promise.all(
+              event.finish_signals.map((controller) => wait_for_abort(controller.signal))
+            )
             callOriginalListener(event)
           }
         }
@@ -422,28 +427,28 @@ const work = () => {
             console.log('skip monkey patch b')
             return
           }
-          // Add debouncing logic
-          const now = Date.now()
-          if (now - lastClickTimestamp < DEBOUNCE_DELAY) {
-            console.log('[Monkey Patch] Debouncing anchor click event')
-            return
-          }
-          lastClickTimestamp = now
-          blockSignals[lastClickTimestamp] = new AbortController()
-
-          const target = event.target as HTMLElement
-
           // Find the closest <a> tag in case of nested elements inside the <a>
           // const anchor = target.closest('a')
 
           if (hasDefaultAction(event)) {
+            // Add debouncing logic
+            const now = Date.now()
+            if (event.block_signal) {
+              console.log('[Monkey Patch] Anchor click event hander from our own listener')
+              console.log('should already be logged in other event listeners')
+              return
+            }
+            event.block_signal = new AbortController()
+            event.finish_signals = []
+
+            const target = event.target as HTMLElement
             // console.log('[Intercepted] Click on <a> tag:', anchor.href)
             console.log('[Intercepted] Click on cancelable')
             // if (!anchor.href.startsWith('javascript:')) {
             event.preventDefault()
             event.stopPropagation()
             const timestamp = new Date().toISOString()
-            // const targetHref = anchor.href
+            // const targetHref = anchor.hrstartPeriodicUploadef
             const uuid = uuidv4()
             try {
               // 监听截图完成的消息
@@ -518,7 +523,10 @@ const work = () => {
               console.error('Error capturing screenshot:', error)
               // window.location.href = targetHref
             } finally {
-              blockSignals[lastClickTimestamp].abort()
+              event.block_signal.abort()
+              await Promise.all(
+                event.finish_signals.map((controller) => wait_for_abort(controller.signal))
+              )
               console.log('re-dispatch the event if its not prevented, 1')
               if (!event.my_default_prevented) {
                 // Clone the original event
@@ -543,7 +551,6 @@ const work = () => {
                 newEvent.just_for_default = true
 
                 // Re-dispatch the new event
-                alert('re-dispatch the event')
                 target.dispatchEvent(newEvent)
               }
             }
