@@ -56,8 +56,7 @@ export const refinement_option = [
     clickable: true
   },
   {
-    selector:
-      "ul:nth-of-type(1) > span.a-declarative > span > li:has(a.a-link-normal.s-navigation-item):has(input[type='checkbox'])",
+    selector: 'ul > span.a-declarative > span > li:has(a.a-link-normal.s-navigation-item)',
     add_text: true,
     name: 'from_text',
     clickable: true,
@@ -106,8 +105,8 @@ export const refinement_option = [
           text += aChild.getAttribute('title')
         }
       }
-      const nameEm = element.closest('ul')?.previousElementSibling
-      const name = nameEm?.innerText?.replace(/\n/g, '').toLowerCase()
+      const nameEm = element.closest('ul')?.parentElement?.firstElementChild
+      const name = nameEm?.innerText?.replace(/[ ]/g, '_').toLowerCase().trim()
 
       let url = ''
 
@@ -116,9 +115,15 @@ export const refinement_option = [
       }
 
       if (aChild && aChild.getAttribute('aria-current') === 'true') {
-        return { name: 'refinements.' + name, data: { title: text, selected: true, url } }
+        return {
+          name: 'refinements.' + name,
+          data: { title: text?.trim() || '', selected: true, url }
+        }
       }
-      return { name: 'refinements.' + name, data: { title: text, selected: false, url } }
+      return {
+        name: 'refinements.' + name,
+        data: { title: text?.trim() || '', selected: false, url }
+      }
     },
     children: [
       {
@@ -128,72 +133,7 @@ export const refinement_option = [
   },
   {
     selector:
-      "ul:nth-of-type(1) > span.a-declarative > span > li:has(a.a-link-normal.s-navigation-item):not(:has(input[type='checkbox']))",
-    add_text: true,
-    name: 'from_text',
-    clickable: true,
-    direct_child: true,
-    text_js: function (element) {
-      try {
-        let text = ''
-        if (!element) {
-          return text
-        }
-        const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-        if (element.innerText && element.innerText.trim()) {
-          text += element.innerText.trim()
-          if (aChild && aChild.hasAttribute('title')) {
-            text += ' '
-            text += aChild.getAttribute('title')
-          }
-        } else {
-          const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-          if (aChild && aChild.hasAttribute('title')) {
-            text += aChild.getAttribute('title')
-          }
-        }
-        if (aChild && aChild.getAttribute('aria-current') === 'true') {
-          text = 'Clear Option ' + text
-        }
-        return text
-      } catch (e) {
-        console.log(e)
-        return ''
-      }
-    },
-    generate_metadata: (element) => {
-      let text = ''
-      const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-      if (element.innerText && element.innerText.trim()) {
-        text += element.innerText.trim()
-        if (aChild && aChild.hasAttribute('title')) {
-          text += '_'
-          text += aChild.getAttribute('title')
-        }
-      } else {
-        const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-        if (aChild && aChild.hasAttribute('title')) {
-          text += aChild.getAttribute('title')
-        }
-      }
-      const nameEm = element.closest('ul')?.previousElementSibling
-      const name = nameEm?.innerText?.replace(/\n/g, '').toLowerCase()
-
-      let url = ''
-
-      if (aChild && aChild.hasAttribute('href')) {
-        url = aChild.getAttribute('href')
-      }
-
-      if (aChild && aChild.getAttribute('aria-current') === 'true') {
-        return { name: 'refinements.' + name, data: { title: text, selected: true, url } }
-      }
-      return { name: 'refinements.' + name, data: { title: text, selected: false, url } }
-    }
-  },
-  {
-    selector:
-      "ul:nth-of-type(1) > span.a-declarative > li > span > div[data-a-expander-name='filter-content-expander']",
+      "ul > span.a-declarative > li > span > div[data-a-expander-name='filter-content-expander']",
     name: 'more_options',
     children: [
       {
@@ -202,7 +142,7 @@ export const refinement_option = [
         add_text: true
       },
       {
-        selector: "li:has(input[type='checkbox'])",
+        selector: 'li',
         add_text: true,
         name: 'from_text',
         clickable: true,
@@ -250,8 +190,9 @@ export const refinement_option = [
               text += aChild.getAttribute('title')
             }
           }
-          const nameEm = element.closest('ul')?.previousElementSibling
-          const name = nameEm?.innerText?.replace(/\n/g, '').toLowerCase()
+          const nameEm = element.closest('ul')?.parentElement?.closest('ul')
+            ?.parentElement?.firstElementChild
+          const name = nameEm?.innerText?.replace(/[ ]/g, '_').toLowerCase().trim()
 
           let url = ''
 
@@ -260,78 +201,21 @@ export const refinement_option = [
           }
 
           if (aChild && aChild.getAttribute('aria-current') === 'true') {
-            return { name: 'refinements.' + name, data: { title: text, selected: true, url } }
+            return {
+              name: 'refinements.' + name,
+              data: { title: text?.trim() || '', selected: true, url }
+            }
           }
-          return { name: 'refinements.' + name, data: { title: text, selected: false, url } }
+          return {
+            name: 'refinements.' + name,
+            data: { title: text?.trim() || '', selected: false, url }
+          }
         },
         children: [
           {
             selector: "input[type='checkbox']"
           }
         ]
-      },
-      {
-        selector: "li:not(:has(input[type='checkbox']))",
-        add_text: true,
-        name: 'from_text',
-        clickable: true,
-        text_js: function (element) {
-          try {
-            let text = ''
-            if (!element) {
-              return text
-            }
-            const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-            if (element.innerText && element.innerText.trim()) {
-              text += element.innerText.trim()
-              if (aChild && aChild.hasAttribute('title')) {
-                text += ' '
-                text += aChild.getAttribute('title')
-              }
-            } else {
-              const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-              if (aChild && aChild.hasAttribute('title')) {
-                text += aChild.getAttribute('title')
-              }
-            }
-            if (aChild && aChild.getAttribute('aria-current') === 'true') {
-              text = 'Clear Option ' + text
-            }
-            return text
-          } catch (e) {
-            console.log(e)
-            return ''
-          }
-        },
-        generate_metadata: (element) => {
-          let text = ''
-          const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-          if (element.innerText && element.innerText.trim()) {
-            text += element.innerText.trim()
-            if (aChild && aChild.hasAttribute('title')) {
-              text += '_'
-              text += aChild.getAttribute('title')
-            }
-          } else {
-            const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-            if (aChild && aChild.hasAttribute('title')) {
-              text += aChild.getAttribute('title')
-            }
-          }
-          const nameEm = element.closest('ul')?.previousElementSibling
-          const name = nameEm?.innerText?.replace(/\n/g, '').toLowerCase()
-
-          let url = ''
-
-          if (aChild && aChild.hasAttribute('href')) {
-            url = aChild.getAttribute('href')
-          }
-
-          if (aChild && aChild.getAttribute('aria-current') === 'true') {
-            return { name: 'refinements.' + name, data: { title: text, selected: true, url } }
-          }
-          return { name: 'refinements.' + name, data: { title: text, selected: false, url } }
-        }
       }
     ]
   }
