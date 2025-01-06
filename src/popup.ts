@@ -1,4 +1,5 @@
-import { data_collector_secret_id, interaction_url } from './config'
+import { data_collector_secret_id, interaction_status_url } from './config'
+import { check_user_id } from './utils/util'
 const downloadDataBtn = document.getElementById('downloadData') as HTMLButtonElement
 const outputDiv = document.getElementById('output') as HTMLDivElement
 const clearCacheBtn = document.getElementById('clearCache') as HTMLButtonElement
@@ -7,7 +8,7 @@ const recordingDiv = document.getElementById('recording') as HTMLDivElement
 // Add this function to fetch and display interaction stats
 async function displayInteractionStats(userId: string) {
   try {
-    const response = await fetch(`${interaction_url}?user_id=${userId}`, {
+    const response = await fetch(`${interaction_status_url}?user_id=${userId}`, {
       method: 'GET'
     })
 
@@ -22,7 +23,7 @@ async function displayInteractionStats(userId: string) {
     outputDiv.textContent = `Error: ${(error as Error).message}`
   }
 }
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const updateRecordingStatus = () => {
     chrome.runtime.sendMessage({ action: 'getRecordingStatus' }, (response) => {
       if (response.recording) {
@@ -33,7 +34,24 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   }
   updateRecordingStatus()
-  chrome.storage.local.get(['userId'], (result) => {
+  const check_user_id_valid = async (user_id: string) => {
+    if (!user_id) {
+      chrome.runtime.sendMessage({
+        action: 'invalid_user_id',
+        invalid_reason: 'Please enter your user id'
+      })
+      return
+    }
+    const user_id_valid = await check_user_id(user_id)
+
+    if (user_id_valid !== 'success') {
+      chrome.runtime.sendMessage({
+        action: 'invalid_user_id',
+        invalid_reason: 'Invalid user id, please check your user id'
+      })
+    }
+  }
+  chrome.storage.local.get(['userId'], async (result) => {
     if (result.userId) {
       userIdInput.value = result.userId || ''
       displayInteractionStats(result.userId)
@@ -42,8 +60,10 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         downloadDataBtn.style.display = 'none' // Hide button
       }
+      check_user_id_valid(result.userId)
     } else {
       outputDiv.textContent = 'Please enter your user id'
+      check_user_id_valid('')
     }
   })
 
@@ -53,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
       outputDiv.textContent = 'User ID saved.'
     })
     updateRecordingStatus()
+    check_user_id_valid(userId)
   })
 
   downloadDataBtn.addEventListener('click', () => {

@@ -1,4 +1,4 @@
-import { filter_url, url_include } from '../config'
+import { filter_url, url_include, check_user_id_url } from '../config'
 
 export function isFromPopup(element: HTMLElement): boolean {
   return element.closest('#reason-modal') !== null
@@ -92,4 +92,23 @@ export function hashCode(str: string) {
   }
   console.log('Hash value before return:', hash)
   return hash.toString()
+}
+
+export async function check_user_id(user_id: string) {
+  try {
+    const response = await fetch(`${check_user_id_url}?user_id=${user_id}`, {
+      method: 'GET'
+    })
+
+    const data = await response.json()
+
+    if (response.ok) {
+      return 'success'
+    } else {
+      return data.error || 'Unknown error'
+    }
+  } catch (error) {
+    console.log(`Error: ${(error as Error).message}`)
+  }
+  return 'Unknown error'
 }

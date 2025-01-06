@@ -252,8 +252,8 @@ def get_interactions_by_date(user_id, date=None, return_data=None ):
             "all_time": n_documents
         }
 
-@app.route('/interactions', methods=['GET'])
-def get_interactions():
+@app.route('/interactions_record_status', methods=['GET'])
+def interactions_record_status():
     user_id = request.args.get('user_id')
     date_str = request.args.get('date')  # in 'YYYY-MM-DD' format
     return_data = request.args.get('return')
@@ -275,6 +275,22 @@ def get_interactions():
     interactions = get_interactions_by_date(user_id, date, return_data)
 
     return jsonify(interactions)
+
+
+@app.route('/check_user_id', methods=['GET'])
+def check_user_id():
+    user_id = request.args.get('user_id')
+
+    try:
+        user_id = ObjectId(user_id)
+    except:
+        return jsonify({'valid': False, 'error': 'Invalid ObjectId format'}), 400
+
+    user = user_collection.find_one({"_id": user_id})
+    if user:
+        return jsonify({'valid': True}), 200
+    else:
+        return jsonify({'valid': False, 'error': 'User not found'}), 404
 
 
 if __name__ == '__main__':

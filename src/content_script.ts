@@ -20,7 +20,7 @@ const work = () => {
       try {
         const result = await chrome.storage.local.get(['htmlSnapshots'])
         const htmlSnapshots = result.htmlSnapshots || {}
-        const html_id = event.data.data.htmlSnapshotId + '_' + event.data.uuid
+        const html_id = event.data.data.htmlSnapshotId
         htmlSnapshots[html_id] = event.data.data.htmlContent
         await chrome.storage.local.set({ htmlSnapshots })
         const dataForBackground = { ...event.data.data }
@@ -526,6 +526,44 @@ const work = () => {
       }
       createModal(message.question, sendResponse)
       return true // Will respond asynchronously
+    }
+  })
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'invalid_user_id') {
+      const existingModal = document.getElementById('reason-modal')
+      if (existingModal) {
+        existingModal.remove()
+      }
+
+      const modal = document.createElement('div')
+      modal.id = 'reason-modal'
+      modal.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 10000;
+      `
+
+      const content = document.createElement('div')
+      content.textContent = `${message.invalid_reason}`
+      modal.appendChild(content)
+
+      const closeButton = document.createElement('button')
+      closeButton.textContent = 'Close'
+      closeButton.style.cssText = `
+        margin-top: 10px;
+        padding: 5px 10px;
+        cursor: pointer;
+      `
+      closeButton.onclick = () => modal.remove()
+      modal.appendChild(closeButton)
+
+      document.body.appendChild(modal)
     }
   })
 }
