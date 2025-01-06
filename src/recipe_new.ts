@@ -484,6 +484,50 @@ export const recipes = [
             name: 'refinements',
             children: [
               {
+                selector: '#topRefinements\\/0',
+                name: 'top_refinements',
+                add_text: 'true',
+                text_format: 'Recently used filters',
+                children: [
+                  {
+                    selector: 'li',
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true,
+                    text_js: function (element) {
+                      try {
+                        let text = ''
+                        if (!element) {
+                          return text
+                        }
+                        const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+                        if (element.innerText && element.innerText.trim()) {
+                          text += element.innerText.trim()
+                          if (aChild && aChild.hasAttribute('title')) {
+                            text += ' '
+                            text += aChild.getAttribute('title')
+                          }
+                        } else {
+                          const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+                          if (aChild && aChild.hasAttribute('title')) {
+                            text += aChild.getAttribute('title')
+                          }
+                        }
+                        return text
+                      } catch (e) {
+                        console.log(e)
+                        return ''
+                      }
+                    },
+                    children: [
+                      {
+                        selector: "input[type='checkbox']"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
                 selector:
                   'div.a-section.a-spacing-none:not(:has(#n-title)):has(span.a-size-base.a-color-base.puis-bold-weight-text):has(ul span.a-declarative > span > li):not(#reviewsRefinements):not(#departments):not(#priceRefinements):not(#filters)',
                 name: 'from_text',
