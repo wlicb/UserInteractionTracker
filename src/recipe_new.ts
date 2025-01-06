@@ -107,7 +107,7 @@ export const refinement_option = [
         }
       }
       const nameEm = element.closest('ul')?.previousElementSibling
-      const name = nameEm?.innerText
+      const name = nameEm?.innerText?.replace(/\n/g, '').toLowerCase()
 
       let url = ''
 
@@ -177,7 +177,7 @@ export const refinement_option = [
         }
       }
       const nameEm = element.closest('ul')?.previousElementSibling
-      const name = nameEm?.innerText
+      const name = nameEm?.innerText?.replace(/\n/g, '').toLowerCase()
 
       let url = ''
 
@@ -251,7 +251,7 @@ export const refinement_option = [
             }
           }
           const nameEm = element.closest('ul')?.previousElementSibling
-          const name = nameEm?.innerText
+          const name = nameEm?.innerText?.replace(/\n/g, '').toLowerCase()
 
           let url = ''
 
@@ -319,7 +319,7 @@ export const refinement_option = [
             }
           }
           const nameEm = element.closest('ul')?.previousElementSibling
-          const name = nameEm?.innerText
+          const name = nameEm?.innerText?.replace(/\n/g, '').toLowerCase()
 
           let url = ''
 
