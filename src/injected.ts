@@ -237,7 +237,10 @@ const work = () => {
                   reject(new Error('Interaction timeout'))
                 }, TimeOut)
               })
-              const selector = finder(event.target)
+              // log before and after time
+              const selector = finder(event.target, {
+                maxNumberOfPathChecks: 0
+              })
               const data = captureInteraction(
                 'click_a',
                 event.target,
@@ -337,7 +340,9 @@ const work = () => {
               'click_b',
               event.target,
               timestamp,
-              finder(event.target),
+              finder(event.target, {
+                maxNumberOfPathChecks: 0
+              }),
               window.location.href,
               uuid
             )
@@ -486,7 +491,9 @@ const work = () => {
                 'click_c',
                 event.target,
                 timestamp,
-                finder(target),
+                finder(target, {
+                  maxNumberOfPathChecks: 0
+                }),
                 window.location.href,
                 uuid
               )
