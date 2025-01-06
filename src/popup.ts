@@ -1,5 +1,5 @@
 import { data_collector_secret_id, interaction_status_url } from './config'
-import { check_user_id } from './utils/util'
+import { check_user_id, shouldExclude } from './utils/util'
 const downloadDataBtn = document.getElementById('downloadData') as HTMLButtonElement
 const outputDiv = document.getElementById('output') as HTMLDivElement
 const clearCacheBtn = document.getElementById('clearCache') as HTMLButtonElement

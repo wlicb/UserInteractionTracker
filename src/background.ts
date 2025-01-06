@@ -27,7 +27,6 @@ import {
   zip,
   base_url,
   data_collector_secret_id,
-  url_include,
   filter_url
 } from './config'
 
@@ -360,12 +359,7 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
     }
     console.log(`Switched to tab ${tabId} with URL: ${tab.url}`)
     update_icon(tab.url)
-    if (
-      tab.url &&
-      // tab.url.includes(url_include) &&
-      // !filter_url.some((excludeUrl) => tab.url.includes(excludeUrl))
-      !(await shouldExclude(tab.url))
-    ) {
+    if (tab.url && !(await shouldExclude(tab.url))) {
       const timestamp = new Date().toISOString()
       const uuid = uuidv4()
       const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}_${uuid}`
@@ -401,11 +395,7 @@ chrome.webNavigation.onCompleted.addListener(async (details) => {
   if (details.frameId !== 0) return
   console.log('webNavigation onCompleted event triggered:', details)
   update_icon(details.url)
-  if (
-    // details.url.includes(url_include) &&
-    // !filter_url.some((excludeUrl) => details.url.includes(excludeUrl))
-    !(await shouldExclude(details.url))
-  ) {
+  if (!(await shouldExclude(details.url))) {
     const navigationType = analyzeNavigation(details.tabId, details.url)
     console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`)
     const timestamp = new Date().toISOString()

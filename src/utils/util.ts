@@ -1,4 +1,4 @@
-import { filter_url, url_include, check_user_id_url } from '../config'
+import { filter_url, url_includes, check_user_id_url } from '../config'
 
 export function isFromPopup(element: HTMLElement): boolean {
   return element.closest('#reason-modal') !== null
@@ -101,7 +101,10 @@ export async function shouldExclude(url: string, ignoreUserId: boolean = false) 
   if (!url) {
     return true
   }
-  return !url.includes(url_include) || filter_url.some((excludeUrl) => url.includes(excludeUrl))
+  return (
+    !url_includes.some((includeUrl) => url.includes(includeUrl)) ||
+    filter_url.some((excludeUrl) => url.includes(excludeUrl))
+  )
 }
 
 export function generateHtmlSnapshotId(uuid: string) {
