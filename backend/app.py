@@ -68,13 +68,13 @@ def check_user(user_id, user_collection):
         app.logger.error(f'user_id is not available')
         return {'error': f'user_id is not available'}, 400
 
-    try:
-        user_id = ObjectId(user_id)
-    except:
-        app.logger.error(f'User ID is not a valid ObjectId: {user_id}')
-        return {f'error': f'User ID is not a valid id:{user_id}'}, 400
+    # try:
+    #     user_id = ObjectId(user_id)
+    # except:
+    #     app.logger.error(f'User ID is not a valid ObjectId: {user_id}')
+    #     return {f'error': f'User ID is not a valid id:{user_id}'}, 400
 
-    user= user_collection.find_one({"_id": user_id})
+    user= user_collection.find_one({"user_name": user_id})
 
     if not user:
         app.logger.error(f'User not found. user_id: {user_id}')
@@ -282,12 +282,7 @@ def interactions_record_status():
 def check_user_id():
     user_id = request.args.get('user_id')
 
-    try:
-        user_id = ObjectId(user_id)
-    except:
-        return jsonify({'valid': False, 'error': 'Invalid ObjectId format'}), 400
-
-    user = user_collection.find_one({"_id": user_id})
+    user = user_collection.find_one({"user_name": user_id})
     if user:
         return jsonify({'valid': True}), 200
     else:
