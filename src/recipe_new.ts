@@ -1298,7 +1298,8 @@ export const recipes = [
                 ]
               },
               {
-                selector: '#productFactsDesktopExpander ul, #featurebullets_feature_div ul',
+                selector:
+                  '#productFactsDesktopExpander ul, #featurebullets_feature_div ul.a-unordered-list',
                 add_text: true,
                 name: 'about_this_item',
                 text_format: 'About this item: {}',
@@ -1429,6 +1430,59 @@ export const recipes = [
     ]
   },
   {
+    match: '/cart/add-to-cart/ref=dp_start-bbf_1_glance',
+    match_method: 'url',
+    selector: 'html',
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: [
+          nav,
+          {
+            selector: '#sw-atc-buy-box',
+            children: [
+              {
+                selector: '#sw-subtotal',
+                children: [
+                  {
+                    selector: '#sw-subtotal-item-count',
+                    add_text: true
+                  },
+                  {
+                    selector: "span[aria-hidden='true']",
+                    add_text: true
+                  }
+                ]
+              },
+              {
+                selector: '#sc-buy-box-ptc-button span.a-button-inner input',
+                add_text: true,
+                text_selector: 'div.sc-without-multicart',
+                clickable: true,
+                name: 'check_out'
+              },
+              {
+                selector: '#sw-gtc a',
+                add_text: true,
+                clickable: true,
+                name: 'go_to_cart'
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     match: '/cart/smart-wagon',
     match_method: 'url',
     selector: 'html',
@@ -1482,7 +1536,7 @@ export const recipes = [
     ]
   },
   {
-    match: '/cart',
+    match: '/cart/ref=ord_cart_shr',
     match_method: 'url',
     selector: 'html',
     children: [
@@ -1503,6 +1557,26 @@ export const recipes = [
   },
   {
     match: '/gp/cart/view.html',
+    match_method: 'url',
+    selector: 'html',
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: cart
+      }
+    ]
+  },
+  {
+    match: '/cart',
     match_method: 'url',
     selector: 'html',
     children: [
