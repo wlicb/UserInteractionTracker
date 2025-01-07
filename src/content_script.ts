@@ -458,6 +458,7 @@ const work = () => {
         console.log('show_popup', message)
         // assert there isn't already a popup
         if (document.getElementById('reason-modal')) {
+          sendResponse({ success: false, message: 'popup already exists' })
           return
         }
         createModal(message.question, sendResponse)
