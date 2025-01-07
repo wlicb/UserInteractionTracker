@@ -985,7 +985,7 @@ export const recipes = [
                         ]
                       },
                       {
-                        selector: 'div.puis-size-variation-price a',
+                        selector: 'div.puis-size-variation-price a.a-text-normal',
                         name: 'price',
                         clickable: true,
                         add_text: true,
