@@ -74,11 +74,7 @@ const work = () => {
         uuid: uuid,
         eventType,
         timestamp: timestamp,
-        target: serializedTarget, // Replace direct DOM element with serializable object
-        //   targetOuterHTML: target.outerHTML,
-        //   targetClass: target.className,
-        //   targetId: target.id,
-        //   targetText: target.innerText || target.value || '',
+        target: serializedTarget,
         htmlSnapshotId: currentSnapshotId,
         selector: selector || '',
         'data-semantic-id': allAttributes['data-clickable-id'] || '',

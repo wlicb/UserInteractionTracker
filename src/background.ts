@@ -976,42 +976,42 @@ async function uploadDataToServer_new() {
       sessionFormData.append('file', sessionInfo)
 
       console.log('uploading session info')
-      await customFetch(lastGeneratePresignedPostResponse.url, {
+      const sessionUploadPromise = customFetch(lastGeneratePresignedPostResponse.url, {
         method: 'POST',
         body: sessionFormData
       })
 
       // Upload HTML snapshots as separate files
       console.log('uploading html snapshots')
-      for (const [snapshotId, htmlContent] of snapshotsToUpload) {
+      const htmlUploadPromises = snapshotsToUpload.map(async ([snapshotId, htmlContent]) => {
         const htmlBlob = await gzipHtml(htmlContent)
         const formData = presignedFormData(`${folderName}/html/${snapshotId}.html.gz`)
         formData.append('file', htmlBlob)
 
-        await customFetch(lastGeneratePresignedPostResponse.url, {
+        return customFetch(lastGeneratePresignedPostResponse.url, {
           method: 'POST',
           body: formData
         })
-      }
+      })
 
       // Upload screenshots
       console.log('uploading screenshots')
-      for (const [screenshotData, screenshotId] of screenshotsToUpload) {
-        const response = await customFetch(screenshotData)
-        const blob = await response.blob()
-        const formData = presignedFormData(
-          `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`
-        )
-        formData.append('file', blob)
+      const screenshotUploadPromises = screenshotsToUpload.map(
+        async ([screenshotData, screenshotId]) => {
+          const response = await customFetch(screenshotData)
+          const blob = await response.blob()
+          const formData = presignedFormData(
+            `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`
+          )
+          formData.append('file', blob)
 
-        console.log('uploading screenshots')
-        await customFetch(lastGeneratePresignedPostResponse.url, {
-          method: 'POST',
-          body: formData
-        }).catch(() => {
-          throw new Error(`Error: ${e}`)
-        })
-      }
+          console.log('uploading screenshots')
+          return customFetch(lastGeneratePresignedPostResponse.url, {
+            method: 'POST',
+            body: formData
+          })
+        }
+      )
 
       // Upload interactions JSON
       console.log('uploading interactions')
@@ -1026,7 +1026,7 @@ async function uploadDataToServer_new() {
 
       jsonFormDataFile.append('file', interactionsBlob)
 
-      await customFetch(lastGeneratePresignedPostResponse.url, {
+      const jsonUploadPromise = customFetch(lastGeneratePresignedPostResponse.url, {
         method: 'POST',
         body: jsonFormDataFile
       })
@@ -1037,10 +1037,17 @@ async function uploadDataToServer_new() {
       jsonFormData.append('user_id', user_id)
 
       console.log('uploading interactions as a json')
-      await customFetch(interactions_url, {
+      const json2dbUploadPromise = customFetch(interactions_url, {
         method: 'POST',
         body: jsonFormData
       })
+      await Promise.all([
+        sessionUploadPromise,
+        ...htmlUploadPromises,
+        ...screenshotUploadPromises,
+        jsonUploadPromise,
+        json2dbUploadPromise
+      ])
     } catch (error) {
       startPeriodicUpload()
       console.error('Error uploading data:', error)
