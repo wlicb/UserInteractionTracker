@@ -5,6 +5,7 @@ import { nav, refinement_option, recipes } from './recipe_new'
 import JSZip from 'jszip'
 import { update_icon } from './utils/util'
 import { shouldExclude } from './utils/util'
+import axios from 'axios'
 
 let interactions: any[] = []
 let screenshots: [string, string][] = []
@@ -612,17 +613,9 @@ function presignedFormData(name) {
   return formData
 }
 
-const customFetch = async (url, options) => {
-  const response = await fetch(url, options)
-
-  // If response is not OK (status code not in 200-299 range), throw an error
-  if (!response.ok) {
-    console.log('response', response)
-    throw new Error(`HTTP error! Status: ${response.status}`)
-  }
-
-  return response
-}
+const request = axios.create({
+  baseURL: base_url
+})
 
 async function gzipHtml(content) {
   // Create a new GZIP compression stream
@@ -646,209 +639,6 @@ async function gzipHtml(content) {
 
   return compressedBlob
 }
-
-// async function uploadDataToServer() {
-//   stopPeriodicUpload()
-//   try {
-//     const interact = await chrome.storage.local.get({ interactions: [] })
-//     const storeInteractions = interact.interactions || []
-
-//     // Check if there are any interactions and get the latest timestamp
-//     if (storeInteractions.length === 0) {
-//       console.log('No interactions to upload')
-//       startPeriodicUpload()
-//       return false
-//     }
-//     lastTimestamp = await chrome.storage.local.get({
-//       user_interaction_tracker_last_timestamp: null
-//     })
-//     lastTimestamp = lastTimestamp.user_interaction_tracker_last_timestamp || null
-
-//     if (lastTimestamp) console.log('lastTimestamp restored: ', lastTimestamp)
-
-//     const timestamp = lastTimestamp || new Date().toISOString().replace(/[:.]/g, '-')
-
-//     await chrome.storage.local.set({
-//       user_interaction_tracker_last_timestamp: timestamp
-//     }) // making sure with reopening the browser, it continues from left point and rewrites the information
-
-//     // Get userId and data from storage
-//     const userIdResult = await chrome.storage.local.get({ userId: '' })
-//     const currentUserId = userIdResult.userId
-
-//     let user_id = currentUserId || 'unknown'
-
-//     const folderName = `${folder_name}/USER/${user_id}`
-
-//     const snapshots = await chrome.storage.local.get({ htmlSnapshots: [] })
-//     const orderDetails = await chrome.storage.local.get({ orderDetails: [] })
-//     const screen = await chrome.storage.local.get({ screenshots: [] })
-//     const ReasonsAnnotation = await chrome.storage.local.get({ reasonsAnnotation: [] })
-
-//     let htmlSnapshots = snapshots.htmlSnapshots || {}
-//     let storeOrderDetails = orderDetails.orderDetails || []
-//     let storeScreenshots = screen.screenshots || []
-//     let storeReasonsAnnotation = ReasonsAnnotation.reasonsAnnotation || []
-
-//     const fullData = {
-//       interactions: storeInteractions,
-//       reasons: storeReasonsAnnotation,
-//       orderDetails: storeOrderDetails
-//     }
-//     if (
-//       !lastGeneratePresignedPostResponse ||
-//       lastGeneratePresignedPostResponse?.expire_timestamp < Date.now() / 1000 || // prevent from requesting for post url over and over
-//       !lastGeneratePresignedPostResponse?.fields?.key.includes(user_id)
-//     ) {
-//       console.log('getting new post url')
-//       console.log(`${generate_presigned_post_url}?user_id=${user_id}`)
-//       let postUrlResult = await customFetch(`${generate_presigned_post_url}?user_id=${user_id}`, {
-//         method: 'GET'
-//       })
-
-//       lastGeneratePresignedPostResponse = await postUrlResult.json()
-//       console.log(
-//         'new post url received',
-//         lastGeneratePresignedPostResponse?.expire_timestamp - Date.now() / 1000
-//       )
-//     }
-//     try {
-//       const sessionInfo = new Blob(
-//         [
-//           `Session data for timestamp: ${timestamp}
-//                     \n user id: ${user_id}
-//                     \n order details:
-//                     \n ${JSON.stringify(orderDetails)}`
-//         ],
-//         { type: 'text/plain' }
-//       )
-//       const sessionFormData = presignedFormData(
-//         `${folderName}/order_info/order_info_${timestamp}.txt`
-//       )
-//       sessionFormData.append('file', sessionInfo)
-
-//       console.log('uploading session info')
-//       await customFetch(lastGeneratePresignedPostResponse.url, {
-//         method: 'POST',
-//         body: sessionFormData
-//       })
-
-//       // Upload HTML snapshots as separate files
-//       console.log('uploading html snapshots')
-//       for (const [snapshotId, htmlContent] of Object.entries(htmlSnapshots)) {
-//         // const htmlBlob = new Blob([htmlContent], { type: 'text/html' })
-//         const htmlBlob = await gzipHtml(htmlContent)
-//         const formData = presignedFormData(`${folderName}/html/${snapshotId}.html.gz`)
-//         formData.append('file', htmlBlob)
-
-//         await customFetch(lastGeneratePresignedPostResponse.url, {
-//           method: 'POST',
-//           body: formData
-//         })
-//       }
-
-//       // Upload screenshots
-//       console.log('uploading screenshots')
-//       for (const [screenshotData, screenshotId] of storeScreenshots) {
-//         const response = await customFetch(screenshotData)
-//         const blob = await response.blob()
-//         const formData = presignedFormData(
-//           `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`
-//         )
-//         formData.append('file', blob)
-
-//         console.log('uploading screenshots')
-//         await customFetch(lastGeneratePresignedPostResponse.url, {
-//           method: 'POST',
-//           body: formData
-//         }).catch(() => {
-//           throw new Error(`Error: ${e}`)
-//         })
-//       }
-
-//       // Upload interactions JSON
-//       console.log('uploading interactions')
-//       const interactions_json = JSON.stringify(fullData, null, 2)
-
-//       const interactionsBlob = new Blob([interactions_json], {
-//         type: 'application/json'
-//       })
-//       const jsonFormDataFile = presignedFormData(
-//         `${folderName}/interactions/interactions_${timestamp}.json`
-//       )
-
-//       jsonFormDataFile.append('file', interactionsBlob)
-
-//       await customFetch(lastGeneratePresignedPostResponse.url, {
-//         method: 'POST',
-//         body: jsonFormDataFile
-//       })
-
-//       const jsonFormData = new FormData()
-
-//       jsonFormData.append('interactions', interactions_json)
-//       jsonFormData.append('user_id', user_id)
-
-//       console.log('uploading interactions as a json')
-//       await customFetch(interactions_url, {
-//         method: 'POST',
-//         body: jsonFormData
-//       })
-//     } catch (error) {
-//       startPeriodicUpload()
-//       console.error('Error uploading data:', error)
-//       return false
-//     }
-
-//     if (user_id.includes(data_collector_secret_id)) {
-//       const seen_interact = await chrome.storage.local.get({ seen_interactions: [] })
-//       const seen_snapshots = await chrome.storage.local.get({ seen_htmlSnapshots: [] })
-//       const seen_orderDetails = await chrome.storage.local.get({ seen_orderDetails: [] })
-//       const seen_screen = await chrome.storage.local.get({ seen_screenshots: [] })
-//       const seen_ReasonsAnnotation = await chrome.storage.local.get({ seen_reasonsAnnotation: [] })
-
-//       let seen_storeInteractions = seen_interact.interactions || []
-//       let seen_htmlSnapshots = seen_snapshots.htmlSnapshots || {}
-//       let seen_storeOrderDetails = seen_orderDetails.orderDetails || []
-//       let seen_storeScreenshots = seen_screen.screenshots || []
-//       let seen_storeReasonsAnnotation = seen_ReasonsAnnotation.reasonsAnnotation || []
-
-//       seen_storeInteractions = [...seen_storeInteractions, ...storeInteractions]
-//       seen_htmlSnapshots = { ...seen_htmlSnapshots, ...htmlSnapshots }
-//       seen_storeOrderDetails = [...seen_storeOrderDetails, ...storeOrderDetails]
-//       seen_storeScreenshots = [...seen_storeScreenshots, ...storeScreenshots]
-//       seen_storeReasonsAnnotation = [...seen_storeReasonsAnnotation, ...storeReasonsAnnotation]
-
-//       await chrome.storage.local.set({ seen_interactions: seen_storeInteractions })
-//       await chrome.storage.local.set({ seen_htmlSnapshots })
-//       await chrome.storage.local.set({ seen_orderDetails: seen_storeOrderDetails })
-//       await chrome.storage.local.set({ seen_screenshots: seen_storeScreenshots })
-//       await chrome.storage.local.set({ seen_reasonsAnnotation: seen_storeReasonsAnnotation })
-//     }
-
-//     lastTimestamp = null
-
-//     chrome.storage.local.remove([
-//       'htmlSnapshots',
-//       'orderDetails',
-//       'screenshots',
-//       'reasonsAnnotation',
-//       'interactions',
-//       'user_interaction_tracker_last_timestamp'
-//     ])
-//     interactions.length = 0
-//     screenshots.length = 0
-//     reasonsAnnotation.length = 0
-
-//     startPeriodicUpload()
-
-//     return true
-//   } catch (error) {
-//     startPeriodicUpload()
-//     console.error('Error uploading data:', error)
-//     return false
-//   }
-// }
 
 // Start the periodic upload timer
 function startPeriodicUpload() {
@@ -955,12 +745,13 @@ async function uploadDataToServer_new() {
       !lastGeneratePresignedPostResponse?.fields?.key.includes(user_id)
     ) {
       console.log('getting new post url')
-      console.log(`${generate_presigned_post_url}?user_id=${user_id}`)
-      let postUrlResult = await customFetch(`${generate_presigned_post_url}?user_id=${user_id}`, {
-        method: 'GET'
+      let postUrlResult = await request.get(`${generate_presigned_post_url}`, {
+        params: {
+          user_id: user_id
+        }
       })
 
-      lastGeneratePresignedPostResponse = await postUrlResult.json()
+      lastGeneratePresignedPostResponse = postUrlResult.data
       console.log(
         'new post url received',
         lastGeneratePresignedPostResponse?.expire_timestamp - Date.now() / 1000
@@ -982,10 +773,10 @@ async function uploadDataToServer_new() {
       sessionFormData.append('file', sessionInfo)
 
       console.log('uploading session info')
-      const sessionUploadPromise = customFetch(lastGeneratePresignedPostResponse.url, {
-        method: 'POST',
-        body: sessionFormData
-      })
+      const sessionUploadPromise = request.post(
+        lastGeneratePresignedPostResponse.url,
+        sessionFormData
+      )
 
       // Upload HTML snapshots as separate files
       console.log('uploading html snapshots')
@@ -994,34 +785,27 @@ async function uploadDataToServer_new() {
         const formData = presignedFormData(`${folderName}/html/${snapshotId}.html.gz`)
         formData.append('file', htmlBlob)
 
-        return customFetch(lastGeneratePresignedPostResponse.url, {
-          method: 'POST',
-          body: formData
-        })
+        return request.post(lastGeneratePresignedPostResponse.url, formData)
       })
 
       // Upload screenshots
       console.log('uploading screenshots')
       const screenshotUploadPromises = screenshotsToUpload.map(
         async ([screenshotData, screenshotId]) => {
-          const response = await customFetch(screenshotData)
-          const blob = await response.blob()
+          const blob = (await fetch(screenshotData)).blob()
           const formData = presignedFormData(
             `${folderName}/screenshots/${screenshotId.replace(/[:.]/g, '-')}.jpg`
           )
           formData.append('file', blob)
 
           console.log('uploading screenshots')
-          return customFetch(lastGeneratePresignedPostResponse.url, {
-            method: 'POST',
-            body: formData
-          })
+          return request.post(lastGeneratePresignedPostResponse.url, formData)
         }
       )
 
       // Upload interactions JSON
       console.log('uploading interactions')
-      const interactions_json = JSON.stringify(fullData, null, 2)
+      const interactions_json = JSON.stringify(fullData)
 
       const interactionsBlob = new Blob([interactions_json], {
         type: 'application/json'
@@ -1032,20 +816,20 @@ async function uploadDataToServer_new() {
 
       jsonFormDataFile.append('file', interactionsBlob)
 
-      const jsonUploadPromise = customFetch(lastGeneratePresignedPostResponse.url, {
-        method: 'POST',
-        body: jsonFormDataFile
-      })
-
-      const jsonFormData = new FormData()
-
-      jsonFormData.append('interactions', interactions_json)
-      jsonFormData.append('user_id', user_id)
+      const jsonUploadPromise = request.post(
+        lastGeneratePresignedPostResponse.url,
+        jsonFormDataFile
+      )
 
       console.log('uploading interactions as a json')
-      const json2dbUploadPromise = customFetch(interactions_url, {
-        method: 'POST',
-        body: jsonFormData
+      const json2dbUploadPromise = request.post(interactions_url, interactions_json, {
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json'
+        },
+        params: {
+          user_id: user_id
+        }
       })
       await Promise.all([
         sessionUploadPromise,
