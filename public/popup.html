@@ -24,6 +24,26 @@
         background-color: #f0f0f0;
         padding: 5px;
       }
+
+      #recording {
+        margin-top: 10px;
+        font-size: 12px;
+        background-color: #f0f0f0;
+        padding: 5px;
+      }
+      #output:empty,
+      #recording:empty {
+        display: none;
+      }
+      #user_id_valid {
+        margin-top: 10px;
+        font-size: 12px;
+        background-color: #f0f0f0;
+        padding: 5px;
+      }
+      #user_id_valid:empty {
+        display: none;
+      }
     </style>
   </head>
 
@@ -35,7 +55,9 @@
     </div>
     <button id="downloadData" style="display: none">Download Data</button>
     <button id="clearCache">Clear Cache</button>
+    <div id="user_id_valid"></div>
     <div id="output"></div>
+    <div id="recording"></div>
     <script src="js/popup.js"></script>
   </body>
 </html>

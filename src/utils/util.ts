@@ -1,15 +1,11 @@
-import { filter_url, url_include } from '../config'
+import { filter_url, url_includes, check_user_id_url } from '../config'
 
 export function isFromPopup(element: HTMLElement): boolean {
   return element.closest('#reason-modal') !== null
 }
-export function update_icon(url) {
+export async function update_icon(url) {
   console.log('update_icon', url)
-  if (
-    url &&
-    url.includes(url_include) &&
-    !filter_url.some((excludeUrl) => url.includes(excludeUrl))
-  ) {
+  if (!(await shouldExclude(url))) {
     console.log('active icon')
     chrome.action.setIcon({
       path: '../icon.png'
@@ -17,19 +13,27 @@ export function update_icon(url) {
   } else {
     console.log('inactive icon')
     chrome.action.setIcon({
-      path: '../Inactive_icon.png'
+      path: '../inactive_icon.png'
     })
   }
 }
 
 export function findPageMeta() {
-  const htmlElement = document.documentElement
-  const metaData = htmlElement.getAttribute('data-element-meta-data')
-  const metaName = htmlElement.getAttribute('data-element-meta-name')
-  return {
-    metaData: metaData,
-    metaName: metaName
-  }
+  const all_element_with_meta_data = document.querySelectorAll('[data-element-meta-name]')
+
+  const groupedResult = {}
+
+  all_element_with_meta_data.forEach((element) => {
+    const metaName = element.getAttribute('data-element-meta-name')
+    const metaData = element.getAttribute('data-element-meta-data')
+
+    if (!groupedResult[metaName]) {
+      groupedResult[metaName] = []
+    }
+    groupedResult[metaName].push(JSON.parse(metaData))
+  })
+
+  return groupedResult
 }
 
 export function getClickableElementsInViewport() {
@@ -49,7 +53,7 @@ export function getClickableElementsInViewport() {
       rect.right <= (window.innerWidth || document.documentElement.clientWidth)
     ) {
       // Add marker attribute to the element
-      element.setAttribute('extension-clickable-marker', 'true')
+      element.setAttribute('visible-clickable-element-marker', 'true')
     }
   })
   return documentCopy
@@ -57,7 +61,74 @@ export function getClickableElementsInViewport() {
 
 // Add cleanup function to remove markers when needed
 export function removeClickableMarkers() {
-  document.querySelectorAll('[extension-clickable-marker]').forEach((element) => {
-    element.removeAttribute('extension-clickable-marker')
+  document.querySelectorAll('[visible-clickable-element-marker]').forEach((element) => {
+    element.removeAttribute('visible-clickable-element-marker')
   })
+}
+
+export async function shouldExclude(url: string, ignoreUserId: boolean = false) {
+  if (!ignoreUserId) {
+    if (chrome.storage) {
+      const result = await chrome.storage.local.get('userId')
+      if (!result.userId) {
+        console.log('no user id')
+        // if there is no user id, we should not be recording anything
+        return true
+      }
+    } else {
+      const userId = await new Promise<string>((resolve) => {
+        const handleMessage = (event: MessageEvent) => {
+          if (event.data.type === 'GET_USER_ID_RESPONSE') {
+            window.removeEventListener('message', handleMessage)
+            resolve(event.data.userId)
+          }
+        }
+        window.addEventListener('message', handleMessage)
+        window.postMessage({ type: 'GET_USER_ID' }, '*')
+      })
+      if (!userId) {
+        // if there is no user id, we should not be recording anything
+        return true
+      }
+    }
+  }
+  if (!url) {
+    return true
+  }
+  return (
+    !url_includes.some((includeUrl) => url.includes(includeUrl)) ||
+    filter_url.some((excludeUrl) => url.includes(excludeUrl))
+  )
+}
+
+export function generateHtmlSnapshotId(timestamp: string, uuid: string) {
+  const url = window.location.href
+  return `html_${hashCode(url)}_${timestamp}_${uuid}`
+}
+export function hashCode(str: string) {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i)
+    hash |= 0
+  }
+  console.log('Hash value before return:', hash)
+  return hash.toString()
+}
+
+export async function check_user_id(user_id: string) {
+  try {
+    const response = await fetch(`${check_user_id_url}?user_id=${user_id}`, {
+      method: 'GET'
+    })
+    const data = await response.json()
+
+    if (response.ok) {
+      return 'success'
+    } else {
+      return data || 'Unknown error'
+    }
+  } catch (error) {
+    console.log(`Error: ${(error as Error).message}`)
+  }
+  return 'Unknown error'
 }

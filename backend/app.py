@@ -56,6 +56,7 @@ s3_client = boto3.client('s3',
 
 app = Flask(__name__)
 CORS(app)
+app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024
 
 REMOVE_ZIP_FILE= True
 if not os.path.exists(UPLOAD_FOLDER):
@@ -67,13 +68,13 @@ def check_user(user_id, user_collection):
         app.logger.error(f'user_id is not available')
         return {'error': f'user_id is not available'}, 400
 
-    try:
-        user_id = ObjectId(user_id)
-    except:
-        app.logger.error(f'User ID is not a valid ObjectId: {user_id}')
-        return {f'error': f'User ID is not a valid id:{user_id}'}, 400
+    # try:
+    #     user_id = ObjectId(user_id)
+    # except:
+    #     app.logger.error(f'User ID is not a valid ObjectId: {user_id}')
+    #     return {f'error': f'User ID is not a valid id:{user_id}'}, 400
 
-    user= user_collection.find_one({"_id": user_id})
+    user= user_collection.find_one({"user_name": user_id})
 
     if not user:
         app.logger.error(f'User not found. user_id: {user_id}')
@@ -155,7 +156,7 @@ def interactions():
 
     if data:
         updated_interactions = [
-            {**interaction, "user_id": ObjectId(user_id)}
+            {**interaction, "user_id": user_id}
             for interaction in data["interactions"]
             ]
 
@@ -226,7 +227,7 @@ def get_interactions_by_date(user_id, date=None, return_data=None ):
                 interaction["user_id"] = str(interaction["user_id"])
 
         interactions_all_time = interaction_collection.find({
-            "user_id": ObjectId(user_id),
+            "user_id": user_id,
         })
         interactions_all_time = list(interactions_all_time)
         for interaction in interactions_all_time:
@@ -238,22 +239,22 @@ def get_interactions_by_date(user_id, date=None, return_data=None ):
 
     else:
         n_documents_date= interaction_collection.count_documents({
-            "user_id": ObjectId(user_id),
+            "user_id": user_id,
             "timestamp": {
                 "$gte": start_of_day,
                 "$lt": end_of_day
             }
         })
         n_documents= interaction_collection.count_documents({
-            "user_id": ObjectId(user_id),
+            "user_id": user_id,
         })
         return{
             "on_date" : n_documents_date,
             "all_time": n_documents
         }
 
-@app.route('/interactions', methods=['GET'])
-def get_interactions():
+@app.route('/interactions_record_status', methods=['GET'])
+def interactions_record_status():
     user_id = request.args.get('user_id')
     date_str = request.args.get('date')  # in 'YYYY-MM-DD' format
     return_data = request.args.get('return')
@@ -275,6 +276,17 @@ def get_interactions():
     interactions = get_interactions_by_date(user_id, date, return_data)
 
     return jsonify(interactions)
+
+
+@app.route('/check_user_id', methods=['GET'])
+def check_user_id():
+    user_id = request.args.get('user_id')
+
+    user = user_collection.find_one({"user_name": user_id})
+    if user:
+        return jsonify({'valid': True}), 200
+    else:
+        return jsonify({'valid': False, 'error': 'User not found'}), 404
 
 
 if __name__ == '__main__':

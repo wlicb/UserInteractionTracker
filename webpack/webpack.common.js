@@ -7,8 +7,8 @@ module.exports = {
   devtool: 'inline-source-map',
   entry: {
     popup: path.join(srcDir, 'popup.ts'),
-    background: path.join(srcDir, 'background_test.ts'),
-    content_script: path.join(srcDir, 'content_script_test.ts'),
+    background: path.join(srcDir, 'background.ts'),
+    content_script: path.join(srcDir, 'content_script.ts'),
     injected: path.join(srcDir, 'injected.ts')
   },
   output: {
@@ -16,23 +16,15 @@ module.exports = {
     filename: '[name].js',
     publicPath: '/dist/'
   },
-  optimization: {
-    splitChunks: {
-      name: 'vendor',
-      chunks(chunk) {
-        return chunk.name !== 'background'
-      }
-    }
-  },
   module: {
     rules: [
       {
         test: /\.tsx?$/,
         use: [
           {
-            loader: 'ts-loader',
+            loader: 'babel-loader',
             options: {
-              transpileOnly: true
+              presets: ['@babel/preset-env', '@babel/preset-typescript']
             }
           }
         ],
@@ -45,8 +37,9 @@ module.exports = {
   },
   plugins: [
     new CopyPlugin({
-      patterns: [{ from: '.', to: '../', context: 'public' }],
-      options: {}
+      patterns: [
+        { from: '.', to: '../', context: 'public' } // Make sure this path is correct and the desired outcome.
+      ]
     })
   ]
 }
