@@ -1302,13 +1302,22 @@ export const recipes = [
                   '#productFactsDesktopExpander ul, #featurebullets_feature_div ul.a-unordered-list',
                 add_text: true,
                 name: 'about_this_item',
-                text_format: 'About this item: {}',
-                generate_metadata: (em) => {
-                  return {
-                    name: 'product_details',
-                    data: { label: 'bullet_list', value: em?.innerText?.replace(/\n/g, ' ') || '' }
+                text_format: 'About this item: ',
+                children: [
+                  {
+                    selector: 'li',
+                    add_text: true,
+                    generate_metadata: (em) => {
+                      return {
+                        name: 'product_details',
+                        data: {
+                          label: 'bullet_list',
+                          value: em?.innerText?.replace(/\n/g, ' ') || ''
+                        }
+                      }
+                    }
                   }
-                }
+                ]
               }
             ]
           },
