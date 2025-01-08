@@ -1299,7 +1299,7 @@ export const recipes = [
               },
               {
                 selector:
-                  '#productFactsDesktopExpander ul, #featurebullets_feature_div ul.a-unordered-list',
+                  '#productFactsDesktopExpander ul.a-unordered-list, #featurebullets_feature_div ul.a-unordered-list',
                 add_text: true,
                 name: 'about_this_item',
                 text_format: 'About this item: ',
