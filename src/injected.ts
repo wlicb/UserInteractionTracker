@@ -88,7 +88,12 @@ const work = () => {
         htmlContent: markedDoc.documentElement.outerHTML,
         simplifiedHTML: simplifiedHTML
       }
-
+      if (target.tagName === 'INPUT' && target.type === 'text') {
+        data['input-terms'] = target.value
+      }
+      if (target.id === 'nav-search-submit-button' && target.type === 'submit') {
+        data['input-terms'] = document.querySelector('input[id="twotabsearchtextbox"]')?.value
+      }
       return data
     }
     // todo: patch removeEventListener support wrap

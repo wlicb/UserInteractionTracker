@@ -189,16 +189,24 @@ const work = () => {
       htmlSnapshots[currentSnapshotId + '_simplified'] = simplifiedHTML
       await chrome.storage.local.set({ htmlSnapshots })
       const pageMeta = findPageMeta()
+
       let data = {
         uuid: uuid,
         eventType,
         timestamp: timestamp,
-        target: target,
+
         htmlSnapshotId: currentSnapshotId, // Use the new snapshot ID
         pageMeta: pageMeta || ''
       }
       if (eventType === 'scroll') {
         data['scrollDistance'] = scrollDistance
+        data['target'] = target
+      }
+      if (eventType === 'input') {
+        data['input-values'] = target?.value || ''
+        data['input-id'] = target?.id || ''
+        data['data-element-meta-name'] = target.getAttribute('data-element-meta-name') || ''
+        data['data-element-meta-data'] = target.getAttribute('data-element-meta-data') || ''
       }
       await chrome.runtime.sendMessage({ action: 'saveData', data })
     } catch (error) {
@@ -275,24 +283,24 @@ const work = () => {
     handleScrollStop()
   })
 
-  document.addEventListener(
-    'blur',
-    async (event) => {
-      const target = event.target as HTMLElement
-      if (isFromPopup(target)) return
-      if (
-        target &&
-        ((target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text') ||
-          target.tagName === 'TEXTAREA')
-      ) {
-        const timestamp = new Date().toISOString()
-        const uuid = uuidv4()
-        await captureScreenshot(timestamp, uuid)
-        await captureInteraction('input', target, timestamp, uuid)
-      }
-    },
-    true
-  )
+  // document.addEventListener(
+  //   'blur',
+  //   async (event) => {
+  //     const target = event.target as HTMLElement
+  //     if (isFromPopup(target)) return
+  //     if (
+  //       target &&
+  //       ((target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text') ||
+  //         target.tagName === 'TEXTAREA')
+  //     ) {
+  //       const timestamp = new Date().toISOString()
+  //       const uuid = uuidv4()
+  //       await captureScreenshot(timestamp, uuid)
+  //       await captureInteraction('input', target, timestamp, uuid)
+  //     }
+  //   },
+  //   true
+  // )
 
   document.addEventListener('DOMContentLoaded', () => {
     // Handle all types of order buttons
