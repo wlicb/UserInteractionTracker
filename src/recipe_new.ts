@@ -1054,7 +1054,7 @@ export const recipes = [
                 generate_metadata: (em) => {
                   return {
                     name: 'product_details',
-                    data: { label: 'title', value: em?.innerText || '' }
+                    data: { title: em?.innerText || '' }
                   }
                 }
               },
@@ -1088,7 +1088,7 @@ export const recipes = [
                 generate_metadata: (em) => {
                   return {
                     name: 'product_details',
-                    data: { label: 'price', value: em?.innerText?.replace(/\n/g, '') || '' }
+                    data: { price: em?.innerText?.replace(/\n/g, '') || '' }
                   }
                 },
                 text_js: (em) => {
@@ -1306,18 +1306,17 @@ export const recipes = [
                 children: [
                   {
                     selector: 'li',
-                    add_text: true,
-                    generate_metadata: (em) => {
-                      return {
-                        name: 'product_details',
-                        data: {
-                          label: 'bullet_list',
-                          value: em?.innerText?.replace(/\n/g, ' ') || ''
-                        }
-                      }
+                    add_text: true
+                  }
+                ],
+                generate_metadata: (em) => {
+                  return {
+                    name: 'product_details',
+                    data: {
+                      bullet_list: em?.innerText?.replace(/\n/g, ' ') || ''
                     }
                   }
-                ]
+                }
               }
             ]
           },
@@ -1356,7 +1355,7 @@ export const recipes = [
               const asinEm = em.querySelector('input#ASIN')
               return {
                 name: 'product_details',
-                data: { label: 'asin', value: asinEm?.value || '' }
+                data: { asin: asinEm?.value || '' }
               }
             }
           },
@@ -1369,7 +1368,7 @@ export const recipes = [
               const asinEm = em.querySelector('input#ASIN')
               return {
                 name: 'product_details',
-                data: { label: 'asin', value: asinEm?.value || '' }
+                data: { asin: asinEm?.value || '' }
               }
             }
           },
@@ -1385,7 +1384,7 @@ export const recipes = [
               const asinEm = em.querySelector('input#ASIN')
               return {
                 name: 'product_details',
-                data: { label: 'asin', value: asinEm?.value || '' }
+                data: { asin: asinEm?.value || '' }
               }
             }
           },
