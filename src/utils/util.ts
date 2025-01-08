@@ -132,3 +132,50 @@ export async function check_user_id(user_id: string) {
   }
   return 'Unknown error'
 }
+
+import { recipes } from '../recipe_new'
+import { processElement } from './element-processor'
+function selectRecipe() {
+  const parsedUrl = new URL(window.location.href)
+  const path = parsedUrl.pathname
+
+  for (const recipe of recipes) {
+    const matchMethod = recipe.match_method || 'text'
+    if (matchMethod === 'text') {
+      try {
+        // Execute script in tab to check for matching element
+        const element = document.querySelector(recipe.match)
+
+        const hasMatch =
+          element &&
+          (!recipe.match_text ||
+            (element.textContent?.toLowerCase().includes(recipe.match_text.toLowerCase()) ?? false))
+
+        if (hasMatch) {
+          return recipe
+        }
+      } catch (error) {
+        console.error('Error checking text match:', error)
+      }
+    } else if (matchMethod === 'url' && recipe.match === path) {
+      return recipe
+    }
+  }
+
+  throw new Error(`No matching recipe found for path: ${path}`)
+}
+
+export function processRecipe() {
+  console.log('start process recipe')
+  try {
+    const recipe = selectRecipe()
+    const rootElement = document.querySelector(recipe.selector)
+    if (rootElement) {
+      const newRoot = processElement(rootElement, recipe)
+      const simplifiedHTML = newRoot.outerHTML
+      return simplifiedHTML
+    }
+  } catch (error) {
+    console.error('Error processing recipe:', error)
+  }
+}

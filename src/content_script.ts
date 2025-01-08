@@ -3,7 +3,8 @@ import {
   isFromPopup,
   getClickableElementsInViewport,
   shouldExclude,
-  generateHtmlSnapshotId
+  generateHtmlSnapshotId,
+  processRecipe
 } from './utils/util'
 import { processElement } from './utils/element-processor'
 import { recipes } from './recipe_new'
@@ -61,9 +62,11 @@ window.addEventListener('message', async (event) => {
       const htmlSnapshots = result.htmlSnapshots || {}
       const html_id = event.data.data.htmlSnapshotId + '_' + event.data.uuid
       htmlSnapshots[html_id] = event.data.data.htmlContent
+      htmlSnapshots[html_id + '_simplified'] = event.data.data.simplifiedHTML
       await chrome.storage.local.set({ htmlSnapshots })
       const dataForBackground = { ...event.data.data }
       delete dataForBackground.htmlContent
+      delete dataForBackground.simplifiedHTML
 
       const response2 = await chrome.runtime.sendMessage({
         action: 'saveData',
@@ -72,7 +75,6 @@ window.addEventListener('message', async (event) => {
       if (!response2.success) {
         throw new Error(response2.message || 'interaction capture failed')
       }
-      console.log(response2)
       window.postMessage(
         {
           type: 'INTERACTION_COMPLETE',
@@ -161,37 +163,10 @@ const work = () => {
     throw new Error(`No matching recipe found for path: ${path}`)
   }
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    console.log('DOMContentLoaded')
-
-    try {
-      const recipe = selectRecipe()
-      const rootElement = document.querySelector(recipe.selector)
-
-      if (rootElement) {
-        const newRoot = processElement(rootElement, recipe)
-
-        console.log(newRoot.outerHTML)
-      }
-    } catch (error) {
-      console.error('Error initializing clickable elements:', error)
-    }
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOMContentLoaded event triggered')
+    processRecipe()
   })
-
-  // function generateHtmlSnapshotId(uuid: string) {
-  //   const url = window.location.href
-  //   const timestamp = new Date().toISOString()
-  //   return `html_${hashCode(url)}_${timestamp}_${uuid}`
-  // }
-  function hashCode(str: string) {
-    let hash = 0
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash << 5) - hash + str.charCodeAt(i)
-      hash |= 0
-    }
-    console.log('Hash value before return:', hash)
-    return hash.toString()
-  }
 
   // Function to capture interactions
   async function captureInteraction(
@@ -205,12 +180,13 @@ const work = () => {
       // Generate new HTML snapshot ID
       const currentSnapshotId = generateHtmlSnapshotId(timestamp, uuid)
 
-      // Save HTML snapshot and wait for it to complete
-      // await new Promise((resolve, reject) => {
+      const simplifiedHTML = processRecipe()
       const result = await chrome.storage.local.get(['htmlSnapshots'])
       const htmlSnapshots = result.htmlSnapshots || {}
+
       const markedDoc = getClickableElementsInViewport()
       htmlSnapshots[currentSnapshotId] = markedDoc.documentElement.outerHTML
+      htmlSnapshots[currentSnapshotId + '_simplified'] = simplifiedHTML
       await chrome.storage.local.set({ htmlSnapshots })
       const pageMeta = findPageMeta()
       let data = {
@@ -449,10 +425,11 @@ const work = () => {
     (message, sender, sendResponse: (response?: any) => void) => {
       console.log('message', message)
       if (message.action === 'getHTML') {
+        const simplifiedHTML = processRecipe()
         const markedDoc = getClickableElementsInViewport()
         const htmlContent = markedDoc.documentElement.outerHTML
         const pageMeta = findPageMeta()
-        sendResponse({ html: htmlContent, pageMeta: pageMeta })
+        sendResponse({ html: htmlContent, pageMeta: pageMeta, simplifiedHTML: simplifiedHTML })
       }
       if (message.action === 'show_popup') {
         console.log('show_popup', message)

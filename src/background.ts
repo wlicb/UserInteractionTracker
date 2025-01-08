@@ -259,10 +259,11 @@ function hashCode(str: string) {
   return hash.toString()
 }
 
-const saveHTML = async (htmlContent: string, currentSnapshotId: string) => {
+const saveHTML = async (htmlContent: string, simplifiedHTML: string, currentSnapshotId: string) => {
   let result = await chrome.storage.local.get({ htmlSnapshots: {} })
   const htmlSnapshots = result.htmlSnapshots || {}
   htmlSnapshots[currentSnapshotId] = htmlContent
+  htmlSnapshots[currentSnapshotId + '_simplified'] = simplifiedHTML
   await chrome.storage.local.set({ htmlSnapshots })
 }
 
@@ -365,14 +366,16 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       const timestamp = new Date().toISOString()
       const uuid = uuidv4()
       const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}_${uuid}`
+
       chrome.tabs.sendMessage(tabId, { action: 'getHTML' }, async (response) => {
         const htmlContent = response?.html
+        const simplifiedHTML = response?.simplifiedHTML
         const pageMeta = response?.pageMeta
         actionSequenceId++
         const currentactionSequenceId = actionSequenceId
 
         await Promise.all([
-          saveHTML(htmlContent, currentSnapshotId),
+          saveHTML(htmlContent, simplifiedHTML, currentSnapshotId),
           saveInteraction(
             'tabActivate',
             timestamp,
@@ -393,23 +396,26 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   }
 })
 
-chrome.webNavigation.onCompleted.addListener(async (details) => {
+chrome.webNavigation.onCommitted.addListener(async (details) => {
   if (details.frameId !== 0) return
-  console.log('webNavigation onCompleted event triggered:', details)
+  console.log('webNavigation onHistoryStateUpdated event triggered:', details)
   update_icon(details.url)
   if (!(await shouldExclude(details.url))) {
+    // chrome.tabs.sendMessage(details.tabId, { action: 'processRecipe' })
+
     const navigationType = analyzeNavigation(details.tabId, details.url)
     console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`)
     const timestamp = new Date().toISOString()
     const uuid = uuidv4()
     chrome.tabs.sendMessage(details.tabId, { action: 'getHTML' }, async (response) => {
       const htmlContent = response?.html
+      const simplifiedHTML = response?.simplifiedHTML
       const pageMeta = response?.pageMeta
       const currentSnapshotId = `html_${hashCode(details.url)}_${timestamp}_${uuid}`
       actionSequenceId++
       const currentactionSequenceId = actionSequenceId
       await Promise.all([
-        saveHTML(htmlContent, currentSnapshotId),
+        saveHTML(htmlContent, simplifiedHTML, currentSnapshotId),
         saveInteraction(
           'navigation',
           timestamp,
