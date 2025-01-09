@@ -74,9 +74,9 @@ const work = () => {
 
       const markedDoc = getClickableElementsInViewport()
       const data = {
-        uuid: uuid,
         eventType,
         timestamp: timestamp,
+        uuid: uuid,
         target: serializedTarget, // Replace direct DOM element with serializable object
         htmlSnapshotId: currentSnapshotId,
         selector: selector || '',
@@ -255,9 +255,6 @@ const work = () => {
                 uuid
               )
 
-              // await sleep 5 seconds
-              // await new Promise(resolve => setTimeout(resolve, 5000));
-              // alert("1")
               window.postMessage(
                 { type: 'CAPTURE_SCREENSHOT', timestamp: timestamp, uuid: uuid },
                 '*'

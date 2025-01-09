@@ -6,17 +6,16 @@ import {
   generateHtmlSnapshotId,
   processRecipe
 } from './utils/util'
-import { processElement } from './utils/element-processor'
-import { recipes } from './recipe_new'
 import { v4 as uuidv4 } from 'uuid'
 import { debounce } from 'lodash'
 
 async function captureScreenshot(timestamp: string, uuid: string) {
   try {
-    const screenshotId = `screenshot_${timestamp}_${uuid}`
+    // const screenshotId = `screenshot_${timestamp}_${uuid}`
     const response = await chrome.runtime.sendMessage({
       action: 'captureScreenshot',
-      screenshotId
+      timestamp,
+      uuid
     })
 
     if (!response.success) {
@@ -58,15 +57,7 @@ window.addEventListener('message', async (event) => {
   }
   if (event.data.type && event.data.type === 'SAVE_INTERACTION_DATA') {
     try {
-      const result = await chrome.storage.local.get(['htmlSnapshots'])
-      const htmlSnapshots = result.htmlSnapshots || {}
-      const html_id = event.data.data.htmlSnapshotId + '_' + event.data.uuid
-      htmlSnapshots[html_id] = event.data.data.htmlContent
-      htmlSnapshots[html_id + '_simplified'] = event.data.data.simplifiedHTML
-      await chrome.storage.local.set({ htmlSnapshots })
       const dataForBackground = { ...event.data.data }
-      delete dataForBackground.htmlContent
-      delete dataForBackground.simplifiedHTML
 
       const response2 = await chrome.runtime.sendMessage({
         action: 'saveData',
@@ -125,43 +116,6 @@ const work = () => {
   }
 
   // Extend the Window interface to include custom properties
-  declare global {
-    interface Window {
-      clickable_recipes?: { [key: string]: Recipe }
-      input_recipes?: { [key: string]: Recipe }
-    }
-  }
-
-  function selectRecipe() {
-    const parsedUrl = new URL(window.location.href)
-    const path = parsedUrl.pathname
-
-    for (const recipe of recipes) {
-      const matchMethod = recipe.match_method || 'text'
-      if (matchMethod === 'text') {
-        try {
-          // Execute script in tab to check for matching element
-          const element = document.querySelector(recipe.match)
-
-          const hasMatch =
-            element &&
-            (!recipe.match_text ||
-              (element.textContent?.toLowerCase().includes(recipe.match_text.toLowerCase()) ??
-                false))
-
-          if (hasMatch) {
-            return recipe
-          }
-        } catch (error) {
-          console.error('Error checking text match:', error)
-        }
-      } else if (matchMethod === 'url' && recipe.match === path) {
-        return recipe
-      }
-    }
-
-    throw new Error(`No matching recipe found for path: ${path}`)
-  }
 
   document.addEventListener('DOMContentLoaded', () => {
     console.log('DOMContentLoaded event triggered')
@@ -181,13 +135,8 @@ const work = () => {
       const currentSnapshotId = generateHtmlSnapshotId(timestamp, uuid)
 
       const simplifiedHTML = processRecipe()
-      const result = await chrome.storage.local.get(['htmlSnapshots'])
-      const htmlSnapshots = result.htmlSnapshots || {}
-
       const markedDoc = getClickableElementsInViewport()
-      htmlSnapshots[currentSnapshotId] = markedDoc.documentElement.outerHTML
-      htmlSnapshots[currentSnapshotId + '_simplified'] = simplifiedHTML
-      await chrome.storage.local.set({ htmlSnapshots })
+
       const pageMeta = findPageMeta()
 
       let data = {
@@ -196,7 +145,9 @@ const work = () => {
         timestamp: timestamp,
 
         htmlSnapshotId: currentSnapshotId, // Use the new snapshot ID
-        pageMeta: pageMeta || ''
+        pageMeta: pageMeta || '',
+        htmlContent: markedDoc.documentElement.outerHTML,
+        simplifiedHTML: simplifiedHTML
       }
       if (eventType === 'scroll') {
         data['scrollDistance'] = scrollDistance
@@ -350,17 +301,16 @@ const work = () => {
 
             console.log(`${button.id} clicked - Product Info:`, productInfo)
 
-            // Store the product info
-            let result = await chrome.storage.local.get({ orderDetails: [] })
-            const orderDetails = result.orderDetails || []
-            orderDetails.push({
-              timestamp: new Date().toISOString(),
-              name: productInfo.title,
-              price: parseFloat(productInfo.price.replace(/[^0-9.]/g, '')),
-              asin: productInfo.asin,
-              options: productInfo.options
+            await chrome.runtime.sendMessage({
+              action: 'saveOrder',
+              data: {
+                timestamp: new Date().toISOString(),
+                name: productInfo.title,
+                price: parseFloat(productInfo.price.replace(/[^0-9.]/g, '')),
+                asin: productInfo.asin,
+                options: productInfo.options
+              }
             })
-            await chrome.storage.local.set({ orderDetails })
           } catch (error) {
             console.error(`Error capturing ${button.id} product info:`, error)
           }
@@ -416,11 +366,7 @@ const work = () => {
             }
           }
           if (selectedItems.length > 0) {
-            let result = await chrome.storage.local.get({ orderDetails: [] })
-            const orderDetails = result.orderDetails || []
-            const updatedOrderDetails = orderDetails.concat(selectedItems)
-            await chrome.storage.local.set({ orderDetails: updatedOrderDetails })
-            console.log('Stored selected cart items:', selectedItems)
+            await chrome.runtime.sendMessage({ action: 'saveOrder', data: selectedItems })
           }
         } catch (error) {
           console.error('Error capturing selected cart items:', error)
