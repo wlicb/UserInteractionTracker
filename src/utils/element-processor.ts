@@ -18,7 +18,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
   } else if (recipe.text_js) {
     elementText = recipe.text_js(element)
     if (elementText === '' || elementText === undefined) {
-      console.log('text js does not detect text for element ', element)
+      // console.log('text js does not detect text for element ', element)
     }
   } else if (recipe.add_text) {
     elementText = element.innerText || element.textContent || ''
@@ -39,7 +39,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
   if (recipe.name) {
     if (recipe.name === 'from_text') {
       if (!elementText) {
-        console.log('elementText is empty', recipe, element)
+        // console.log('elementText is empty', recipe, element)
         // debugger
       }
       elementName = parentName ? parentName + '.' : ''
@@ -67,7 +67,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
 
     element.setAttribute('data-element-meta-name', metaname)
     element.setAttribute('data-element-meta-data', metadata)
-    console.log('metadata generated: ', metadata, ' with name: ', metaname)
+    // console.log('metadata generated: ', metadata, ' with name: ', metaname)
   }
 
   // Handle clickables and inputs
@@ -85,7 +85,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     if (click_element) {
       click_element.setAttribute('data-clickable-id', elementName)
     } else {
-      console.log('click-element not found', element, recipe)
+      // console.log('click-element not found', element, recipe)
     }
     if (!window.clickable_recipes) {
       window.clickable_recipes = {}
@@ -160,7 +160,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     // console.log("attributes to keep: ", recipe.keep_attr);
     for (const key of recipe.keep_attr) {
       const value = element.getAttribute(key)
-      console.log(key, value)
+      // console.log(key, value)
       if (value) {
         newElement.setAttribute(key, value)
       }
@@ -203,7 +203,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
           const splitMarker = document.createElement('split-marker')
           newElement.appendChild(splitMarker)
         } else {
-          console.log('no split marker')
+          // console.log('no split marker')
         }
       })
     }

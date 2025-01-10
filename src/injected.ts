@@ -3,7 +3,8 @@ import {
   getClickableElementsInViewport,
   isFromPopup,
   shouldExclude,
-  generateHtmlSnapshotId
+  generateHtmlSnapshotId,
+  processRecipe
 } from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
 import { finder } from '@medv/finder'
@@ -55,7 +56,8 @@ const work = () => {
         // Continue searching up the tree, passing along collected attributes
         return findClickableParent(element.parentElement, depth + 1, allAttributes)
       }
-
+      const simplifiedHTML = processRecipe()
+      console.log('simplifiedHTML', simplifiedHTML)
       const pageMeta = findPageMeta()
       const allAttributes = findClickableParent(target as HTMLElement)
       // Generate new HTML snapshot ID
@@ -69,12 +71,13 @@ const work = () => {
         innerText: target.innerText || target.value || '',
         outerHTML: target.outerHTML
       }
+
       const markedDoc = getClickableElementsInViewport()
       const data = {
-        uuid: uuid,
         eventType,
         timestamp: timestamp,
-        target: serializedTarget,
+        uuid: uuid,
+        target: serializedTarget, // Replace direct DOM element with serializable object
         htmlSnapshotId: currentSnapshotId,
         selector: selector || '',
         'data-semantic-id': allAttributes['data-clickable-id'] || '',
@@ -82,9 +85,15 @@ const work = () => {
         'element-meta-data': allAttributes['data-element-meta-data'] || '',
         'page-meta': pageMeta || '',
         url: url || '',
-        htmlContent: markedDoc.documentElement.outerHTML
+        htmlContent: markedDoc.documentElement.outerHTML,
+        simplifiedHTML: simplifiedHTML
       }
-
+      if (target.tagName === 'INPUT' && target.type === 'text') {
+        data['input-terms'] = target.value
+      }
+      if (target.id === 'nav-search-submit-button' && target.type === 'submit') {
+        data['input-terms'] = document.querySelector('input[id="twotabsearchtextbox"]')?.value
+      }
       return data
     }
     // todo: patch removeEventListener support wrap
@@ -246,9 +255,6 @@ const work = () => {
                 uuid
               )
 
-              // await sleep 5 seconds
-              // await new Promise(resolve => setTimeout(resolve, 5000));
-              // alert("1")
               window.postMessage(
                 { type: 'CAPTURE_SCREENSHOT', timestamp: timestamp, uuid: uuid },
                 '*'

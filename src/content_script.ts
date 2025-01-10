@@ -3,19 +3,19 @@ import {
   isFromPopup,
   getClickableElementsInViewport,
   shouldExclude,
-  generateHtmlSnapshotId
+  generateHtmlSnapshotId,
+  processRecipe
 } from './utils/util'
-import { processElement } from './utils/element-processor'
-import { recipes } from './recipe_new'
 import { v4 as uuidv4 } from 'uuid'
 import { debounce } from 'lodash'
 
 async function captureScreenshot(timestamp: string, uuid: string) {
   try {
-    const screenshotId = `screenshot_${timestamp}_${uuid}`
+    // const screenshotId = `screenshot_${timestamp}_${uuid}`
     const response = await chrome.runtime.sendMessage({
       action: 'captureScreenshot',
-      screenshotId
+      timestamp,
+      uuid
     })
 
     if (!response.success) {
@@ -57,13 +57,7 @@ window.addEventListener('message', async (event) => {
   }
   if (event.data.type && event.data.type === 'SAVE_INTERACTION_DATA') {
     try {
-      const result = await chrome.storage.local.get(['htmlSnapshots'])
-      const htmlSnapshots = result.htmlSnapshots || {}
-      const html_id = event.data.data.htmlSnapshotId + '_' + event.data.uuid
-      htmlSnapshots[html_id] = event.data.data.htmlContent
-      await chrome.storage.local.set({ htmlSnapshots })
       const dataForBackground = { ...event.data.data }
-      delete dataForBackground.htmlContent
 
       const response2 = await chrome.runtime.sendMessage({
         action: 'saveData',
@@ -72,7 +66,6 @@ window.addEventListener('message', async (event) => {
       if (!response2.success) {
         throw new Error(response2.message || 'interaction capture failed')
       }
-      console.log(response2)
       window.postMessage(
         {
           type: 'INTERACTION_COMPLETE',
@@ -123,75 +116,11 @@ const work = () => {
   }
 
   // Extend the Window interface to include custom properties
-  declare global {
-    interface Window {
-      clickable_recipes?: { [key: string]: Recipe }
-      input_recipes?: { [key: string]: Recipe }
-    }
-  }
 
-  function selectRecipe() {
-    const parsedUrl = new URL(window.location.href)
-    const path = parsedUrl.pathname
-
-    for (const recipe of recipes) {
-      const matchMethod = recipe.match_method || 'text'
-      if (matchMethod === 'text') {
-        try {
-          // Execute script in tab to check for matching element
-          const element = document.querySelector(recipe.match)
-
-          const hasMatch =
-            element &&
-            (!recipe.match_text ||
-              (element.textContent?.toLowerCase().includes(recipe.match_text.toLowerCase()) ??
-                false))
-
-          if (hasMatch) {
-            return recipe
-          }
-        } catch (error) {
-          console.error('Error checking text match:', error)
-        }
-      } else if (matchMethod === 'url' && recipe.match === path) {
-        return recipe
-      }
-    }
-
-    throw new Error(`No matching recipe found for path: ${path}`)
-  }
-
-  document.addEventListener('DOMContentLoaded', async () => {
-    console.log('DOMContentLoaded')
-
-    try {
-      const recipe = selectRecipe()
-      const rootElement = document.querySelector(recipe.selector)
-
-      if (rootElement) {
-        const newRoot = processElement(rootElement, recipe)
-
-        console.log(newRoot.outerHTML)
-      }
-    } catch (error) {
-      console.error('Error initializing clickable elements:', error)
-    }
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOMContentLoaded event triggered')
+    processRecipe()
   })
-
-  // function generateHtmlSnapshotId(uuid: string) {
-  //   const url = window.location.href
-  //   const timestamp = new Date().toISOString()
-  //   return `html_${hashCode(url)}_${timestamp}_${uuid}`
-  // }
-  function hashCode(str: string) {
-    let hash = 0
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash << 5) - hash + str.charCodeAt(i)
-      hash |= 0
-    }
-    console.log('Hash value before return:', hash)
-    return hash.toString()
-  }
 
   // Function to capture interactions
   async function captureInteraction(
@@ -205,24 +134,30 @@ const work = () => {
       // Generate new HTML snapshot ID
       const currentSnapshotId = generateHtmlSnapshotId(timestamp, uuid)
 
-      // Save HTML snapshot and wait for it to complete
-      // await new Promise((resolve, reject) => {
-      const result = await chrome.storage.local.get(['htmlSnapshots'])
-      const htmlSnapshots = result.htmlSnapshots || {}
+      const simplifiedHTML = processRecipe()
       const markedDoc = getClickableElementsInViewport()
-      htmlSnapshots[currentSnapshotId] = markedDoc.documentElement.outerHTML
-      await chrome.storage.local.set({ htmlSnapshots })
+
       const pageMeta = findPageMeta()
+
       let data = {
         uuid: uuid,
         eventType,
         timestamp: timestamp,
-        target: target,
+
         htmlSnapshotId: currentSnapshotId, // Use the new snapshot ID
-        pageMeta: pageMeta || ''
+        pageMeta: pageMeta || '',
+        htmlContent: markedDoc.documentElement.outerHTML,
+        simplifiedHTML: simplifiedHTML
       }
       if (eventType === 'scroll') {
         data['scrollDistance'] = scrollDistance
+        data['target'] = target
+      }
+      if (eventType === 'input') {
+        data['input-values'] = target?.value || ''
+        data['input-id'] = target?.id || ''
+        data['data-element-meta-name'] = target.getAttribute('data-element-meta-name') || ''
+        data['data-element-meta-data'] = target.getAttribute('data-element-meta-data') || ''
       }
       await chrome.runtime.sendMessage({ action: 'saveData', data })
     } catch (error) {
@@ -299,24 +234,24 @@ const work = () => {
     handleScrollStop()
   })
 
-  document.addEventListener(
-    'blur',
-    async (event) => {
-      const target = event.target as HTMLElement
-      if (isFromPopup(target)) return
-      if (
-        target &&
-        ((target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text') ||
-          target.tagName === 'TEXTAREA')
-      ) {
-        const timestamp = new Date().toISOString()
-        const uuid = uuidv4()
-        await captureScreenshot(timestamp, uuid)
-        await captureInteraction('input', target, timestamp, uuid)
-      }
-    },
-    true
-  )
+  // document.addEventListener(
+  //   'blur',
+  //   async (event) => {
+  //     const target = event.target as HTMLElement
+  //     if (isFromPopup(target)) return
+  //     if (
+  //       target &&
+  //       ((target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text') ||
+  //         target.tagName === 'TEXTAREA')
+  //     ) {
+  //       const timestamp = new Date().toISOString()
+  //       const uuid = uuidv4()
+  //       await captureScreenshot(timestamp, uuid)
+  //       await captureInteraction('input', target, timestamp, uuid)
+  //     }
+  //   },
+  //   true
+  // )
 
   document.addEventListener('DOMContentLoaded', () => {
     // Handle all types of order buttons
@@ -366,17 +301,16 @@ const work = () => {
 
             console.log(`${button.id} clicked - Product Info:`, productInfo)
 
-            // Store the product info
-            let result = await chrome.storage.local.get({ orderDetails: [] })
-            const orderDetails = result.orderDetails || []
-            orderDetails.push({
-              timestamp: new Date().toISOString(),
-              name: productInfo.title,
-              price: parseFloat(productInfo.price.replace(/[^0-9.]/g, '')),
-              asin: productInfo.asin,
-              options: productInfo.options
+            await chrome.runtime.sendMessage({
+              action: 'saveOrder',
+              data: {
+                timestamp: new Date().toISOString(),
+                name: productInfo.title,
+                price: parseFloat(productInfo.price.replace(/[^0-9.]/g, '')),
+                asin: productInfo.asin,
+                options: productInfo.options
+              }
             })
-            await chrome.storage.local.set({ orderDetails })
           } catch (error) {
             console.error(`Error capturing ${button.id} product info:`, error)
           }
@@ -432,11 +366,7 @@ const work = () => {
             }
           }
           if (selectedItems.length > 0) {
-            let result = await chrome.storage.local.get({ orderDetails: [] })
-            const orderDetails = result.orderDetails || []
-            const updatedOrderDetails = orderDetails.concat(selectedItems)
-            await chrome.storage.local.set({ orderDetails: updatedOrderDetails })
-            console.log('Stored selected cart items:', selectedItems)
+            await chrome.runtime.sendMessage({ action: 'saveOrder', data: selectedItems })
           }
         } catch (error) {
           console.error('Error capturing selected cart items:', error)
@@ -449,10 +379,11 @@ const work = () => {
     (message, sender, sendResponse: (response?: any) => void) => {
       console.log('message', message)
       if (message.action === 'getHTML') {
+        const simplifiedHTML = processRecipe()
         const markedDoc = getClickableElementsInViewport()
         const htmlContent = markedDoc.documentElement.outerHTML
         const pageMeta = findPageMeta()
-        sendResponse({ html: htmlContent, pageMeta: pageMeta })
+        sendResponse({ html: htmlContent, pageMeta: pageMeta, simplifiedHTML: simplifiedHTML })
       }
       if (message.action === 'show_popup') {
         console.log('show_popup', message)
