@@ -55,6 +55,7 @@ const db = await openDB('userInteractions', 1, {
       })
       interactionsStore.createIndex('timestamp', 'timestamp', { unique: false })
       interactionsStore.createIndex('uuid', 'uuid', { unique: false })
+      interactionsStore.createIndex('uploaded', 'uploaded', { unique: false })
       console.log('Database interactions initialized')
     }
     if (!db.objectStoreNames.contains('screenshots')) {
@@ -64,6 +65,7 @@ const db = await openDB('userInteractions', 1, {
       })
       screenshotsStore.createIndex('timestamp', 'timestamp', { unique: false })
       screenshotsStore.createIndex('uuid', 'uuid', { unique: false })
+      screenshotsStore.createIndex('uploaded', 'uploaded', { unique: false })
       console.log('Database screenshots initialized')
     }
     if (!db.objectStoreNames.contains('reasonsAnnotation')) {
@@ -73,6 +75,7 @@ const db = await openDB('userInteractions', 1, {
       })
       reasonsAnnotationStore.createIndex('timestamp', 'timestamp', { unique: false })
       reasonsAnnotationStore.createIndex('uuid', 'uuid', { unique: false })
+      reasonsAnnotationStore.createIndex('uploaded', 'uploaded', { unique: false })
       console.log('Database reasonsAnnotation initialized')
     }
     if (!db.objectStoreNames.contains('htmlSnapshots')) {
@@ -82,12 +85,13 @@ const db = await openDB('userInteractions', 1, {
       })
       htmlSnapshotsStore.createIndex('timestamp', 'timestamp', { unique: false })
       htmlSnapshotsStore.createIndex('uuid', 'uuid', { unique: false })
+      htmlSnapshotsStore.createIndex('uploaded', 'uploaded', { unique: false })
       console.log('Database htmlSnapshots initialized')
     }
     if (!db.objectStoreNames.contains('order')) {
       const orderStore = db.createObjectStore('order', { keyPath: 'id', autoIncrement: true })
       orderStore.createIndex('timestamp', 'timestamp', { unique: false })
-      // orderStore.createIndex('uuid', 'uuid', { unique: false });
+      orderStore.createIndex('uploaded', 'uploaded', { unique: false })
       console.log('Database order initialized')
     }
   }
@@ -180,7 +184,10 @@ async function saveScreenshot_idb(screenshotDataUrl: string, timestamp: string, 
       uuid: uuid
     }
 
-    await db.add('screenshots', screenshotData)
+    await db.add('screenshots', {
+      ...screenshotData,
+      uploaded: 0
+    })
 
     return true
   }
@@ -209,7 +216,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         const saveData = async () => {
           console.log('saveData ', message.data.eventType)
-          await db.add('interactions', message.data)
+          await db.add('interactions', {
+            ...message.data,
+            uploaded: 0
+          })
         }
         await Promise.all([
           saveData(),
@@ -239,7 +249,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       try {
         console.log('saveOrder', message.data)
         if (typeof message.data === 'object') {
-          await db.add('order', message.data)
+          await db.add('order', {
+            ...message.data,
+            uploaded: 0
+          })
         } else if (Array.isArray(message.data)) {
           if (message.data.length > 0) {
             const tx = db.transaction('order', 'readwrite')
@@ -366,7 +379,8 @@ const saveHTML = async (
     htmlContent: htmlContent,
     simplifiedHTML: simplifiedHTML,
     timestamp: timestamp,
-    uuid: uuid
+    uuid: uuid,
+    uploaded: 0
   })
 }
 
@@ -394,7 +408,10 @@ const saveInteraction = async (
     data['navigationType'] = navigationType
   }
 
-  await db.add('interactions', data)
+  await db.add('interactions', {
+    ...data,
+    uploaded: 0
+  })
 }
 
 const saveScreenshot = async (windowId: number, timestamp: string, uuid: string) => {
@@ -435,7 +452,10 @@ const sendPopup = async (
           eventType: eventType,
           reason: reason
         }
-        await db.add('reasonsAnnotation', newitem)
+        await db.add('reasonsAnnotation', {
+          ...newitem,
+          uploaded: 0
+        })
       }
     } catch (error) {
       console.error('Error popup:', error)
@@ -735,22 +755,37 @@ async function uploadDataToServer_new() {
 
     const folderName = `${folder_name}/USER/${user_id}`
 
-    // Create an IDBKeyRange for fetching data since the last upload
-    const lowerBound =
-      lastuploadTimestamp !== null ? IDBKeyRange.lowerBound(lastuploadTimestamp, true) : undefined
-
-    // Fetch data from IndexedDB
-    console.log('Fetching data from IndexedDB')
-
-    const interactionsToUpload = await db.getAllFromIndex('interactions', 'timestamp', lowerBound)
-    const htmlSnapshotsToUpload = await db.getAllFromIndex('htmlSnapshots', 'timestamp', lowerBound)
-    const orderDetailsToUpload = await db.getAllFromIndex('order', 'timestamp', lowerBound)
-    const screenshotsToUpload = await db.getAllFromIndex('screenshots', 'timestamp', lowerBound)
-    const reasonsAnnotationToUpload = await db.getAllFromIndex(
-      'reasonsAnnotation',
-      'timestamp',
-      lowerBound
+    // Create a transaction for reading data
+    const tx = db.transaction(
+      ['interactions', 'htmlSnapshots', 'order', 'screenshots', 'reasonsAnnotation'],
+      'readonly'
     )
+
+    // Retrieve only items where uploaded == false
+    const interactionsToUpload = await tx
+      .objectStore('interactions')
+      .index('uploaded')
+      .getAll(IDBKeyRange.only(0))
+
+    const htmlSnapshotsToUpload = await tx
+      .objectStore('htmlSnapshots')
+      .index('uploaded')
+      .getAll(IDBKeyRange.only(0))
+
+    const orderDetailsToUpload = await tx
+      .objectStore('order')
+      .index('uploaded')
+      .getAll(IDBKeyRange.only(0))
+
+    const screenshotsToUpload = await tx
+      .objectStore('screenshots')
+      .index('uploaded')
+      .getAll(IDBKeyRange.only(0))
+
+    const reasonsAnnotationToUpload = await tx
+      .objectStore('reasonsAnnotation')
+      .index('uploaded')
+      .getAll(IDBKeyRange.only(0))
 
     // Check if there are any interactions to upload
     if (interactionsToUpload.length === 0) {
@@ -925,7 +960,44 @@ async function uploadDataToServer_new() {
       chrome.storage.local.remove('user_interaction_tracker_last_timestamp')
     } else {
       // If user_id contains the secret ID, do not delete data from IndexedDB
-      console.log('Data retained in IndexedDB for local download')
+      const tx = db.transaction(
+        ['interactions', 'htmlSnapshots', 'order', 'screenshots', 'reasonsAnnotation'],
+        'readwrite'
+      )
+
+      const updatePromises = []
+
+      interactionsToUpload.forEach((item) => {
+        item.uploaded = 1
+        updatePromises.push(tx.objectStore('interactions').put(item))
+      })
+
+      htmlSnapshotsToUpload.forEach((item) => {
+        item.uploaded = 1
+        updatePromises.push(tx.objectStore('htmlSnapshots').put(item))
+      })
+
+      orderDetailsToUpload.forEach((item) => {
+        item.uploaded = 1
+        updatePromises.push(tx.objectStore('order').put(item))
+      })
+
+      screenshotsToUpload.forEach((item) => {
+        item.uploaded = 1
+        updatePromises.push(tx.objectStore('screenshots').put(item))
+      })
+
+      reasonsAnnotationToUpload.forEach((item) => {
+        item.uploaded = 1
+        updatePromises.push(tx.objectStore('reasonsAnnotation').put(item))
+      })
+
+      updatePromises.push(tx.done)
+      await Promise.all(updatePromises)
+      lastTimestamp = null
+      lastuploadTimestamp = currentTimestamp
+      await chrome.storage.local.set({ lastuploadTimestamp: lastuploadTimestamp })
+      chrome.storage.local.remove('user_interaction_tracker_last_timestamp')
     }
 
     startPeriodicUpload()
