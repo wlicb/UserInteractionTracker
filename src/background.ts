@@ -10,7 +10,6 @@ import axios from 'axios'
 let interactions: any[] = []
 let screenshots: [string, string][] = []
 let reasonsAnnotation: any[] = []
-let actionSequenceId = 0
 let uploadTimer: NodeJS.Timer | null | false = null
 let userId: string = ''
 
@@ -58,7 +57,7 @@ const db = await openDB('userInteractions', 1, {
         autoIncrement: true
       })
       interactionsStore.createIndex('timestamp', 'timestamp', { unique: false })
-      interactionsStore.createIndex('uuid', 'uuid', { unique: false })
+      interactionsStore.createIndex('uuid', 'uuid', { unique: true })
       interactionsStore.createIndex('uploaded', 'uploaded', { unique: false })
       console.log('Database interactions initialized')
     }
@@ -68,7 +67,7 @@ const db = await openDB('userInteractions', 1, {
         autoIncrement: true
       })
       screenshotsStore.createIndex('timestamp', 'timestamp', { unique: false })
-      screenshotsStore.createIndex('uuid', 'uuid', { unique: false })
+      screenshotsStore.createIndex('uuid', 'uuid', { unique: true })
       screenshotsStore.createIndex('uploaded', 'uploaded', { unique: false })
       console.log('Database screenshots initialized')
     }
@@ -78,7 +77,7 @@ const db = await openDB('userInteractions', 1, {
         autoIncrement: true
       })
       reasonsAnnotationStore.createIndex('timestamp', 'timestamp', { unique: false })
-      reasonsAnnotationStore.createIndex('uuid', 'uuid', { unique: false })
+      reasonsAnnotationStore.createIndex('uuid', 'uuid', { unique: true })
       reasonsAnnotationStore.createIndex('uploaded', 'uploaded', { unique: false })
       console.log('Database reasonsAnnotation initialized')
     }
@@ -88,13 +87,13 @@ const db = await openDB('userInteractions', 1, {
         autoIncrement: true
       })
       htmlSnapshotsStore.createIndex('timestamp', 'timestamp', { unique: false })
-      htmlSnapshotsStore.createIndex('uuid', 'uuid', { unique: false })
+      htmlSnapshotsStore.createIndex('uuid', 'uuid', { unique: true })
       htmlSnapshotsStore.createIndex('uploaded', 'uploaded', { unique: false })
       console.log('Database htmlSnapshots initialized')
     }
     if (!db.objectStoreNames.contains('order')) {
       const orderStore = db.createObjectStore('order', { keyPath: 'id', autoIncrement: true })
-      orderStore.createIndex('timestamp', 'timestamp', { unique: false })
+      orderStore.createIndex('timestamp', 'timestamp', { unique: true })
       orderStore.createIndex('uploaded', 'uploaded', { unique: false })
       console.log('Database order initialized')
     }
@@ -202,9 +201,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   ;(async () => {
     if (message.action === 'saveData') {
       try {
-        actionSequenceId++
-        const currentactionSequenceId = actionSequenceId
-        console.log(currentactionSequenceId)
         const uuid = message.data.uuid
 
         const htmldata = {
@@ -393,7 +389,6 @@ const saveInteraction = async (
   timestamp: string,
   target_url: string,
   htmlSnapshotId: string,
-  currentactionSequenceId: number,
   uuid: string,
   navigationType: string | null = null,
   pageMeta: string | null = null
@@ -501,8 +496,6 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
         const htmlContent = response?.html
         const simplifiedHTML = response?.simplifiedHTML
         const pageMeta = response?.pageMeta
-        actionSequenceId++
-        const currentactionSequenceId = actionSequenceId
 
         await Promise.all([
           saveHTML(htmlContent, simplifiedHTML, currentSnapshotId, timestamp, uuid),
@@ -511,7 +504,6 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
             timestamp,
             tab.url,
             currentSnapshotId,
-            currentactionSequenceId,
             uuid,
             null,
             pageMeta
@@ -542,8 +534,6 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
       const simplifiedHTML = response?.simplifiedHTML
       const pageMeta = response?.pageMeta
       const currentSnapshotId = `html_${hashCode(details.url)}_${timestamp}_${uuid}`
-      actionSequenceId++
-      const currentactionSequenceId = actionSequenceId
       await Promise.all([
         saveHTML(htmlContent, simplifiedHTML, currentSnapshotId, timestamp, uuid),
         saveInteraction(
@@ -551,7 +541,6 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
           timestamp,
           details.url,
           currentSnapshotId,
-          currentactionSequenceId,
           uuid,
           navigationType,
           pageMeta
@@ -564,7 +553,6 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
           details.tabId,
           timestamp,
           'navigation',
-          // currentactionSequenceId,
           {
             navigationType: navigationType
           },
