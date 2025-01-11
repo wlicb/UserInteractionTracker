@@ -284,7 +284,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             message.uuid
           )
           console.log('save screenshot success', success)
-          console.log('time: ', new Date().getTime() - start_time)
+          console.log('time: ', new Date().toISOString())
           sendResponse({
             success,
             message: success ? undefined : 'Failed to capture screenshot'

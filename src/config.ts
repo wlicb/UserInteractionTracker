@@ -16,3 +16,4 @@ export const filter_url = [
   //   'https://www.amazon.com/gp/checkoutportal/',
   //   'https://www.amazon.com/gp/cart/desktop/'
 ]
+export const scroll_threshold = 300
