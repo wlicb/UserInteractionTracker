@@ -3,8 +3,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import { nav, refinement_option, recipes } from './recipe_new'
 import JSZip from 'jszip'
-import { update_icon } from './utils/util'
-import { shouldExclude } from './utils/util'
+import { update_icon, shouldExclude, getCustomQuestion } from './utils/util'
 import axios from 'axios'
 
 let interactions: any[] = []
@@ -138,42 +137,6 @@ function analyzeNavigation(tabId: number, url: string): 'new' | 'back' | 'forwar
   history.forwardStack = []
   history.currentUrl = url
   return 'new'
-}
-
-// Replace the simple question with a more detailed one based on event type
-function getCustomQuestion(eventType: string, data: any): string {
-  switch (eventType) {
-    case 'click_a':
-    case 'click_b':
-    case 'click_c':
-      // Check if it's a specific type of click
-      if (data.target.innerText === 'Set Up Now') {
-        return "Why did you choose 'Set Up Now' instead of buy once, and why do you like this particular product?"
-      } else if (data.target.id === 'buy-now-button') {
-        return 'Why did you choose to buy this product immediately, and what convinced you to skip further exploration of other options? Why do you like this particular product?'
-      } else if (data.target.className?.includes('sc-product-link')) {
-        return 'What made you click on this product, and what specific aspects attracted your attention compared to other search results?'
-      } else if (data.target.id === 'add-to-cart-button') {
-        return 'Why did you decide to add this item to your cart, and are you planning to buy it now or later? What convinced you that this item was the right choice for your needs?'
-      } else {
-        return 'What was your reason for clicking on this element?'
-      }
-    case 'scroll':
-      return 'What are you doing while scrolling—are you browsing search results, looking at reviews, or something else, and what are you hoping to find?'
-    case 'input':
-      return 'What are you searching for, and how did you decide on the search terms you used? Are you looking for a specific product, brand, or feature?'
-    case 'navigation':
-      if (data.navigationType === 'back') {
-        return 'Why did you decide to go back to the previous page, and what were you hoping to revisit or reconsider?'
-      } else if (data.navigationType === 'forward') {
-        return 'Why did you decide to return to this page after previously navigating away, and what new or unresolved information are you looking for now?'
-      }
-      return `What is the reason for this ${data.navigationType} navigation?`
-    case 'tabActivate':
-      return `Why did you switch to this tab? Do you have specific task or information in mind?`
-    default:
-      return `What is the reason for the ${eventType} action?`
-  }
 }
 
 // Add new function to handle screenshot saving

@@ -1,3 +1,4 @@
+import { startsWith } from 'lodash'
 import { filter_url, url_includes, check_user_id_url } from '../config'
 
 export function isFromPopup(element: HTMLElement): boolean {
@@ -177,5 +178,64 @@ export function processRecipe() {
     }
   } catch (error) {
     console.error('Error processing recipe:', error)
+  }
+}
+
+// Replace the simple question with a more detailed one based on event type
+export function getCustomQuestion(eventType: string, data: any): string {
+  switch (eventType) {
+    case 'click_a':
+    case 'click_b':
+    case 'click_c':
+      // Check if it's a specific type of click
+      if (
+        data['data-semantic-id'] === 'buybox.delivery.subscribe_save_.purchase_form.set_up_now' ||
+        data.target.innerText === 'Set Up Now'
+      ) {
+        return 'What makes you choose to subscribe to this product?'
+      } else if (
+        data['data-semantic-id'] === 'buybox.delivery.one_time_purchase_.purchase_form.buy_now' ||
+        data['data-semantic-id'] === 'buybox.delivery.purchase_form.buy' ||
+        data.target.id === 'buy-now-button'
+      ) {
+        return 'What do you like about this particular product?'
+      } else if (
+        data['data-semantic-id']?.startsWith('search_results.') ||
+        data.target.className?.includes('sc-product-link')
+      ) {
+        return 'You clicked on this product. What caught your attention compared to the other options you saw?'
+      } else if (
+        data['data-semantic-id'] ===
+          'buybox.delivery.one_time_purchase_.purchase_form.add_to_cart' ||
+        data['data-semantic-id'] === 'buybox.delivery.purchase_form.add_to_cart' ||
+        data.target.id === 'add-to-cart-button' ||
+        data.target.name === 'submit.addToCart'
+      ) {
+        return 'What makes you decide to add this item to your cart?'
+      } else if (data['data-semantic-id'] === 'nav_bar.search_button') {
+        return 'What are you searching for?'
+      } else if (data['data-semantic-id']?.startsWith('refinements.')) {
+        return 'What are you hoping to find with this filter?'
+      } else if (data['data-semantic-id']?.startsWith('product_options.')) {
+        return 'What do you like about this product option?'
+      } else {
+        return 'You clicked on this element. Could you share what you were trying to do or find?'
+      }
+
+    case 'scroll':
+      return 'What information are you looking for?'
+    case 'input':
+      return 'What are you searching for？'
+    case 'navigation':
+      if (data.navigationType === 'back') {
+        return 'Why did you decide to go back to the previous page?'
+      } else if (data.navigationType === 'forward') {
+        return 'Why did you decide to return to this page ?'
+      }
+      return `What is the reason for this ${data.navigationType} navigation?`
+    case 'tabActivate':
+      return `Why did you switch to this tab?`
+    default:
+      return `What is the reason for the ${eventType} action?`
   }
 }

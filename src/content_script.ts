@@ -7,7 +7,6 @@ import {
   processRecipe
 } from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
-import { debounce } from 'lodash'
 import { scroll_threshold } from './config'
 
 async function captureScreenshot(timestamp: string, uuid: string) {
@@ -165,76 +164,6 @@ const work = () => {
       console.error(`Error during ${eventType} event handling:`, error)
     }
   }
-
-  // let accumulatedScrollDistance = 0
-  // let lastScrollTop = window.scrollY || document.documentElement.scrollTop
-  // let lastScrollTime = 0 // Track last scroll timestamp
-  // const SCROLL_THRESHOLD = 1500 // Minimum time in ms between screenshots for scroll actions
-  // // Capture scroll interactions
-  // document.addEventListener('scroll', async (event) => {
-  //   try {
-  //     // scroll don't have a specific target, so we judge whether popup is open
-  //     if (document.getElementById('reason-modal')) {
-  //       return
-  //     }
-  //     const currentScrollTop = window.scrollY || document.documentElement.scrollTop
-  //     accumulatedScrollDistance += Math.abs(currentScrollTop - lastScrollTop)
-  //     lastScrollTop = currentScrollTop
-  //     const currentTime = Date.now()
-  //     if (currentTime - lastScrollTime >= SCROLL_THRESHOLD) {
-  //       lastScrollTime = currentTime
-  //       const timestamp = new Date().toISOString()
-  //       const uuid = uuidv4()
-  //       await captureInteraction('scroll', event.target, timestamp,  uuid,accumulatedScrollDistance)
-  //       await captureScreenshot(timestamp, uuid)
-  //       accumulatedScrollDistance = 0
-  //     }
-  //   } catch (error) {
-  //     console.error('Error during scroll event handling:', error)
-  //   }
-  // })
-
-  // let lastScrollTop = window.scrollY || document.documentElement.scrollTop
-  // let accumulatedScrollDistance = 0
-
-  // const handleScrollStop = debounce(async () => {
-  //   try {
-  //     console.log('handle scroll event')
-  //     const currentScrollTop = window.scrollY || document.documentElement.scrollTop
-  //     accumulatedScrollDistance = currentScrollTop - lastScrollTop
-  //     // console.log(window.scrollY, currentScrollTop, lastScrollTop, accumulatedScrollDistance)
-  //     if (accumulatedScrollDistance !== 0) {
-  //       const timestamp = new Date().toISOString()
-  //       const uuid = uuidv4()
-  //       await captureInteraction('scroll', null, timestamp, uuid, accumulatedScrollDistance)
-  //       await captureScreenshot(timestamp, uuid)
-
-  //       // Reset after capturing
-  //       lastScrollTop = currentScrollTop
-  //       accumulatedScrollDistance = 0
-  //     }
-  //   } catch (error) {
-  //     console.error('Error during scroll event handling:', error)
-  //   }
-  // }, scroll_threshold) // Using the 400ms threshold
-
-  // document.addEventListener('scroll', (event) => {
-  //   console.log('scroll event')
-
-  //   if (document.getElementById('reason-modal')) {
-  //     return
-  //   }
-  //   if (
-  //     event.target !== window &&
-  //     event.target !== document &&
-  //     event.target !== document.documentElement
-  //   ) {
-  //     console.log('Scroll event ignored from a nested scrollable container')
-  //     return
-  //   }
-  //   handleScrollStop()
-  // })
-
   // Variables to track scroll events
   let isScrolling = false
   let scrollTimeout: number | undefined
