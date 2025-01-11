@@ -24,6 +24,10 @@ let lastGeneratePresignedPostResponse: {
 
 import {
   popup_probability,
+  popup_scroll_probability,
+  popup_click_probability,
+  popup_navigation_probability,
+  popup_tabActivate_probability,
   folder_name,
   zip,
   base_url,
@@ -426,7 +430,6 @@ const sendPopup = async (
   tabId: number,
   timestamp: string,
   eventType: string,
-  // action_uuid: string,
   data: any,
   uuid: string
 ) => {
@@ -437,7 +440,22 @@ const sendPopup = async (
     return
   }
   const question = getCustomQuestion(eventType, data)
-  if (Math.random() < popup_probability && tabId) {
+  let probability = popup_probability
+  switch (eventType) {
+    case 'scroll':
+      probability = popup_scroll_probability
+      break
+    case 'click':
+      probability = popup_click_probability
+      break
+    case 'navigation':
+      probability = popup_navigation_probability
+      break
+    case 'tabActivate':
+      probability = popup_tabActivate_probability
+      break
+  }
+  if (Math.random() < probability && tabId) {
     console.log('send popup')
     try {
       const reason = await chrome.tabs.sendMessage(tabId, {

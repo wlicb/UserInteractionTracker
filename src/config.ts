@@ -1,4 +1,8 @@
 export const popup_probability = 0.15
+export const popup_scroll_probability = 0.08
+export const popup_click_probability = 0.18
+export const popup_navigation_probability = 0.15
+export const popup_tabActivate_probability = 0.15
 export const folder_name = `user_interaction_data`
 export const zip = true
 export const upload_url = 'http://userdatacollect.hailab.io/upload'
