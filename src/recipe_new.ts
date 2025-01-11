@@ -1398,7 +1398,7 @@ export const recipes = [
                 name: 'from_text',
                 children: [
                   {
-                    selector: "input[type='checkbox']",
+                    selector: 'i.a-icon-checkbox',
                     name: 'select',
                     clickable: true
                   },
