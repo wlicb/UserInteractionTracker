@@ -113,15 +113,28 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     // Tag the select element with data-select-id
     element.setAttribute('data-select-id', elementName)
 
-    const options = element.querySelectorAll('option')
-    options.forEach((option: any) => {
-      const optionValue = option.getAttribute('value') || option.textContent.trim()
+    const selectId = element.getAttribute('id')
+
+    const nameId = element.getAttribute('name')
+
+    const tag = element.parentElement?.querySelector('span.a-button-dropdown span.a-button-text')
+    const newTag = document.createElement('span')
+    newTag.textContent = tag.textContent
+    const tagName = elementName + '.open_drop_down_list'
+    newTag.setAttribute('name', tagName)
+    tag.setAttribute('data-clickable-id', tagName) // Tag actual DOM option element
+
+    newElement.appendChild(newTag)
+
+    const options = document.querySelectorAll('a[id^="' + selectId + '"]')
+    options.forEach(async (option) => {
+      const optionValue = option.textContent.trim()
       const optionName = elementName + '.' + optionValue
-      const newOption = document.createElement('option')
+      const newOption = document.createElement('a')
       newOption.textContent = option.textContent
       newOption.setAttribute('value', optionValue)
       newOption.setAttribute('name', optionName)
-      newOption.setAttribute('selected', option.selected.toString())
+      newOption.setAttribute('selected', option.getAttribute('aria-selected'))
       option.setAttribute('data-clickable-id', optionName) // Tag actual DOM option element
       newElement.appendChild(newOption)
     })

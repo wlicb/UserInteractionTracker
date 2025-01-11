@@ -56,8 +56,7 @@ export const refinement_option = [
     clickable: true
   },
   {
-    selector:
-      "ul:nth-of-type(1) > span.a-declarative > span > li:has(a.a-link-normal.s-navigation-item):has(input[type='checkbox'])",
+    selector: 'ul > span.a-declarative > span > li:has(a.a-link-normal.s-navigation-item)',
     add_text: true,
     name: 'from_text',
     clickable: true,
@@ -106,8 +105,8 @@ export const refinement_option = [
           text += aChild.getAttribute('title')
         }
       }
-      const nameEm = element.closest('ul')?.previousElementSibling
-      const name = nameEm?.innerText
+      const nameEm = element.closest('ul')?.parentElement?.firstElementChild
+      const name = nameEm?.innerText?.replace(/[ ]/g, '_').toLowerCase().trim()
 
       let url = ''
 
@@ -116,9 +115,15 @@ export const refinement_option = [
       }
 
       if (aChild && aChild.getAttribute('aria-current') === 'true') {
-        return { name: 'refinements.' + name, data: { title: text, selected: true, url } }
+        return {
+          name: 'refinements.' + name,
+          data: { title: text?.trim() || '', selected: true, url }
+        }
       }
-      return { name: 'refinements.' + name, data: { title: text, selected: false, url } }
+      return {
+        name: 'refinements.' + name,
+        data: { title: text?.trim() || '', selected: false, url }
+      }
     },
     children: [
       {
@@ -128,72 +133,7 @@ export const refinement_option = [
   },
   {
     selector:
-      "ul:nth-of-type(1) > span.a-declarative > span > li:has(a.a-link-normal.s-navigation-item):not(:has(input[type='checkbox']))",
-    add_text: true,
-    name: 'from_text',
-    clickable: true,
-    direct_child: true,
-    text_js: function (element) {
-      try {
-        let text = ''
-        if (!element) {
-          return text
-        }
-        const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-        if (element.innerText && element.innerText.trim()) {
-          text += element.innerText.trim()
-          if (aChild && aChild.hasAttribute('title')) {
-            text += ' '
-            text += aChild.getAttribute('title')
-          }
-        } else {
-          const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-          if (aChild && aChild.hasAttribute('title')) {
-            text += aChild.getAttribute('title')
-          }
-        }
-        if (aChild && aChild.getAttribute('aria-current') === 'true') {
-          text = 'Clear Option ' + text
-        }
-        return text
-      } catch (e) {
-        console.log(e)
-        return ''
-      }
-    },
-    generate_metadata: (element) => {
-      let text = ''
-      const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-      if (element.innerText && element.innerText.trim()) {
-        text += element.innerText.trim()
-        if (aChild && aChild.hasAttribute('title')) {
-          text += '_'
-          text += aChild.getAttribute('title')
-        }
-      } else {
-        const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-        if (aChild && aChild.hasAttribute('title')) {
-          text += aChild.getAttribute('title')
-        }
-      }
-      const nameEm = element.closest('ul')?.previousElementSibling
-      const name = nameEm?.innerText
-
-      let url = ''
-
-      if (aChild && aChild.hasAttribute('href')) {
-        url = aChild.getAttribute('href')
-      }
-
-      if (aChild && aChild.getAttribute('aria-current') === 'true') {
-        return { name: 'refinements.' + name, data: { title: text, selected: true, url } }
-      }
-      return { name: 'refinements.' + name, data: { title: text, selected: false, url } }
-    }
-  },
-  {
-    selector:
-      "ul:nth-of-type(1) > span.a-declarative > li > span > div[data-a-expander-name='filter-content-expander']",
+      "ul > span.a-declarative > li > span > div[data-a-expander-name='filter-content-expander']",
     name: 'more_options',
     children: [
       {
@@ -202,7 +142,7 @@ export const refinement_option = [
         add_text: true
       },
       {
-        selector: "li:has(input[type='checkbox'])",
+        selector: 'li',
         add_text: true,
         name: 'from_text',
         clickable: true,
@@ -250,8 +190,9 @@ export const refinement_option = [
               text += aChild.getAttribute('title')
             }
           }
-          const nameEm = element.closest('ul')?.previousElementSibling
-          const name = nameEm?.innerText
+          const nameEm = element.closest('ul')?.parentElement?.closest('ul')
+            ?.parentElement?.firstElementChild
+          const name = nameEm?.innerText?.replace(/[ ]/g, '_').toLowerCase().trim()
 
           let url = ''
 
@@ -260,78 +201,21 @@ export const refinement_option = [
           }
 
           if (aChild && aChild.getAttribute('aria-current') === 'true') {
-            return { name: 'refinements.' + name, data: { title: text, selected: true, url } }
+            return {
+              name: 'refinements.' + name,
+              data: { title: text?.trim() || '', selected: true, url }
+            }
           }
-          return { name: 'refinements.' + name, data: { title: text, selected: false, url } }
+          return {
+            name: 'refinements.' + name,
+            data: { title: text?.trim() || '', selected: false, url }
+          }
         },
         children: [
           {
             selector: "input[type='checkbox']"
           }
         ]
-      },
-      {
-        selector: "li:not(:has(input[type='checkbox']))",
-        add_text: true,
-        name: 'from_text',
-        clickable: true,
-        text_js: function (element) {
-          try {
-            let text = ''
-            if (!element) {
-              return text
-            }
-            const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-            if (element.innerText && element.innerText.trim()) {
-              text += element.innerText.trim()
-              if (aChild && aChild.hasAttribute('title')) {
-                text += ' '
-                text += aChild.getAttribute('title')
-              }
-            } else {
-              const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-              if (aChild && aChild.hasAttribute('title')) {
-                text += aChild.getAttribute('title')
-              }
-            }
-            if (aChild && aChild.getAttribute('aria-current') === 'true') {
-              text = 'Clear Option ' + text
-            }
-            return text
-          } catch (e) {
-            console.log(e)
-            return ''
-          }
-        },
-        generate_metadata: (element) => {
-          let text = ''
-          const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-          if (element.innerText && element.innerText.trim()) {
-            text += element.innerText.trim()
-            if (aChild && aChild.hasAttribute('title')) {
-              text += '_'
-              text += aChild.getAttribute('title')
-            }
-          } else {
-            const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
-            if (aChild && aChild.hasAttribute('title')) {
-              text += aChild.getAttribute('title')
-            }
-          }
-          const nameEm = element.closest('ul')?.previousElementSibling
-          const name = nameEm?.innerText
-
-          let url = ''
-
-          if (aChild && aChild.hasAttribute('href')) {
-            url = aChild.getAttribute('href')
-          }
-
-          if (aChild && aChild.getAttribute('aria-current') === 'true') {
-            return { name: 'refinements.' + name, data: { title: text, selected: true, url } }
-          }
-          return { name: 'refinements.' + name, data: { title: text, selected: false, url } }
-        }
       }
     ]
   }
@@ -600,6 +484,50 @@ export const recipes = [
             name: 'refinements',
             children: [
               {
+                selector: '#topRefinements\\/0',
+                name: 'top_refinements',
+                add_text: 'true',
+                text_format: 'Recently used filters',
+                children: [
+                  {
+                    selector: 'li',
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true,
+                    text_js: function (element) {
+                      try {
+                        let text = ''
+                        if (!element) {
+                          return text
+                        }
+                        const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+                        if (element.innerText && element.innerText.trim()) {
+                          text += element.innerText.trim()
+                          if (aChild && aChild.hasAttribute('title')) {
+                            text += ' '
+                            text += aChild.getAttribute('title')
+                          }
+                        } else {
+                          const aChild = element.querySelector('a.a-link-normal.s-navigation-item')
+                          if (aChild && aChild.hasAttribute('title')) {
+                            text += aChild.getAttribute('title')
+                          }
+                        }
+                        return text
+                      } catch (e) {
+                        console.log(e)
+                        return ''
+                      }
+                    },
+                    children: [
+                      {
+                        selector: "input[type='checkbox']"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
                 selector:
                   'div.a-section.a-spacing-none:not(:has(#n-title)):has(span.a-size-base.a-color-base.puis-bold-weight-text):has(ul span.a-declarative > span > li):not(#reviewsRefinements):not(#departments):not(#priceRefinements):not(#filters)',
                 name: 'from_text',
@@ -705,40 +633,6 @@ export const recipes = [
                   },
                   {
                     selector: "ul[aria-labelledby='p_36-title'] a[aria-current='false']",
-                    add_text: true,
-                    name: 'from_text',
-                    clickable: true,
-                    generate_metadata: (em) => {
-                      const title = em?.innerText
-                      const url = em?.getAttribute('href')
-                      return { name: 'refinements.price', data: { title, selected: false, url } }
-                    }
-                  },
-                  {
-                    selector: '#p_n_deal_type-title',
-                    add_text: true,
-                    name: 'deals_discounts_heading'
-                  },
-                  {
-                    selector: "div[aria-labelledby='p_n_deal_type-title'] > a",
-                    add_text: true,
-                    name: 'clear_deals_discount_selection',
-                    clickable: true
-                  },
-                  {
-                    selector: "ul[aria-labelledby='p_n_deal_type-title'] a[aria-current='true']",
-                    add_text: true,
-                    name: 'from_text',
-                    clickable: true,
-                    text_format: 'Clear Option {}',
-                    generate_metadata: (em) => {
-                      const title = em?.innerText
-                      const url = em?.getAttribute('href')
-                      return { name: 'refinements.price', data: { title, selected: true, url } }
-                    }
-                  },
-                  {
-                    selector: "ul[aria-labelledby='p_n_deal_type-title'] a[aria-current='false']",
                     add_text: true,
                     name: 'from_text',
                     clickable: true,
@@ -855,6 +749,41 @@ export const recipes = [
                     name: 'reset_price_selection',
                     add_text: true,
                     clickable: true
+                  },
+
+                  {
+                    selector: '#p_n_deal_type-title',
+                    add_text: true,
+                    name: 'deals_discounts_heading'
+                  },
+                  {
+                    selector: "div[aria-labelledby='p_n_deal_type-title'] > a",
+                    add_text: true,
+                    name: 'clear_deals_discount_selection',
+                    clickable: true
+                  },
+                  {
+                    selector: "ul[aria-labelledby='p_n_deal_type-title'] a[aria-current='true']",
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true,
+                    text_format: 'Clear Option {}',
+                    generate_metadata: (em) => {
+                      const title = em?.innerText
+                      const url = em?.getAttribute('href')
+                      return { name: 'refinements.price', data: { title, selected: true, url } }
+                    }
+                  },
+                  {
+                    selector: "ul[aria-labelledby='p_n_deal_type-title'] a[aria-current='false']",
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true,
+                    generate_metadata: (em) => {
+                      const title = em?.innerText
+                      const url = em?.getAttribute('href')
+                      return { name: 'refinements.price', data: { title, selected: false, url } }
+                    }
                   }
                 ]
               }
@@ -1056,7 +985,7 @@ export const recipes = [
                         ]
                       },
                       {
-                        selector: 'div.puis-size-variation-price a',
+                        selector: 'div.puis-size-variation-price a.a-text-normal',
                         name: 'price',
                         clickable: true,
                         add_text: true,
@@ -1125,7 +1054,7 @@ export const recipes = [
                 generate_metadata: (em) => {
                   return {
                     name: 'product_details',
-                    data: { label: 'title', value: em?.innerText || '' }
+                    data: { title: em?.innerText || '' }
                   }
                 }
               },
@@ -1145,15 +1074,25 @@ export const recipes = [
               },
               {
                 selector:
-                  '#apex_desktop > div[data-csa-c-slot-id="apex_dp_center_column"] > div[class="offersConsistencyEnabled"] > div:not([style="display:none;"]):not([style="display: none;"]) #corePriceDisplay_desktop_feature_div div.a-section.a-spacing-none.aok-align-center.aok-relative > span.aok-offscreen, #apex_desktop > div[data-csa-c-slot-id="apex_dp_center_column"] > div[data-csa-c-content-id="apex_with_rio_cx"] #corePriceDisplay_desktop_feature_div span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay',
+                  '#apex_desktop > div[data-csa-c-slot-id="apex_dp_center_column"]' +
+                  ' > div[class="offersConsistencyEnabled"] > div:not([style="display:none;"]):not([style="display: none;"]) ' +
+                  '#corePriceDisplay_desktop_feature_div:has(#sns-base-price) #sns-base-price span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay, ' +
+                  '#apex_desktop > div[data-csa-c-slot-id="apex_dp_center_column"]' +
+                  ' > div[class="offersConsistencyEnabled"] > div:not([style="display:none;"]):not([style="display: none;"]) ' +
+                  '#corePriceDisplay_desktop_feature_div:not(:has(#sns-base-price)) span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay, ' +
+                  '#apex_desktop > div[data-csa-c-slot-id="apex_dp_center_column"] > div[data-csa-c-content-id="apex_with_rio_cx"] ' +
+                  '#corePriceDisplay_desktop_feature_div span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay',
                 add_text: true,
                 text_format: 'Price: {}',
                 class: 'product-price',
                 generate_metadata: (em) => {
                   return {
                     name: 'product_details',
-                    data: { label: 'price', value: em?.innerText?.replace(/\n/g, '') || '' }
+                    data: { price: em?.innerText?.replace(/\n/g, '') || '' }
                   }
+                },
+                text_js: (em) => {
+                  return em?.innerText?.replace(/\n/g, '') || ''
                 }
               },
               {
@@ -1359,14 +1298,23 @@ export const recipes = [
                 ]
               },
               {
-                selector: '#productFactsDesktopExpander ul, #featurebullets_feature_div ul',
+                selector:
+                  '#productFactsDesktopExpander ul.a-unordered-list, #featurebullets_feature_div ul.a-unordered-list',
                 add_text: true,
                 name: 'about_this_item',
-                text_format: 'About this item: {}',
+                text_format: 'About this item: ',
+                children: [
+                  {
+                    selector: 'li',
+                    add_text: true
+                  }
+                ],
                 generate_metadata: (em) => {
                   return {
                     name: 'product_details',
-                    data: { label: 'bullet_list', value: em?.innerText?.replace(/\n/g, ' ') || '' }
+                    data: {
+                      bullet_list: em?.innerText?.replace(/\n/g, ' ') || ''
+                    }
                   }
                 }
               }
@@ -1407,7 +1355,7 @@ export const recipes = [
               const asinEm = em.querySelector('input#ASIN')
               return {
                 name: 'product_details',
-                data: { label: 'asin', value: asinEm?.value || '' }
+                data: { asin: asinEm?.value || '' }
               }
             }
           },
@@ -1420,7 +1368,7 @@ export const recipes = [
               const asinEm = em.querySelector('input#ASIN')
               return {
                 name: 'product_details',
-                data: { label: 'asin', value: asinEm?.value || '' }
+                data: { asin: asinEm?.value || '' }
               }
             }
           },
@@ -1436,7 +1384,7 @@ export const recipes = [
               const asinEm = em.querySelector('input#ASIN')
               return {
                 name: 'product_details',
-                data: { label: 'asin', value: asinEm?.value || '' }
+                data: { asin: asinEm?.value || '' }
               }
             }
           },
@@ -1450,7 +1398,7 @@ export const recipes = [
                 name: 'from_text',
                 children: [
                   {
-                    selector: "input[type='checkbox']",
+                    selector: 'i.a-icon-checkbox',
                     name: 'select',
                     clickable: true
                   },
@@ -1482,6 +1430,59 @@ export const recipes = [
                     text_format: 'No Thanks'
                   }
                 ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    match: '/cart/add-to-cart/ref=dp_start-bbf_1_glance',
+    match_method: 'url',
+    selector: 'html',
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: [
+          nav,
+          {
+            selector: '#sw-atc-buy-box',
+            children: [
+              {
+                selector: '#sw-subtotal',
+                children: [
+                  {
+                    selector: '#sw-subtotal-item-count',
+                    add_text: true
+                  },
+                  {
+                    selector: "span[aria-hidden='true']",
+                    add_text: true
+                  }
+                ]
+              },
+              {
+                selector: '#sc-buy-box-ptc-button span.a-button-inner input',
+                add_text: true,
+                text_selector: 'div.sc-without-multicart',
+                clickable: true,
+                name: 'check_out'
+              },
+              {
+                selector: '#sw-gtc a',
+                add_text: true,
+                clickable: true,
+                name: 'go_to_cart'
               }
             ]
           }
@@ -1543,7 +1544,7 @@ export const recipes = [
     ]
   },
   {
-    match: '/cart',
+    match: '/cart/ref=ord_cart_shr',
     match_method: 'url',
     selector: 'html',
     children: [
@@ -1564,6 +1565,26 @@ export const recipes = [
   },
   {
     match: '/gp/cart/view.html',
+    match_method: 'url',
+    selector: 'html',
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: cart
+      }
+    ]
+  },
+  {
+    match: '/cart',
     match_method: 'url',
     selector: 'html',
     children: [
