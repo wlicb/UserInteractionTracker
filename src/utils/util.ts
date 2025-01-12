@@ -138,8 +138,8 @@ import { recipes } from '../recipe_new'
 import { processElement } from './element-processor'
 function selectRecipe() {
   const parsedUrl = new URL(window.location.href)
-  const path = parsedUrl.pathname
-  path !== '/' ? path.replace(/\/+$/, '') : path
+  let path = parsedUrl.pathname
+  path = path !== '/' ? path.replace(/\/+$/, '') : path
 
   for (const recipe of recipes) {
     const matchMethod = recipe.match_method || 'text'
@@ -239,7 +239,7 @@ export function getCustomQuestion(eventType: string, data: any): string {
     case 'scroll':
       return 'What information are you looking for?'
     case 'input':
-      return 'What are you searching for？'
+      return 'What are you searching for?'
     case 'navigation':
       if (data.navigationType === 'back') {
         return 'Why did you decide to go back to the previous page?'
