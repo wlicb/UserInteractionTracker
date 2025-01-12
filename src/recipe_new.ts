@@ -463,9 +463,10 @@ export const cart = [
           const quantityEm = em.querySelector(
             "div.sc-item-content-group span.sc-quantity-stepper div[role='spinbutton']"
           )
-          const selectedEm = em.querySelector('div.sc-item-check-checkbox-selector input')
-          const selected = selectedEm?.selected
           const quantity = quantityEm?.innerText
+          const selectedEm = em.querySelector('div.sc-item-check-checkbox-selector input')
+          const selected = selectedEm?.getAttribute('checked') !== null
+
           return {
             name: 'active_items',
             data: { title, asin, price, url, delivery, quantity, selected }
@@ -842,7 +843,8 @@ export const buy_again = [
                     name: 'delivery'
                   },
                   {
-                    selector: 'input[name="submit.addToCart"]',
+                    selector:
+                      'input[name="submit.addToCart"], input[name^="atfcShim"], button[aria-label="Add to Cart. Click to change quantity"]',
                     add_text: true,
                     name: 'add_to_cart',
                     clickable: true
