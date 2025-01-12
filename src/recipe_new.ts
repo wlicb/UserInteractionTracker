@@ -553,6 +553,12 @@ export const buy_again = [
                     name: 'add_to_cart',
                     clickable: true,
                     add_text: true
+                  },
+                  {
+                    selector: 'div[id^="seeBuyingOptionsWrapper"] a',
+                    name: 'see_buying_options',
+                    clickable: true,
+                    add_text: true
                   }
                 ]
               },
@@ -593,7 +599,7 @@ export const buy_again = [
               },
               {
                 selector: "div[id^='expandedImage']",
-                name: 'close_prodct_card',
+                name: 'close_product_card',
                 clickable: true,
                 add_text: true,
                 text_format: 'Close Product Card'
@@ -842,6 +848,12 @@ export const buy_again = [
                     clickable: true
                   },
                   {
+                    selector: 'div[id^="seeBuyingOptionsWrapper"] a',
+                    name: 'see_buying_options',
+                    clickable: true,
+                    add_text: true
+                  },
+                  {
                     selector: 'div[name="ax-qs"]',
                     children: [
                       {
@@ -909,6 +921,22 @@ export const buy_again = [
                         text_format: 'Drop Down Option {}'
                       },
                       {
+                        selector:
+                          'div[id^="qs-widget-quantity-container-atfc"] span[data-action="qs-widget-quantity-changelink-decl"]',
+                        add_text: true,
+                        clickable: true,
+                        use_root: true,
+                        name: 'from_text'
+                      },
+                      {
+                        selector:
+                          'div[id^="qs-widget-summary-container-atfc"] span[id^="qs-widget-summary-atc-atfc"]',
+                        add_text: true,
+                        clickable: true,
+                        use_root: true,
+                        name: 'from_text'
+                      },
+                      {
                         selector: "input[aria-label='Add']",
                         add_text: true,
                         text_js: function (element) {
@@ -924,21 +952,30 @@ export const buy_again = [
                   }
                 ],
                 generate_metadata: (em) => {
+                  const parentTitleEm = em
+                    .closest('div[id^="featured"]')
+                    ?.querySelector(
+                      'div[id^="detailContentWrapper"] a[id^="title"] span.a-truncate-full'
+                    )
+                  const parentTitle = parentTitleEm?.innerText
+                    ?.toLowerCase()
+                    .replace(/[^\w]+/g, '_')
                   const asinEm = em.querySelector('div[class*="delightFaceout"]')
                   const asin = asinEm?.getAttribute('data-asin')
                   const priceEm = em.querySelector(
                     'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)'
                   )
                   const price = priceEm?.innerText?.replace(/[\n]/g, '')
-                  const titleEm = em.parentElement?.parentElement?.querySelector(
-                    "a[id^='title'] span.a-truncate-full"
-                  )
+                  const titleEm = em.querySelector("a[id^='title'] span.a-truncate-full")
                   const title = titleEm?.innerText
-                  const urlEm = em.parentElement?.parentElement?.querySelector("a[id^='title']")
+                  const urlEm = em.querySelector("a[id^='title']")
                   const url = urlEm?.getAttribute('href')
                   const deliveryEm = em.querySelector('#udmDeliveryMessageComponent')
                   const delivery = deliveryEm?.innerText.replace(/[\n]/g, ' ')
-                  return { name: 'active_items', data: { title, asin, price, url, delivery } }
+                  return {
+                    name: parentTitle + '.similar_items',
+                    data: { title, asin, price, url, delivery }
+                  }
                 }
               }
             ]
