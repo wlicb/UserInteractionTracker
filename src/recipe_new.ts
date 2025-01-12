@@ -82,7 +82,7 @@ export const refinement_option = [
           }
         }
         if (aChild && aChild.getAttribute('aria-current') === 'true') {
-          text = 'Clear Option ' + text
+          // text = 'Clear Option ' + text
         }
         return text
       } catch (e) {
@@ -167,7 +167,7 @@ export const refinement_option = [
               }
             }
             if (aChild && aChild.getAttribute('aria-current') === 'true') {
-              text = 'Clear Option ' + text
+              // text = 'Clear Option ' + text
             }
             return text
           } catch (e) {
@@ -545,6 +545,41 @@ export const buy_again = [
                 ]
               },
               {
+                selector: 'div[name="ax-qs"]',
+                children: [
+                  {
+                    selector: "button[aria-label='Decrease quantity by one']",
+                    add_text: true,
+                    text_js: function (element) {
+                      if (element.hasAttribute('aria-label')) {
+                        return element.getAttribute('aria-label')
+                      }
+                      return ''
+                    },
+
+                    clickable: true,
+                    name: 'decrease_quantity_by_one'
+                  },
+                  {
+                    selector: "div[role='spinbutton']",
+                    add_text: true,
+                    text_format: 'Current Quantity: {}'
+                  },
+                  {
+                    selector: "button[aria-label='Increase quantity by one']",
+                    add_text: true,
+                    text_js: function (element) {
+                      if (element.hasAttribute('aria-label')) {
+                        return element.getAttribute('aria-label')
+                      }
+                      return ''
+                    },
+                    clickable: true,
+                    name: 'increase_quantity_by_one'
+                  }
+                ]
+              },
+              {
                 selector: "div[id^='expandedImage']",
                 name: 'close_prodct_card',
                 clickable: true,
@@ -866,7 +901,7 @@ export const recipes = [
                     add_text: true,
                     name: 'from_text',
                     clickable: true,
-                    text_format: 'Clear Option {}',
+                    // text_format: 'Clear Option {}',
                     generate_metadata: (em) => {
                       const title = em?.innerText?.replace(/\n/g, ' ')
                       const url = em?.getAttribute('href')
@@ -909,7 +944,7 @@ export const recipes = [
                     add_text: true,
                     name: 'from_text',
                     clickable: true,
-                    text_format: 'Clear Option {}',
+                    // text_format: 'Clear Option {}',
                     generate_metadata: (em) => {
                       const title = em?.innerText
                       const url = em?.getAttribute('href')
@@ -1052,7 +1087,7 @@ export const recipes = [
                     add_text: true,
                     name: 'from_text',
                     clickable: true,
-                    text_format: 'Clear Option {}',
+                    // text_format: 'Clear Option {}',
                     generate_metadata: (em) => {
                       const title = em?.innerText
                       const url = em?.getAttribute('href')
@@ -1171,6 +1206,41 @@ export const recipes = [
                     add_text: true,
                     clickable: true,
                     name: 'see_options'
+                  },
+                  {
+                    selector: 'div[name="ax-qs"]',
+                    children: [
+                      {
+                        selector: "button[aria-label='Decrease quantity by one']",
+                        add_text: true,
+                        text_js: function (element) {
+                          if (element.hasAttribute('aria-label')) {
+                            return element.getAttribute('aria-label')
+                          }
+                          return ''
+                        },
+
+                        clickable: true,
+                        name: 'decrease_quantity_by_one'
+                      },
+                      {
+                        selector: "div[role='spinbutton']",
+                        add_text: true,
+                        text_format: 'Current Quantity: {}'
+                      },
+                      {
+                        selector: "button[aria-label='Increase quantity by one']",
+                        add_text: true,
+                        text_js: function (element) {
+                          if (element.hasAttribute('aria-label')) {
+                            return element.getAttribute('aria-label')
+                          }
+                          return ''
+                        },
+                        clickable: true,
+                        name: 'increase_quantity_by_one'
+                      }
+                    ]
                   }
                 ],
                 generate_metadata: (em) => {
