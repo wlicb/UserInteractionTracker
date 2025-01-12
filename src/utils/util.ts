@@ -153,13 +153,20 @@ function selectRecipe() {
             (element.textContent?.toLowerCase().includes(recipe.match_text.toLowerCase()) ?? false))
 
         if (hasMatch) {
+          console.log('matched with recipe ', recipe.match)
           return recipe
         }
       } catch (error) {
         console.error('Error checking text match:', error)
       }
-    } else if (matchMethod === 'url' && recipe.match === path) {
-      return recipe
+    } else if (matchMethod === 'url') {
+      if (recipe.match === path) {
+        console.log('matched with recipe ', recipe.match)
+        return recipe
+      } else if (recipe.match_with_ref && path.startsWith(recipe.match + '/ref=')) {
+        console.log('matched with recipe ', recipe.match)
+        return recipe
+      }
     }
   }
 

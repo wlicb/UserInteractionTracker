@@ -1723,9 +1723,10 @@ export const recipes = [
     ]
   },
   {
-    match: '/cart/add-to-cart/ref=dp_start-bbf_1_glance',
+    match: '/cart/add-to-cart',
     match_method: 'url',
     selector: 'html',
+    match_with_ref: true,
     children: [
       {
         selector: 'head',
@@ -1829,26 +1830,6 @@ export const recipes = [
     ]
   },
   {
-    match: '/cart/ref=ord_cart_shr',
-    match_method: 'url',
-    selector: 'html',
-    children: [
-      {
-        selector: 'head',
-        children: [
-          {
-            selector: 'title',
-            add_text: true
-          }
-        ]
-      },
-      {
-        selector: 'body',
-        children: cart
-      }
-    ]
-  },
-  {
     match: '/gp/cart/view.html',
     match_method: 'url',
     selector: 'html',
@@ -1871,6 +1852,7 @@ export const recipes = [
   {
     match: '/cart',
     match_method: 'url',
+    match_with_ref: true,
     selector: 'html',
     children: [
       {
@@ -1913,26 +1895,7 @@ export const recipes = [
   {
     match: '/gp/buyagain',
     match_method: 'url',
-    selector: 'html',
-    children: [
-      {
-        selector: 'head',
-        children: [
-          {
-            selector: 'title',
-            add_text: true
-          }
-        ]
-      },
-      {
-        selector: 'body',
-        children: buy_again
-      }
-    ]
-  },
-  {
-    match: '/gp/buyagain/',
-    match_method: 'url',
+    match_with_ref: true,
     selector: 'html',
     children: [
       {
