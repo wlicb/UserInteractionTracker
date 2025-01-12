@@ -684,6 +684,41 @@ export const buy_again = [
                         add_text: true,
                         name: 'remove_item',
                         clickable: true
+                      },
+                      {
+                        selector: 'div[name="ax-qs"]',
+                        children: [
+                          {
+                            selector: "button[aria-label='Decrease quantity by one']",
+                            add_text: true,
+                            text_js: function (element) {
+                              if (element.hasAttribute('aria-label')) {
+                                return element.getAttribute('aria-label')
+                              }
+                              return ''
+                            },
+
+                            clickable: true,
+                            name: 'decrease_quantity_by_one'
+                          },
+                          {
+                            selector: "div[role='spinbutton']",
+                            add_text: true,
+                            text_format: 'Current Quantity: {}'
+                          },
+                          {
+                            selector: "button[aria-label='Increase quantity by one']",
+                            add_text: true,
+                            text_js: function (element) {
+                              if (element.hasAttribute('aria-label')) {
+                                return element.getAttribute('aria-label')
+                              }
+                              return ''
+                            },
+                            clickable: true,
+                            name: 'increase_quantity_by_one'
+                          }
+                        ]
                       }
                     ]
                   }
@@ -748,6 +783,148 @@ export const buy_again = [
                 ],
                 generate_metadata: (em) => {
                   const asinEm = em.parentElement?.parentElement
+                  const asin = asinEm?.getAttribute('data-asin')
+                  const priceEm = em.querySelector(
+                    'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)'
+                  )
+                  const price = priceEm?.innerText?.replace(/[\n]/g, '')
+                  const titleEm = em.parentElement?.parentElement?.querySelector(
+                    "a[id^='title'] span.a-truncate-full"
+                  )
+                  const title = titleEm?.innerText
+                  const urlEm = em.parentElement?.parentElement?.querySelector("a[id^='title']")
+                  const url = urlEm?.getAttribute('href')
+                  const deliveryEm = em.querySelector('#udmDeliveryMessageComponent')
+                  const delivery = deliveryEm?.innerText.replace(/[\n]/g, ' ')
+                  return { name: 'active_items', data: { title, asin, price, url, delivery } }
+                }
+              }
+            ]
+          },
+          {
+            selector: "div[id^='detail-view-similar-items']",
+            name: 'similar_items',
+            children: [
+              {
+                selector: 'li.a-carousel-card',
+                name: 'from_text',
+                text_selector: "a[id^='title'] span.a-truncate-full",
+                children: [
+                  {
+                    selector: 'div.a-image-container:has(> img)',
+                    clickable: true,
+                    name: 'product_image',
+                    add_text: true,
+                    text_format: 'Product Image'
+                  },
+                  {
+                    selector: "a[id^='title']",
+                    clickable: true,
+                    name: 'product_title',
+                    add_text: true,
+                    text_selector: 'span.a-truncate-full'
+                  },
+                  {
+                    selector:
+                      'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)',
+                    add_text: true,
+                    name: 'price'
+                  },
+                  {
+                    selector: '#udmDeliveryMessageComponent',
+                    add_text: true,
+                    name: 'delivery'
+                  },
+                  {
+                    selector: 'input[name="submit.addToCart"]',
+                    add_text: true,
+                    name: 'add_to_cart',
+                    clickable: true
+                  },
+                  {
+                    selector: 'div[name="ax-qs"]',
+                    children: [
+                      {
+                        selector: "button[aria-label='Decrease quantity by one']",
+                        add_text: true,
+                        text_js: function (element) {
+                          if (element.hasAttribute('aria-label')) {
+                            return element.getAttribute('aria-label')
+                          }
+                          return ''
+                        },
+
+                        clickable: true,
+                        name: 'decrease_quantity_by_one'
+                      },
+                      {
+                        selector: "div[role='spinbutton']",
+                        add_text: true,
+                        text_format: 'Current Quantity: {}'
+                      },
+                      {
+                        selector: "button[aria-label='Increase quantity by one']",
+                        add_text: true,
+                        text_js: function (element) {
+                          if (element.hasAttribute('aria-label')) {
+                            return element.getAttribute('aria-label')
+                          }
+                          return ''
+                        },
+                        clickable: true,
+                        name: 'increase_quantity_by_one'
+                      }
+                    ]
+                  },
+                  {
+                    selector: 'div.qs-widget-container',
+                    children: [
+                      {
+                        selector: "input[aria-label='Remove']",
+                        add_text: true,
+                        text_js: function (element) {
+                          if (element.hasAttribute('aria-label')) {
+                            return element.getAttribute('aria-label')
+                          }
+                          return ''
+                        },
+
+                        clickable: true,
+                        name: 'decrease_quantity_by_one'
+                      },
+                      {
+                        selector: 'div.qs-widget-dropdown-flex-wrapper button',
+                        add_text: true,
+                        clickable: true,
+                        name: 'drop_down_list',
+                        text_format: 'Current Quantity: {}'
+                      },
+                      {
+                        selector:
+                          'div.qs-widget-dropdown-wrapper span[data-action="qs-widget-dropdown-decl"]',
+                        add_text: true,
+                        clickable: true,
+                        use_root: true,
+                        name: 'from_text',
+                        text_format: 'Drop Down Option {}'
+                      },
+                      {
+                        selector: "input[aria-label='Add']",
+                        add_text: true,
+                        text_js: function (element) {
+                          if (element.hasAttribute('aria-label')) {
+                            return element.getAttribute('aria-label')
+                          }
+                          return ''
+                        },
+                        clickable: true,
+                        name: 'increase_quantity_by_one'
+                      }
+                    ]
+                  }
+                ],
+                generate_metadata: (em) => {
+                  const asinEm = em.querySelector('div[class*="delightFaceout"]')
                   const asin = asinEm?.getAttribute('data-asin')
                   const priceEm = em.querySelector(
                     'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)'
