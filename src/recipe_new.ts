@@ -382,6 +382,14 @@ export const cart = [
             name: 'product_detail'
           },
           {
+            selector: 'li.sc-delivery-messaging',
+            add_text: true
+          },
+          {
+            selector: 'div.sc-badge-price-to-pay span.sc-product-price span:not(.a-offscreen)',
+            add_text: true
+          },
+          {
             selector: 'div.sc-item-content-group span.sc-quantity-stepper',
             children: [
               {
@@ -428,7 +436,29 @@ export const cart = [
             clickable: true,
             name: 'save_for_later'
           }
-        ]
+        ],
+        generate_metadata: (em) => {
+          const asin = em.parentElement?.getAttribute('data-asin')
+          const priceEm = em.querySelector(
+            'div.sc-badge-price-to-pay span.sc-product-price span:not(.a-offscreen)'
+          )
+          const price = priceEm?.innerText
+          const titleEm = em.querySelector(
+            'div.sc-item-content-group ul > li > span.a-list-item > a.sc-product-title span.a-truncate-full'
+          )
+          const title = titleEm?.innerText
+          const urlEm = em.querySelector(
+            'div.sc-item-content-group ul > li > span.a-list-item > a.sc-product-title'
+          )
+          const url = urlEm?.getAttribute('href')
+          const deliveryEm = em.querySelector('li.sc-delivery-messaging')
+          const delivery = deliveryEm?.innerText.replace(/[\n]/g, ' ')
+          const quantityEm = em.querySelector(
+            "div.sc-item-content-group span.sc-quantity-stepper div[role='spinbutton']"
+          )
+          const quantity = quantityEm?.innerText
+          return { name: 'active_items', data: { title, asin, price, url, delivery, quantity } }
+        }
       }
     ]
   },
