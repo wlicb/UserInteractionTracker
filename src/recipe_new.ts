@@ -664,7 +664,7 @@ export const buy_again = [
                     name: 'delivery'
                   },
                   {
-                    selector: 'div[class*="actionButtonsRow"]',
+                    selector: 'div[class*="actionButtonsRow"], div[class*="asinDetailActionsRow"]',
                     name: 'buttons',
                     children: [
                       {
