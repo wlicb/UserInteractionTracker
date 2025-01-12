@@ -481,13 +481,11 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   }
 })
 
-chrome.webNavigation.onCommitted.addListener(async (details) => {
+chrome.webNavigation.onDOMContentLoaded.addListener(async (details) => {
   if (details.frameId !== 0) return
-  console.log('webNavigation onHistoryStateUpdated event triggered:', details)
+  console.log('webNavigation onDOMContentLoaded event triggered:', details)
   update_icon(details.url)
   if (!(await shouldExclude(details.url))) {
-    // chrome.tabs.sendMessage(details.tabId, { action: 'processRecipe' })
-
     const navigationType = analyzeNavigation(details.tabId, details.url)
     console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`)
     const timestamp = new Date().toISOString()
