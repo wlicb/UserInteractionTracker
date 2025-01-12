@@ -139,6 +139,7 @@ import { processElement } from './element-processor'
 function selectRecipe() {
   const parsedUrl = new URL(window.location.href)
   const path = parsedUrl.pathname
+  path !== '/' ? path.replace(/\/+$/, '') : path
 
   for (const recipe of recipes) {
     const matchMethod = recipe.match_method || 'text'
