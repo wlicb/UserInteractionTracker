@@ -209,6 +209,9 @@ export function getCustomQuestion(eventType: string, data: any): string {
         return 'What do you like about this particular product?'
       } else if (
         data['data-semantic-id']?.startsWith('search_results.') ||
+        data['data-semantic-id']?.startsWith('product_list.') ||
+        (data['data-semantic-id']?.startsWith('active_item_list.') &&
+          data['data-semantic-id']?.endsWith('.product_detail')) ||
         data.target.className?.includes('sc-product-link')
       ) {
         return 'You clicked on this product. What caught your attention compared to the other options you saw?'
@@ -222,7 +225,10 @@ export function getCustomQuestion(eventType: string, data: any): string {
         return 'What makes you decide to add this item to your cart?'
       } else if (data['data-semantic-id'] === 'nav_bar.search_button') {
         return 'What are you searching for?'
-      } else if (data['data-semantic-id']?.startsWith('refinements.')) {
+      } else if (
+        data['data-semantic-id']?.startsWith('refinements.') ||
+        data['data-semantic-id']?.startsWith('filters.')
+      ) {
         return 'What are you hoping to find with this filter?'
       } else if (data['data-semantic-id']?.startsWith('product_options.')) {
         return 'What do you like about this product option?'
