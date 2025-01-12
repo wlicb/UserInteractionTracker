@@ -649,7 +649,7 @@ export const buy_again = [
                 add_text: true
               },
               {
-                selector: "div[data-buyingoptiontype='NEW'] div[class*='asinDetailInfoColumns']",
+                selector: "div[data-buyingoptiontype='NEW'], div[class*='asinDetailInfoColumns']",
                 name: 'one_time_purchase',
                 children: [
                   {
