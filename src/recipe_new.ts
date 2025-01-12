@@ -370,9 +370,16 @@ export const cart = [
         name: 'from_text',
         children: [
           {
-            selector: 'div.sc-item-check-checkbox-selector input',
+            selector: 'div.sc-item-check-checkbox-selector label',
             clickable: true,
             name: 'checkbox'
+          },
+          {
+            selector: 'div.sc-image-wrapper a',
+            clickable: true,
+            name: 'product_image',
+            add_text: true,
+            text_format: 'Product Image'
           },
           {
             selector: 'div.sc-item-content-group ul > li > span.a-list-item > a.sc-product-title',
@@ -456,8 +463,13 @@ export const cart = [
           const quantityEm = em.querySelector(
             "div.sc-item-content-group span.sc-quantity-stepper div[role='spinbutton']"
           )
+          const selectedEm = em.querySelector('div.sc-item-check-checkbox-selector input')
+          const selected = selectedEm?.selected
           const quantity = quantityEm?.innerText
-          return { name: 'active_items', data: { title, asin, price, url, delivery, quantity } }
+          return {
+            name: 'active_items',
+            data: { title, asin, price, url, delivery, quantity, selected }
+          }
         }
       }
     ]
@@ -637,7 +649,7 @@ export const buy_again = [
                 add_text: true
               },
               {
-                selector: "div[data-buyingoptiontype='NEW']",
+                selector: "div[data-buyingoptiontype='NEW'] div[class*='asinDetailInfoColumns']",
                 name: 'one_time_purchase',
                 children: [
                   {
