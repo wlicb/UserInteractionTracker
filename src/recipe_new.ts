@@ -442,7 +442,7 @@ export const cart = [
           const priceEm = em.querySelector(
             'div.sc-badge-price-to-pay span.sc-product-price span:not(.a-offscreen)'
           )
-          const price = priceEm?.innerText
+          const price = priceEm?.innerText?.replace(/[\n]/g, '')
           const titleEm = em.querySelector(
             'div.sc-item-content-group ul > li > span.a-list-item > a.sc-product-title span.a-truncate-full'
           )
@@ -467,6 +467,261 @@ export const cart = [
     add_text: true,
     clickable: true,
     name: 'check_out'
+  }
+]
+
+export const buy_again = [
+  nav,
+  {
+    selector: 'div.a-section:has(div.filter-container)',
+    name: 'filters',
+    children: [
+      {
+        selector: 'div.filter-container',
+        text_selector: 'span#filter-container-header',
+        name: 'from_text',
+        children: [
+          {
+            selector: 'span#filter-container-header',
+            add_text: true
+          },
+          {
+            selector: 'label',
+            add_text: true,
+            clickable: true,
+            name: 'from_text',
+            generate_metadata: (em) => {
+              const title = em.innerText
+              const nameEm = em
+                .closest('div.filter-container')
+                ?.querySelector('#filter-container-header')
+              const name = nameEm?.innerText?.replace(/[ ]/g, '_').toLowerCase().trim()
+              const input = em.querySelector('input')
+              if (input && input.checked) {
+                return {
+                  name: 'filters.' + name,
+                  data: { title: title?.trim() || '', selected: true }
+                }
+              }
+              return {
+                name: 'filters.' + name,
+                data: { title: title?.trim() || '', selected: false }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    selector: 'div.alm-grid-desktop-grid-container',
+    name: 'product_list',
+    children: [
+      {
+        selector: 'div[id^="gridCell"]',
+        name: 'from_text',
+        text_selector: "div[id^='closedCard'] a[id^='title'] span.a-truncate-full",
+        children: [
+          {
+            selector: "div[id^='gridElement']",
+            name: 'product_card',
+            children: [
+              {
+                selector: "div[id^='closedCard']",
+                name: 'closed_product_card',
+                children: [
+                  {
+                    selector: "div[id^='info']",
+                    name: 'open_product_card',
+                    clickable: true,
+                    text_format: 'Open Product Card'
+                  },
+                  {
+                    selector: 'form span.a-button-inner',
+                    name: 'add_to_cart',
+                    clickable: true,
+                    add_text: true
+                  }
+                ]
+              },
+              {
+                selector: "div[id^='expandedImage']",
+                name: 'close_prodct_card',
+                clickable: true,
+                add_text: true,
+                text_format: 'Close Product Card'
+              }
+            ]
+          }
+        ],
+        generate_metadata: (em) => {
+          const asinEm = em.querySelector("div[id^='closedCard'] div[id^='info']")
+          const asin = asinEm?.getAttribute('data-asin')
+          const priceEm = em.querySelector(
+            'div[id^="closedCard"] div[id^="info"] span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)'
+          )
+          const price = priceEm?.innerText?.replace(/[\n]/g, '')
+          const titleEm = em.querySelector(
+            "div[id^='closedCard'] a[id^='title'] span.a-truncate-full"
+          )
+          const title = titleEm?.innerText
+          const deliveryEm = em.querySelector(
+            'div[id^="closedCard"] div[id^="info"] #udmDeliveryMessageComponent'
+          )
+          const delivery = deliveryEm?.innerText.replace(/[\n]/g, ' ')
+          return { name: 'active_items', data: { title, asin, price, delivery } }
+        }
+      },
+      {
+        selector: 'div[id^="featured"]',
+        name: 'from_text',
+        text_selector: "a[id^='title'] span.a-truncate-full",
+        children: [
+          {
+            selector: 'div[id^="detailContentWrapper"] div[id^="detailContent"]',
+            name: 'detailed_content',
+            children: [
+              {
+                selector: 'div:has(> img)',
+                clickable: true,
+                name: 'product_image',
+                add_text: true,
+                text_format: 'Product Image'
+              },
+              {
+                selector: "a[id^='title']",
+                clickable: true,
+                name: 'product_title',
+                add_text: true,
+                text_selector: 'span.a-truncate-full'
+              },
+              {
+                selector: "div[class*='multiOfferPillContainer'] a",
+                clickable: true,
+                name: 'from_text',
+                add_text: true
+              },
+              {
+                selector: "div[data-buyingoptiontype='NEW']",
+                name: 'one_time_purchase',
+                children: [
+                  {
+                    selector:
+                      'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)',
+                    add_text: true,
+                    name: 'price'
+                  },
+                  {
+                    selector: '#udmDeliveryMessageComponent',
+                    add_text: true,
+                    name: 'delivery'
+                  },
+                  {
+                    selector: 'div[class*="actionButtonsRow"]',
+                    name: 'buttons',
+                    children: [
+                      {
+                        selector: 'input[name="submit.addToCart"]',
+                        add_text: true,
+                        name: 'add_to_cart',
+                        clickable: true
+                      },
+                      {
+                        selector: 'input[id^="buy-now"]',
+                        add_text: true,
+                        name: 'buy_now',
+                        clickable: true
+                      },
+                      {
+                        selector: 'div[id^="feedbackButtonSection"] input',
+                        add_text: true,
+                        name: 'remove_item',
+                        clickable: true
+                      }
+                    ]
+                  }
+                ],
+                generate_metadata: (em) => {
+                  const asinEm = em.parentElement?.parentElement
+                  const asin = asinEm?.getAttribute('data-asin')
+                  const priceEm = em.querySelector(
+                    'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)'
+                  )
+                  const price = priceEm?.innerText?.replace(/[\n]/g, '')
+                  const titleEm = em.parentElement?.parentElement?.querySelector(
+                    "a[id^='title'] span.a-truncate-full"
+                  )
+                  const title = titleEm?.innerText
+                  const urlEm = em.parentElement?.parentElement?.querySelector("a[id^='title']")
+                  const url = urlEm?.getAttribute('href')
+                  const deliveryEm = em.querySelector('#udmDeliveryMessageComponent')
+                  const delivery = deliveryEm?.innerText.replace(/[\n]/g, ' ')
+                  return { name: 'active_items', data: { title, asin, price, url, delivery } }
+                }
+              },
+              {
+                selector: "div[data-buyingoptiontype='SNS']",
+                name: 'subscribe_and_save',
+                children: [
+                  {
+                    selector:
+                      'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)',
+                    add_text: true,
+                    name: 'price'
+                  },
+                  {
+                    selector: '#udmDeliveryMessageComponent',
+                    add_text: true,
+                    name: 'delivery'
+                  },
+                  {
+                    selector: 'div[class*="actionButtonsRow"]',
+                    name: 'buttons',
+                    children: [
+                      {
+                        selector: 'input[name="submit.addToCart"]',
+                        add_text: true,
+                        name: 'add_to_cart',
+                        clickable: true
+                      },
+                      {
+                        selector: 'span[class*="snsButton"] input',
+                        add_text: true,
+                        name: 'subscribe_and_save',
+                        clickable: true
+                      },
+                      {
+                        selector: 'div[id^="feedbackButtonSection"] input',
+                        add_text: true,
+                        name: 'remove_item',
+                        clickable: true
+                      }
+                    ]
+                  }
+                ],
+                generate_metadata: (em) => {
+                  const asinEm = em.parentElement?.parentElement
+                  const asin = asinEm?.getAttribute('data-asin')
+                  const priceEm = em.querySelector(
+                    'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)'
+                  )
+                  const price = priceEm?.innerText?.replace(/[\n]/g, '')
+                  const titleEm = em.parentElement?.parentElement?.querySelector(
+                    "a[id^='title'] span.a-truncate-full"
+                  )
+                  const title = titleEm?.innerText
+                  const urlEm = em.parentElement?.parentElement?.querySelector("a[id^='title']")
+                  const url = urlEm?.getAttribute('href')
+                  const deliveryEm = em.querySelector('#udmDeliveryMessageComponent')
+                  const delivery = deliveryEm?.innerText.replace(/[\n]/g, ' ')
+                  return { name: 'active_items', data: { title, asin, price, url, delivery } }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]
 
@@ -1654,5 +1909,45 @@ export const recipes = [
       return arguments[0]
     },
     selector: 'html'
+  },
+  {
+    match: '/gp/buyagain',
+    match_method: 'url',
+    selector: 'html',
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: buy_again
+      }
+    ]
+  },
+  {
+    match: '/gp/buyagain/',
+    match_method: 'url',
+    selector: 'html',
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: buy_again
+      }
+    ]
   }
 ]
