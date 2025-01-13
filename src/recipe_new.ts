@@ -657,7 +657,7 @@ export const buy_again = [
               },
               {
                 selector:
-                  "div[data-buyingoptiontype='NEW'], div[class*='asinDetailInfoColumns']:not([class*='snsUpsellBlock'])",
+                  "div[data-buyingoptiontype='NEW'], div[class*='asinDetailInfoColumns']:has(input[name='submit.addToCart']",
                 name: 'one_time_purchase',
                 children: [
                   {
@@ -732,8 +732,12 @@ export const buy_again = [
                   }
                 ],
                 generate_metadata: (em) => {
-                  const asinEm = em.parentElement?.parentElement
-                  const asin = asinEm?.getAttribute('data-asin')
+                  let asinEm = em.parentElement?.parentElement
+                  let asin = asinEm?.getAttribute('data-asin')
+                  if (asin === null) {
+                    let asinEm = em.parentElement
+                    let asin = asinEm?.getAttribute('data-asin')
+                  }
                   const priceEm = em.querySelector(
                     'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)'
                   )
@@ -750,7 +754,7 @@ export const buy_again = [
                 }
               },
               {
-                selector: "div[data-buyingoptiontype='SNS'], div[class*='snsUpsellBlock']",
+                selector: "div[data-buyingoptiontype='SNS'], div[class*='snsUpsellBlockContainer']",
                 name: 'subscribe_and_save',
                 children: [
                   {
@@ -785,14 +789,14 @@ export const buy_again = [
                         add_text: true,
                         name: 'remove_item',
                         clickable: true
-                      },
-                      {
-                        selector: 'input[data-mix-operations="snsModalHandler"]',
-                        add_text: true,
-                        name: 'set_up_subscription',
-                        clickable: true
                       }
                     ]
+                  },
+                  {
+                    selector: 'span[class*="subscriptionButton"]',
+                    add_text: true,
+                    name: 'set_up_subscription',
+                    clickable: true
                   }
                 ],
                 generate_metadata: (em) => {
