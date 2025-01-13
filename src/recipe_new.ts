@@ -656,7 +656,8 @@ export const buy_again = [
                 add_text: true
               },
               {
-                selector: "div[data-buyingoptiontype='NEW'], div[class*='asinDetailInfoColumns']",
+                selector:
+                  "div[data-buyingoptiontype='NEW'], div[class*='asinDetailInfoColumns']:not([class*='snsUpsellBlock'])",
                 name: 'one_time_purchase',
                 children: [
                   {
@@ -749,7 +750,7 @@ export const buy_again = [
                 }
               },
               {
-                selector: "div[data-buyingoptiontype='SNS'], div[class*='snsUpsellBlockContainer']",
+                selector: "div[data-buyingoptiontype='SNS'], div[class*='snsUpsellBlock']",
                 name: 'subscribe_and_save',
                 children: [
                   {
@@ -774,8 +775,7 @@ export const buy_again = [
                         clickable: true
                       },
                       {
-                        selector:
-                          'span[class*="snsButton"] input, input[data-mix-operations="snsModalHandler"]',
+                        selector: 'span[class*="snsButton"] input',
                         add_text: true,
                         name: 'subscribe_and_save',
                         clickable: true
@@ -784,6 +784,12 @@ export const buy_again = [
                         selector: 'div[id^="feedbackButtonSection"] input',
                         add_text: true,
                         name: 'remove_item',
+                        clickable: true
+                      },
+                      {
+                        selector: 'input[data-mix-operations="snsModalHandler"]',
+                        add_text: true,
+                        name: 'set_up_subscription',
                         clickable: true
                       }
                     ]
