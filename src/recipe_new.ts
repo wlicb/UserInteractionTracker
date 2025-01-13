@@ -749,7 +749,7 @@ export const buy_again = [
                 }
               },
               {
-                selector: "div[data-buyingoptiontype='SNS']",
+                selector: "div[data-buyingoptiontype='SNS'], div[class*='snsUpsellBlockContainer']",
                 name: 'subscribe_and_save',
                 children: [
                   {
@@ -774,7 +774,8 @@ export const buy_again = [
                         clickable: true
                       },
                       {
-                        selector: 'span[class*="snsButton"] input',
+                        selector:
+                          'span[class*="snsButton"] input, input[data-mix-operations="snsModalHandler"]',
                         add_text: true,
                         name: 'subscribe_and_save',
                         clickable: true
