@@ -463,9 +463,10 @@ export const cart = [
           const quantityEm = em.querySelector(
             "div.sc-item-content-group span.sc-quantity-stepper div[role='spinbutton']"
           )
-          const selectedEm = em.querySelector('div.sc-item-check-checkbox-selector input')
-          const selected = selectedEm?.selected
           const quantity = quantityEm?.innerText
+          const selectedEm = em.querySelector('div.sc-item-check-checkbox-selector input')
+          const selected = selectedEm?.getAttribute('checked') !== null
+
           return {
             name: 'active_items',
             data: { title, asin, price, url, delivery, quantity, selected }
@@ -553,6 +554,12 @@ export const buy_again = [
                     name: 'add_to_cart',
                     clickable: true,
                     add_text: true
+                  },
+                  {
+                    selector: 'div[id^="seeBuyingOptionsWrapper"] a',
+                    name: 'see_buying_options',
+                    clickable: true,
+                    add_text: true
                   }
                 ]
               },
@@ -593,7 +600,7 @@ export const buy_again = [
               },
               {
                 selector: "div[id^='expandedImage']",
-                name: 'close_prodct_card',
+                name: 'close_product_card',
                 clickable: true,
                 add_text: true,
                 text_format: 'Close Product Card'
@@ -684,6 +691,41 @@ export const buy_again = [
                         add_text: true,
                         name: 'remove_item',
                         clickable: true
+                      },
+                      {
+                        selector: 'div[name="ax-qs"]',
+                        children: [
+                          {
+                            selector: "button[aria-label='Decrease quantity by one']",
+                            add_text: true,
+                            text_js: function (element) {
+                              if (element.hasAttribute('aria-label')) {
+                                return element.getAttribute('aria-label')
+                              }
+                              return ''
+                            },
+
+                            clickable: true,
+                            name: 'decrease_quantity_by_one'
+                          },
+                          {
+                            selector: "div[role='spinbutton']",
+                            add_text: true,
+                            text_format: 'Current Quantity: {}'
+                          },
+                          {
+                            selector: "button[aria-label='Increase quantity by one']",
+                            add_text: true,
+                            text_js: function (element) {
+                              if (element.hasAttribute('aria-label')) {
+                                return element.getAttribute('aria-label')
+                              }
+                              return ''
+                            },
+                            clickable: true,
+                            name: 'increase_quantity_by_one'
+                          }
+                        ]
                       }
                     ]
                   }
@@ -762,6 +804,180 @@ export const buy_again = [
                   const deliveryEm = em.querySelector('#udmDeliveryMessageComponent')
                   const delivery = deliveryEm?.innerText.replace(/[\n]/g, ' ')
                   return { name: 'active_items', data: { title, asin, price, url, delivery } }
+                }
+              }
+            ]
+          },
+          {
+            selector: "div[id^='detail-view-similar-items']",
+            name: 'similar_items',
+            children: [
+              {
+                selector: 'li.a-carousel-card',
+                name: 'from_text',
+                text_selector: "a[id^='title'] span.a-truncate-full",
+                children: [
+                  {
+                    selector: 'div.a-image-container:has(> img)',
+                    clickable: true,
+                    name: 'product_image',
+                    add_text: true,
+                    text_format: 'Product Image'
+                  },
+                  {
+                    selector: "a[id^='title']",
+                    clickable: true,
+                    name: 'product_title',
+                    add_text: true,
+                    text_selector: 'span.a-truncate-full'
+                  },
+                  {
+                    selector:
+                      'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)',
+                    add_text: true,
+                    name: 'price'
+                  },
+                  {
+                    selector: '#udmDeliveryMessageComponent',
+                    add_text: true,
+                    name: 'delivery'
+                  },
+                  {
+                    selector:
+                      'input[name="submit.addToCart"], input[name^="atfcShim"], button[aria-label="Add to Cart. Click to change quantity"]',
+                    add_text: true,
+                    name: 'add_to_cart',
+                    clickable: true
+                  },
+                  {
+                    selector: 'div[id^="seeBuyingOptionsWrapper"] a',
+                    name: 'see_buying_options',
+                    clickable: true,
+                    add_text: true
+                  },
+                  {
+                    selector: 'div[name="ax-qs"]',
+                    children: [
+                      {
+                        selector: "button[aria-label='Decrease quantity by one']",
+                        add_text: true,
+                        text_js: function (element) {
+                          if (element.hasAttribute('aria-label')) {
+                            return element.getAttribute('aria-label')
+                          }
+                          return ''
+                        },
+
+                        clickable: true,
+                        name: 'decrease_quantity_by_one'
+                      },
+                      {
+                        selector: "div[role='spinbutton']",
+                        add_text: true,
+                        text_format: 'Current Quantity: {}'
+                      },
+                      {
+                        selector: "button[aria-label='Increase quantity by one']",
+                        add_text: true,
+                        text_js: function (element) {
+                          if (element.hasAttribute('aria-label')) {
+                            return element.getAttribute('aria-label')
+                          }
+                          return ''
+                        },
+                        clickable: true,
+                        name: 'increase_quantity_by_one'
+                      }
+                    ]
+                  },
+                  {
+                    selector: 'div.qs-widget-container',
+                    children: [
+                      {
+                        selector: "input[aria-label='Remove']",
+                        add_text: true,
+                        text_js: function (element) {
+                          if (element.hasAttribute('aria-label')) {
+                            return element.getAttribute('aria-label')
+                          }
+                          return ''
+                        },
+
+                        clickable: true,
+                        name: 'decrease_quantity_by_one'
+                      },
+                      {
+                        selector: 'div.qs-widget-dropdown-flex-wrapper button',
+                        add_text: true,
+                        clickable: true,
+                        name: 'drop_down_list',
+                        text_format: 'Current Quantity: {}'
+                      },
+                      {
+                        selector:
+                          'div.qs-widget-dropdown-wrapper span[data-action="qs-widget-dropdown-decl"]',
+                        add_text: true,
+                        clickable: true,
+                        use_root: true,
+                        name: 'from_text',
+                        text_format: 'Drop Down Option {}'
+                      },
+                      {
+                        selector:
+                          'div[id^="qs-widget-quantity-container-atfc"] span[data-action="qs-widget-quantity-changelink-decl"]',
+                        add_text: true,
+                        clickable: true,
+                        use_root: true,
+                        name: 'from_text'
+                      },
+                      {
+                        selector:
+                          'div[id^="qs-widget-summary-container-atfc"] span[id^="qs-widget-summary-atc-atfc"]',
+                        add_text: true,
+                        clickable: true,
+                        use_root: true,
+                        name: 'from_text'
+                      },
+                      {
+                        selector: "input[aria-label='Add']",
+                        add_text: true,
+                        text_js: function (element) {
+                          if (element.hasAttribute('aria-label')) {
+                            return element.getAttribute('aria-label')
+                          }
+                          return ''
+                        },
+                        clickable: true,
+                        name: 'increase_quantity_by_one'
+                      }
+                    ]
+                  }
+                ],
+                generate_metadata: (em) => {
+                  const parentTitleEm = em
+                    .closest('div[id^="featured"]')
+                    ?.querySelector(
+                      'div[id^="detailContentWrapper"] a[id^="title"] span.a-truncate-full'
+                    )
+                  const parentTitle = parentTitleEm?.innerText
+                    ?.toLowerCase()
+                    .replace(/[^\w]+/g, '_')
+                  const asinEm = em.querySelector('div[class*="delightFaceout"]')
+                  const asin = asinEm?.getAttribute('data-asin')
+                  const priceEm = em.querySelector(
+                    'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)'
+                  )
+                  const price = priceEm?.innerText?.replace(/[\n]/g, '')
+                  const titleEm = em.querySelector("a[id^='title'] span.a-truncate-full")
+                  const title = titleEm?.innerText
+                  const urlEm = em.querySelector("a[id^='title']")
+                  const url = urlEm?.getAttribute('href')
+                  const deliveryEm = em.querySelector('#udmDeliveryMessageComponent')
+                  const delivery = deliveryEm?.innerText.replace(/[\n]/g, ' ')
+                  return {
+                    name: parentTitle + '.similar_items',
+                    data: { title, asin, price, url, delivery }
+                  }
                 }
               }
             ]
