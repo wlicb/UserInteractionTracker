@@ -796,8 +796,12 @@ export const buy_again = [
                   }
                 ],
                 generate_metadata: (em) => {
-                  const asinEm = em.parentElement?.parentElement
-                  const asin = asinEm?.getAttribute('data-asin')
+                  let asinEm = em.parentElement?.parentElement
+                  let asin = asinEm?.getAttribute('data-asin')
+                  if (asin === null) {
+                    asinEm = em.querySelector('input[data-mix-operations="snsModalHandler"]')
+                    asin = asinEm?.getAttribute('data-asin')
+                  }
                   const priceEm = em.querySelector(
                     'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)'
                   )
