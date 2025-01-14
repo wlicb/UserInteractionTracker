@@ -6,14 +6,10 @@
   "permissions": [
     "activeTab",
     "storage",
-    "unlimitedStorage",
     "scripting",
     "webNavigation",
     "desktopCapture",
-    "tabs",
-    "downloads",
-    "declarativeNetRequest",
-    "declarativeNetRequestWithHostAccess"
+    "downloads"
   ],
   "host_permissions": ["<all_urls>"],
   "action": {
