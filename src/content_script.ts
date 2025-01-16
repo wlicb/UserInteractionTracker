@@ -4,7 +4,8 @@ import {
   getClickableElementsInViewport,
   shouldExclude,
   generateHtmlSnapshotId,
-  processRecipe
+  processRecipe,
+  isValidReason
 } from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
 import { scroll_threshold } from './config'
@@ -431,6 +432,14 @@ const work = () => {
                     height: 100px;
                     margin: 10px 0;
                 "></textarea>
+                <div id="error-message" style="
+                    color: red;
+                    display: none;
+                    font-size: 12px;
+                    margin-top: 5px;
+                ">
+                    Please enter a valid reason.
+                </div>
                 <div style="
                     text-align: right;
                     display: flex;
@@ -458,8 +467,16 @@ const work = () => {
     // Add event listeners
     document.getElementById('reason-submit').addEventListener('click', () => {
       const input = document.getElementById('reason-input') as HTMLTextAreaElement
-      console.log('submitBtn clicked')
+      const errorMessage = document.getElementById('error-message') as HTMLElement
       const value = input.value
+
+      if (!isValidReason(value)) {
+        errorMessage.style.display = 'block' // Show the error message
+        return // Prevent submission if the reason is invalid
+      } else {
+        errorMessage.style.display = 'none' // Hide the error message
+      }
+
       modalContainer.remove()
       sendResponse({ input: value })
     })

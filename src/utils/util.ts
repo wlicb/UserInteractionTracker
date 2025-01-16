@@ -253,3 +253,20 @@ export function getCustomQuestion(eventType: string, data: any): string {
       return `What is the reason for the ${eventType} action?`
   }
 }
+
+export function isValidReason(reason: string): boolean {
+  if (!reason || reason.trim().length === 0) {
+    return false // Empty input
+  }
+  if (reason.trim().length < 2 || reason.length < 5) {
+    return false // Too short to be meaningful, at least 5 characters and 2 words
+  }
+  // Check for repetitive or meaningless input (e.g., "aaa","!!!")
+  const meaninglessPatterns = [/^(.)\1{3,}$/, /^[^a-zA-Z0-9]+$/]
+  for (const pattern of meaninglessPatterns) {
+    if (pattern.test(reason.toLowerCase().replace(/\s+/g, ''))) {
+      return false
+    }
+  }
+  return true
+}
