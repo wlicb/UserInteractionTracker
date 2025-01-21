@@ -6,9 +6,7 @@
   "permissions": [
     "activeTab",
     "storage",
-    "scripting",
     "webNavigation",
-    "desktopCapture",
     "downloads"
   ],
   "host_permissions": ["<all_urls>"],

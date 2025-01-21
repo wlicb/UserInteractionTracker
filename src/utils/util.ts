@@ -237,9 +237,9 @@ export function getCustomQuestion(eventType: string, data: any): string {
       }
 
     case 'scroll':
-      return 'What information are you looking for?'
+      return 'You scrolled on this page. What information are you looking for?'
     case 'input':
-      return 'What are you searching for?'
+      return 'You typed in this input field. What are you searching for?'
     case 'navigation':
       if (data.navigationType === 'back') {
         return 'Why did you decide to go back to the previous page?'
