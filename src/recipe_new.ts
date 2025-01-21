@@ -1007,6 +1007,7 @@ export const recipes = [
   {
     match: '/',
     match_method: 'url',
+    match_with_ref: true,
     selector: 'html',
     children: [
       {

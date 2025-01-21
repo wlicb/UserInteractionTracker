@@ -164,7 +164,10 @@ function selectRecipe() {
       if (recipe.match === path) {
         console.log('matched with recipe ', recipe.match)
         return recipe
-      } else if (recipe.match_with_ref && path.startsWith(recipe.match + '/ref=')) {
+      } else if (
+        recipe.match_with_ref &&
+        (path.startsWith(recipe.match + '/ref=') || path.startsWith(recipe.match + 'ref='))
+      ) {
         console.log('matched with recipe ', recipe.match)
         return recipe
       }
