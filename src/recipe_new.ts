@@ -247,7 +247,7 @@ export const product_delivery = {
 }
 
 export const quantity_selector = {
-  selector: '#selectQuantity',
+  selector: '#selectQuantity, div[id^="qs-widget-button-container-atfc"]',
   name: 'quantity_selector',
   children: [
     {
@@ -262,6 +262,20 @@ export const quantity_selector = {
       selector: 'select',
       // clickable: true,
       name: 'drop_down_list'
+    },
+    {
+      selector: 'button',
+      name: 'drop_down_list',
+      clickable: true,
+      add_text: true
+    },
+    {
+      selector: 'div.qs-widget-dropdown-wrapper span[data-action="qs-widget-dropdown-decl"]',
+      add_text: true,
+      clickable: true,
+      use_root: true,
+      name: 'from_text',
+      text_format: 'Drop Down Option {}'
     }
   ]
 }
@@ -293,7 +307,8 @@ export const set_up_now_button = {
 }
 
 export const add_to_cart_button = {
-  selector: "input[name='submit.add-to-cart'], input[name='submit.add-to-cart-ubb']",
+  selector:
+    "input[name='submit.add-to-cart'], input[name='submit.add-to-cart-ubb'], #freshAddToCartButton input",
   add_text: true,
   clickable: true,
   name: 'add_to_cart',
@@ -314,7 +329,8 @@ export const buy_box_with_accordion = {
   text_selector: 'div.accordion-caption > span',
   children: [
     {
-      selector: "div[data-csa-c-content-id='offer_display_desktop_accordion_header']",
+      selector:
+        "div[data-csa-c-content-id='offer_display_desktop_accordion_header'], div[data-csa-c-content-id='offer_display_mobile_accordion_header']",
       name: 'accordion_selector',
       add_text: true,
       clickable: true,
@@ -1447,6 +1463,13 @@ export const recipes = [
                     ]
                   },
                   {
+                    selector: 'div.s-variations-options-elevated',
+                    name: 'options',
+                    add_text: true,
+                    clickable: true,
+                    click_selector: 'a'
+                  },
+                  {
                     selector: "div[data-cy='reviews-block']",
                     class: 'product-review',
                     children: [
@@ -1459,7 +1482,9 @@ export const recipes = [
                         selector: 'span.a-size-base.s-underline-text',
                         add_text: true,
                         text_format: '{} reviews',
-                        class: 'product-rating-count'
+                        class: 'product-rating-count',
+                        name: 'product_rating_count',
+                        clickable: true
                       }
                     ]
                   },
