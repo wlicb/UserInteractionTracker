@@ -1,4 +1,5 @@
 export function processElement(element: any, recipe: any, parentName = '', nthChild = 0) {
+  // console.log("processing element: ", element, recipe);
   // Create a new element using the DOM API
   let tagName = recipe.tag_name || element.tagName.toLowerCase()
   // Handle underscored tags
@@ -15,13 +16,18 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
       elementText = textElement.innerText || textElement.textContent || ''
     }
   } else if (recipe.text_js) {
-    elementText = eval(recipe.text_js)
+    elementText = recipe.text_js(element)
+    if (elementText === '' || elementText === undefined) {
+      // console.log('text js does not detect text for element ', element)
+    }
   } else if (recipe.add_text) {
     elementText = element.innerText || element.textContent || ''
   }
   elementText = elementText.replace(/\s+/g, ' ').trim()
-  if (recipe.text_format && elementText) {
+  if (recipe.text_format) {
     elementText = recipe.text_format.replace('{}', elementText)
+  } else if (recipe.text_format) {
+    elementText = recipe.text_format
   }
 
   if (elementText && recipe.add_text) {
@@ -32,8 +38,17 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
   let elementName = ''
   if (recipe.name) {
     if (recipe.name === 'from_text') {
+      if (!elementText) {
+        // console.log('elementText is empty', recipe, element)
+        // debugger
+      }
       elementName = parentName ? parentName + '.' : ''
-      elementName += elementText.toLowerCase().replace(/[^\w]+/g, '_')
+      if (!elementText) {
+        // console.log("element text not found");
+        elementName = ''
+      } else {
+        elementName += elementText.toLowerCase().replace(/[^\w]+/g, '_')
+      }
     } else if (recipe.name === 'from_nth_child') {
       elementName = parentName ? parentName + '.' : ''
       elementName += nthChild.toString()
@@ -43,6 +58,16 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     }
     newElement.setAttribute('name', elementName)
     parentName = elementName
+  }
+
+  if (recipe.generate_metadata) {
+    const metaobj = recipe.generate_metadata(element)
+    const metadata = JSON.stringify(metaobj.data)
+    const metaname = metaobj.name
+
+    element.setAttribute('data-element-meta-name', metaname)
+    element.setAttribute('data-element-meta-data', metadata)
+    // console.log('metadata generated: ', metadata, ' with name: ', metaname)
   }
 
   // Handle clickables and inputs
@@ -60,7 +85,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     if (click_element) {
       click_element.setAttribute('data-clickable-id', elementName)
     } else {
-      console.log('click-element not found', element, recipe)
+      // console.log('click-element not found', element, recipe)
     }
     if (!window.clickable_recipes) {
       window.clickable_recipes = {}
@@ -88,15 +113,28 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     // Tag the select element with data-select-id
     element.setAttribute('data-select-id', elementName)
 
-    const options = element.querySelectorAll('option')
-    options.forEach((option: any) => {
-      const optionValue = option.getAttribute('value') || option.textContent.trim()
+    const selectId = element.getAttribute('id')
+
+    const nameId = element.getAttribute('name')
+
+    const tag = element.parentElement?.querySelector('span.a-button-dropdown span.a-button-text')
+    const newTag = document.createElement('span')
+    newTag.textContent = tag.textContent
+    const tagName = elementName + '.open_drop_down_list'
+    newTag.setAttribute('name', tagName)
+    tag.setAttribute('data-clickable-id', tagName) // Tag actual DOM option element
+
+    newElement.appendChild(newTag)
+
+    const options = document.querySelectorAll('a[id^="' + selectId + '"]')
+    options.forEach(async (option) => {
+      const optionValue = option.textContent.trim()
       const optionName = elementName + '.' + optionValue
-      const newOption = document.createElement('option')
+      const newOption = document.createElement('a')
       newOption.textContent = option.textContent
       newOption.setAttribute('value', optionValue)
       newOption.setAttribute('name', optionName)
-      newOption.setAttribute('selected', option.selected.toString())
+      newOption.setAttribute('selected', option.getAttribute('aria-selected'))
       option.setAttribute('data-clickable-id', optionName) // Tag actual DOM option element
       newElement.appendChild(newOption)
     })
@@ -119,8 +157,10 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     }
   })
   if (recipe.keep_attr) {
-    for (const key in recipe.keep_attr) {
+    // console.log("attributes to keep: ", recipe.keep_attr);
+    for (const key of recipe.keep_attr) {
       const value = element.getAttribute(key)
+      // console.log(key, value)
       if (value) {
         newElement.setAttribute(key, value)
       }
@@ -136,7 +176,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
   // Override attributes if specified
   if (recipe.override_attr) {
     for (const key in recipe.override_attr) {
-      newElement.setAttribute(key, eval(recipe.override_attr[key]))
+      newElement.setAttribute(key, recipe.override_attr[key](element))
     }
   }
 
@@ -146,7 +186,11 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
       const selector = childRecipe.direct_child
         ? `:scope > ${childRecipe.selector}`
         : childRecipe.selector
-      const childElements = element.querySelectorAll(selector)
+      let childElements
+      if (childRecipe.use_root) {
+        childElements = document.querySelectorAll(selector)
+        console.log('use root for ', childElements)
+      } else childElements = element.querySelectorAll(selector)
       childElements.forEach((childElement: any, index: number) => {
         const childNode = processElement(childElement, childRecipe, parentName, index)
         newElement.appendChild(childNode)
@@ -163,7 +207,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
           const splitMarker = document.createElement('split-marker')
           newElement.appendChild(splitMarker)
         } else {
-          console.log('no split marker')
+          // console.log('no split marker')
         }
       })
     }
