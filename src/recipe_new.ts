@@ -389,6 +389,33 @@ export const buy_box_without_accordion_pick_up = {
 export const cart = [
   nav,
   {
+    selector: '#sc-collapsed-carts-container',
+    name: 'amazon_fresh_cart',
+    children: [
+      {
+        selector: 'div.sc-localmarket-text-logo',
+        add_text: true
+      },
+      {
+        selector: 'div[data-name="collapsed_item_list"]',
+        clickable: true,
+        name: 'item_list'
+      },
+      {
+        selector: 'div.sc-buy-box-inner-box input[name^="proceedToALMCheckout"]',
+        clickable: true,
+        name: 'check_out',
+        add_text: true
+      },
+      {
+        selector: 'div.sc-buy-box-inner-box a',
+        clickable: true,
+        name: 'from_text',
+        add_text: true
+      }
+    ]
+  },
+  {
     selector: "div[data-name='Active Items']",
     name: 'active_item_list',
     children: [
@@ -509,6 +536,151 @@ export const cart = [
     add_text: true,
     clickable: true,
     name: 'check_out'
+  }
+]
+
+export const fresh_cart = [
+  nav,
+  {
+    selector: "div[data-name='Active Items']",
+    name: 'active_item_list',
+    children: [
+      {
+        selector: 'div.sc-list-item-content',
+        text_selector: 'ul > li > span.a-list-item > a.sc-product-title span.a-truncate-full',
+        name: 'from_text',
+        children: [
+          {
+            selector: 'div.sc-product-image-desktop a img',
+            clickable: true,
+            name: 'product_image',
+            add_text: true,
+            text_format: 'Product Image'
+          },
+          {
+            selector: 'ul > li > span.a-list-item > a.sc-product-title',
+            clickable: true,
+            text_selector: 'span.a-truncate-full',
+            add_text: true,
+            name: 'product_detail'
+          },
+          {
+            selector: 'div.sc-badge-price-to-pay span.sc-price',
+            add_text: true
+          },
+          {
+            selector: 'div.sc-action-links',
+            children: [
+              {
+                selector: 'div.qs-widget-container',
+                children: [
+                  {
+                    selector: "input[aria-label='Remove']",
+                    add_text: true,
+                    text_js: function (element) {
+                      if (element.hasAttribute('aria-label')) {
+                        return element.getAttribute('aria-label')
+                      }
+                      return ''
+                    },
+
+                    clickable: true,
+                    name: 'decrease_quantity_by_one'
+                  },
+                  {
+                    selector: 'div.qs-widget-dropdown-flex-wrapper button',
+                    add_text: true,
+                    clickable: true,
+                    name: 'quantity_drop_down_list',
+                    text_format: 'Current Quantity: {}'
+                  },
+                  {
+                    selector:
+                      'div.qs-widget-dropdown-wrapper span[data-action="qs-widget-dropdown-decl"]',
+                    add_text: true,
+                    clickable: true,
+                    use_root: true,
+                    name: 'from_text',
+                    text_format: 'Drop Down Option {}'
+                  },
+                  {
+                    selector:
+                      'div[id^="qs-widget-quantity-container-atfc"] span[data-action="qs-widget-quantity-changelink-decl"]',
+                    add_text: true,
+                    clickable: true,
+                    use_root: true,
+                    name: 'from_text'
+                  },
+                  {
+                    selector:
+                      'div[id^="qs-widget-summary-container-atfc"] span[id^="qs-widget-summary-atc-atfc"]',
+                    add_text: true,
+                    clickable: true,
+                    use_root: true,
+                    name: 'from_text'
+                  },
+                  {
+                    selector: "input[aria-label='Add']",
+                    add_text: true,
+                    text_js: function (element) {
+                      if (element.hasAttribute('aria-label')) {
+                        return element.getAttribute('aria-label')
+                      }
+                      return ''
+                    },
+                    clickable: true,
+                    name: 'increase_quantity_by_one'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            selector: "input[data-action='delete']",
+            add_text: true,
+            clickable: true,
+            name: 'delete'
+          }
+        ],
+        generate_metadata: (em) => {
+          const asin = em.parentElement?.getAttribute('data-asin')
+          const priceEm = em.querySelector('div.sc-badge-price-to-pay span.sc-price')
+          const price = priceEm?.innerText?.replace(/[\n]/g, '')
+          const titleEm = em.querySelector(
+            'ul > li > span.a-list-item > a.sc-product-title span.a-truncate-full'
+          )
+          const title = titleEm?.innerText
+          const urlEm = em.querySelector('ul > li > span.a-list-item > a.sc-product-title')
+          const url = urlEm?.getAttribute('href')
+          const quantityEm = em.querySelector(
+            'div.sc-action-links div.qs-widget-dropdown-flex-wrapper button'
+          )
+          const quantity = quantityEm?.innerText
+          return {
+            name: 'active_items',
+            data: { title, asin, price, url, quantity }
+          }
+        }
+      }
+    ]
+  },
+  {
+    selector: 'div.sc-buy-box-inner-box input[name^="proceedToALMCheckout"]',
+    clickable: true,
+    name: 'check_out',
+    add_text: true
+  },
+  {
+    selector: 'div.sc-buy-box-inner-box a',
+    clickable: true,
+    name: 'from_text',
+    add_text: true
+  },
+  {
+    selector: '#sc-cart-above-actions button, #sc-cart-above-actions a',
+    clickable: true,
+    name: 'from_text',
+    add_text: true
   }
 ]
 
@@ -2245,6 +2417,27 @@ export const recipes = [
       {
         selector: 'body',
         children: cart
+      }
+    ]
+  },
+  {
+    match: '/cart/localmarket',
+    match_method: 'url',
+    match_with_ref: true,
+    selector: 'html',
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: fresh_cart
       }
     ]
   },
