@@ -8,6 +8,7 @@ export const nav = {
         {
           selector: 'input#twotabsearchtextbox',
           name: 'search_input',
+          clickable: true,
           generate_metadata: (em) => {
             const term = em?.value
             return { name: 'search_term', data: { term } }
@@ -39,6 +40,18 @@ export const nav = {
       add_text: true,
       clickable: true,
       name: 'cart_button'
+    },
+    {
+      selector: '#nav-flyout-searchAjax',
+      name: 'suggested_terms',
+      children: [
+        {
+          selector: 'div.s-suggestion-ellipsis-direction',
+          name: 'from_text',
+          add_text: true,
+          clickable: true
+        }
+      ]
     }
   ]
 }
@@ -1357,6 +1370,32 @@ export const recipes = [
             selector: 'div.s-main-slot.s-result-list.s-search-results',
             name: 'search_results',
             children: [
+              {
+                selector: 'div.AdHolder',
+                name: 'ads',
+                children: [
+                  {
+                    selector: 'li',
+                    name: 'from_text',
+                    add_text: true,
+                    clickable: true,
+                    text_js: (em) => {
+                      const titleEm = em.querySelector('img')
+                      const text = titleEm?.getAttribute('alt')
+                      return text.trim() || ''
+                    },
+                    generate_metadata: (em) => {
+                      const asinEm = em.querySelector('div[data-asin]')
+                      const asin = asinEm?.getAttribute('data-asin')
+                      const titleEm = em.querySelector('img')
+                      const title = titleEm?.getAttribute('alt')
+                      const urlEm = em.querySelector("a[data-type='productTitle']")
+                      const url = urlEm?.getAttribute('href')
+                      return { name: 'ads', data: { title, asin, url } }
+                    }
+                  }
+                ]
+              },
               {
                 insert_split_marker: true,
                 insert_split_marker_every: 4,
