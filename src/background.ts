@@ -404,6 +404,9 @@ const sendPopup = async (
       probability = popup_scroll_probability
       break
     case 'click':
+    case 'click_a':
+    case 'click_b':
+    case 'click_c':
       probability = popup_click_probability
       break
     case 'navigation':

@@ -36,10 +36,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (!isExcluded) {
         recordingDiv.innerHTML =
-          '<img src="icon.png" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;" /> Actions on this page will be recorded'
+          '<img src="icon.png" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;" /> Actions on this page will be recorded.'
       } else {
         recordingDiv.innerHTML =
-          '<img src="inactive_icon.png" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;" /> Actions on this page will not be recorded'
+          '<img src="inactive_icon.png" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;" /> This page is NOT recorded to protect your privacy.'
       }
     })
     // })
