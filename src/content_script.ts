@@ -193,7 +193,7 @@ const work = () => {
         // Record the scroll interaction with the accumulated scroll distance
         await captureInteraction(
           'scroll',
-          null,
+          window.location.href,
           scrollTimestamp,
           scrollUuid,
           accumulatedScrollDistance
