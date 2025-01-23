@@ -1563,7 +1563,7 @@ export const recipes = [
                 name: 'ads',
                 children: [
                   {
-                    selector: 'li',
+                    selector: 'div[data-asin]',
                     name: 'from_text',
                     add_text: true,
                     clickable: true,
@@ -1573,7 +1573,7 @@ export const recipes = [
                       return text.trim() || ''
                     },
                     generate_metadata: (em) => {
-                      const asinEm = em.querySelector('div[data-asin]')
+                      const asinEm = em
                       const asin = asinEm?.getAttribute('data-asin')
                       const titleEm = em.querySelector('img')
                       const title = titleEm?.getAttribute('alt')
