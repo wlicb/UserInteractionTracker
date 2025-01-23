@@ -8,6 +8,7 @@ export const nav = {
         {
           selector: 'input#twotabsearchtextbox',
           name: 'search_input',
+          clickable: true,
           generate_metadata: (em) => {
             const term = em?.value
             return { name: 'search_term', data: { term } }
@@ -39,6 +40,18 @@ export const nav = {
       add_text: true,
       clickable: true,
       name: 'cart_button'
+    },
+    {
+      selector: '#nav-flyout-searchAjax',
+      name: 'suggested_terms',
+      children: [
+        {
+          selector: 'div.s-suggestion-ellipsis-direction',
+          name: 'from_text',
+          add_text: true,
+          clickable: true
+        }
+      ]
     }
   ]
 }
@@ -234,7 +247,7 @@ export const product_delivery = {
 }
 
 export const quantity_selector = {
-  selector: '#selectQuantity',
+  selector: '#selectQuantity, div[id^="qs-widget-button-container-atfc"]',
   name: 'quantity_selector',
   children: [
     {
@@ -249,6 +262,20 @@ export const quantity_selector = {
       selector: 'select',
       // clickable: true,
       name: 'drop_down_list'
+    },
+    {
+      selector: 'button',
+      name: 'drop_down_list',
+      clickable: true,
+      add_text: true
+    },
+    {
+      selector: 'div.qs-widget-dropdown-wrapper span[data-action="qs-widget-dropdown-decl"]',
+      add_text: true,
+      clickable: true,
+      use_root: true,
+      name: 'from_text',
+      text_format: 'Drop Down Option {}'
     }
   ]
 }
@@ -280,7 +307,8 @@ export const set_up_now_button = {
 }
 
 export const add_to_cart_button = {
-  selector: "input[name='submit.add-to-cart'], input[name='submit.add-to-cart-ubb']",
+  selector:
+    "input[name='submit.add-to-cart'], input[name='submit.add-to-cart-ubb'], #freshAddToCartButton input",
   add_text: true,
   clickable: true,
   name: 'add_to_cart',
@@ -301,7 +329,8 @@ export const buy_box_with_accordion = {
   text_selector: 'div.accordion-caption > span',
   children: [
     {
-      selector: "div[data-csa-c-content-id='offer_display_desktop_accordion_header']",
+      selector:
+        "div[data-csa-c-content-id='offer_display_desktop_accordion_header'], div[data-csa-c-content-id='offer_display_mobile_accordion_header']",
       name: 'accordion_selector',
       add_text: true,
       clickable: true,
@@ -359,6 +388,33 @@ export const buy_box_without_accordion_pick_up = {
 
 export const cart = [
   nav,
+  {
+    selector: '#sc-collapsed-carts-container',
+    name: 'amazon_fresh_cart',
+    children: [
+      {
+        selector: 'div.sc-localmarket-text-logo',
+        add_text: true
+      },
+      {
+        selector: 'div[data-name="collapsed_item_list"]',
+        clickable: true,
+        name: 'item_list'
+      },
+      {
+        selector: 'div.sc-buy-box-inner-box input[name^="proceedToALMCheckout"]',
+        clickable: true,
+        name: 'check_out',
+        add_text: true
+      },
+      {
+        selector: 'div.sc-buy-box-inner-box a',
+        clickable: true,
+        name: 'from_text',
+        add_text: true
+      }
+    ]
+  },
   {
     selector: "div[data-name='Active Items']",
     name: 'active_item_list',
@@ -480,6 +536,151 @@ export const cart = [
     add_text: true,
     clickable: true,
     name: 'check_out'
+  }
+]
+
+export const fresh_cart = [
+  nav,
+  {
+    selector: "div[data-name='Active Items']",
+    name: 'active_item_list',
+    children: [
+      {
+        selector: 'div.sc-list-item-content',
+        text_selector: 'ul > li > span.a-list-item > a.sc-product-title span.a-truncate-full',
+        name: 'from_text',
+        children: [
+          {
+            selector: 'div.sc-product-image-desktop a img',
+            clickable: true,
+            name: 'product_image',
+            add_text: true,
+            text_format: 'Product Image'
+          },
+          {
+            selector: 'ul > li > span.a-list-item > a.sc-product-title',
+            clickable: true,
+            text_selector: 'span.a-truncate-full',
+            add_text: true,
+            name: 'product_detail'
+          },
+          {
+            selector: 'div.sc-badge-price-to-pay span.sc-price',
+            add_text: true
+          },
+          {
+            selector: 'div.sc-action-links',
+            children: [
+              {
+                selector: 'div.qs-widget-container',
+                children: [
+                  {
+                    selector: "input[aria-label='Remove']",
+                    add_text: true,
+                    text_js: function (element) {
+                      if (element.hasAttribute('aria-label')) {
+                        return element.getAttribute('aria-label')
+                      }
+                      return ''
+                    },
+
+                    clickable: true,
+                    name: 'decrease_quantity_by_one'
+                  },
+                  {
+                    selector: 'div.qs-widget-dropdown-flex-wrapper button',
+                    add_text: true,
+                    clickable: true,
+                    name: 'quantity_drop_down_list',
+                    text_format: 'Current Quantity: {}'
+                  },
+                  {
+                    selector:
+                      'div.qs-widget-dropdown-wrapper span[data-action="qs-widget-dropdown-decl"]',
+                    add_text: true,
+                    clickable: true,
+                    use_root: true,
+                    name: 'from_text',
+                    text_format: 'Drop Down Option {}'
+                  },
+                  {
+                    selector:
+                      'div[id^="qs-widget-quantity-container-atfc"] span[data-action="qs-widget-quantity-changelink-decl"]',
+                    add_text: true,
+                    clickable: true,
+                    use_root: true,
+                    name: 'from_text'
+                  },
+                  {
+                    selector:
+                      'div[id^="qs-widget-summary-container-atfc"] span[id^="qs-widget-summary-atc-atfc"]',
+                    add_text: true,
+                    clickable: true,
+                    use_root: true,
+                    name: 'from_text'
+                  },
+                  {
+                    selector: "input[aria-label='Add']",
+                    add_text: true,
+                    text_js: function (element) {
+                      if (element.hasAttribute('aria-label')) {
+                        return element.getAttribute('aria-label')
+                      }
+                      return ''
+                    },
+                    clickable: true,
+                    name: 'increase_quantity_by_one'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            selector: "input[data-action='delete']",
+            add_text: true,
+            clickable: true,
+            name: 'delete'
+          }
+        ],
+        generate_metadata: (em) => {
+          const asin = em.parentElement?.getAttribute('data-asin')
+          const priceEm = em.querySelector('div.sc-badge-price-to-pay span.sc-price')
+          const price = priceEm?.innerText?.replace(/[\n]/g, '')
+          const titleEm = em.querySelector(
+            'ul > li > span.a-list-item > a.sc-product-title span.a-truncate-full'
+          )
+          const title = titleEm?.innerText
+          const urlEm = em.querySelector('ul > li > span.a-list-item > a.sc-product-title')
+          const url = urlEm?.getAttribute('href')
+          const quantityEm = em.querySelector(
+            'div.sc-action-links div.qs-widget-dropdown-flex-wrapper button'
+          )
+          const quantity = quantityEm?.innerText
+          return {
+            name: 'active_items',
+            data: { title, asin, price, url, quantity }
+          }
+        }
+      }
+    ]
+  },
+  {
+    selector: 'div.sc-buy-box-inner-box input[name^="proceedToALMCheckout"]',
+    clickable: true,
+    name: 'check_out',
+    add_text: true
+  },
+  {
+    selector: 'div.sc-buy-box-inner-box a',
+    clickable: true,
+    name: 'from_text',
+    add_text: true
+  },
+  {
+    selector: '#sc-cart-above-actions button, #sc-cart-above-actions a',
+    clickable: true,
+    name: 'from_text',
+    add_text: true
   }
 ]
 
@@ -1358,6 +1559,32 @@ export const recipes = [
             name: 'search_results',
             children: [
               {
+                selector: 'div.AdHolder',
+                name: 'ads',
+                children: [
+                  {
+                    selector: 'li',
+                    name: 'from_text',
+                    add_text: true,
+                    clickable: true,
+                    text_js: (em) => {
+                      const titleEm = em.querySelector('img')
+                      const text = titleEm?.getAttribute('alt')
+                      return text.trim() || ''
+                    },
+                    generate_metadata: (em) => {
+                      const asinEm = em.querySelector('div[data-asin]')
+                      const asin = asinEm?.getAttribute('data-asin')
+                      const titleEm = em.querySelector('img')
+                      const title = titleEm?.getAttribute('alt')
+                      const urlEm = em.querySelector("a[data-type='productTitle']")
+                      const url = urlEm?.getAttribute('href')
+                      return { name: 'ads', data: { title, asin, url } }
+                    }
+                  }
+                ]
+              },
+              {
                 insert_split_marker: true,
                 insert_split_marker_every: 4,
                 selector: 'div[data-component-type="s-search-result"]',
@@ -1408,6 +1635,13 @@ export const recipes = [
                     ]
                   },
                   {
+                    selector: 'div.s-variations-options-elevated',
+                    name: 'options',
+                    add_text: true,
+                    clickable: true,
+                    click_selector: 'a'
+                  },
+                  {
                     selector: "div[data-cy='reviews-block']",
                     class: 'product-review',
                     children: [
@@ -1420,7 +1654,9 @@ export const recipes = [
                         selector: 'span.a-size-base.s-underline-text',
                         add_text: true,
                         text_format: '{} reviews',
-                        class: 'product-rating-count'
+                        class: 'product-rating-count',
+                        name: 'product_rating_count',
+                        clickable: true
                       }
                     ]
                   },
@@ -2181,6 +2417,27 @@ export const recipes = [
       {
         selector: 'body',
         children: cart
+      }
+    ]
+  },
+  {
+    match: '/cart/localmarket',
+    match_method: 'url',
+    match_with_ref: true,
+    selector: 'html',
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: fresh_cart
       }
     ]
   },
