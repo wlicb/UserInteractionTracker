@@ -203,13 +203,13 @@ export function getCustomQuestion(eventType: string, data: any): string {
         data['data-semantic-id'] === 'buybox.delivery.subscribe_save_.purchase_form.set_up_now' ||
         data.target.innerText === 'Set Up Now'
       ) {
-        return 'What makes you choose to subscribe to this product?'
+        return 'You clicked on the set up now button. What makes you choose to subscribe to this product?'
       } else if (
         data['data-semantic-id'] === 'buybox.delivery.one_time_purchase_.purchase_form.buy_now' ||
         data['data-semantic-id'] === 'buybox.delivery.purchase_form.buy' ||
         data.target.id === 'buy-now-button'
       ) {
-        return 'What do you like about this particular product?'
+        return 'You clicked on the buy now button. What do you like about this particular product?'
       } else if (
         data['data-semantic-id']?.startsWith('search_results.') ||
         data['data-semantic-id']?.startsWith('product_list.') ||
@@ -219,22 +219,23 @@ export function getCustomQuestion(eventType: string, data: any): string {
       ) {
         return 'You clicked on this product. What caught your attention compared to the other options you saw?'
       } else if (
-        data['data-semantic-id'] ===
-          'buybox.delivery.one_time_purchase_.purchase_form.add_to_cart' ||
-        data['data-semantic-id'] === 'buybox.delivery.purchase_form.add_to_cart' ||
+        data['data-semantic-id']?.endsWith('add_to_cart') ||
         data.target.id === 'add-to-cart-button' ||
-        data.target.name === 'submit.addToCart'
+        data.target.name === 'submit.addToCart' ||
+        data.target.innerText === 'Add to Cart'
       ) {
-        return 'What makes you decide to add this item to your cart?'
+        return 'You clicked on the add to cart button. What makes you decide to add this item to your cart?'
       } else if (data['data-semantic-id'] === 'nav_bar.search_button') {
-        return 'What are you searching for?'
+        return 'You clicked on the search button. What are you searching for?'
       } else if (
         data['data-semantic-id']?.startsWith('refinements.') ||
         data['data-semantic-id']?.startsWith('filters.')
       ) {
-        return 'What are you hoping to find with this filter?'
+        return 'You clicked on this filter. What are you hoping to find with this filter?'
       } else if (data['data-semantic-id']?.startsWith('product_options.')) {
-        return 'What do you like about this product option?'
+        return 'You clicked on this product option. What do you like about this product option?'
+      } else if (data['data-semantic-id']?.endsWith('check_out')) {
+        return 'You clicked checkout button. What makes you choose to checkout?'
       } else {
         return 'You clicked on this element. Could you share what you were trying to do or find?'
       }
