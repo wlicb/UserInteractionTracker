@@ -19,9 +19,9 @@ export const filter_url = [
   'https://www.amazon.com/ap/signin',
   'https://www.amazon.com/ap/cvf/',
   'https://www.amazon.com/ap/profile/',
-  'https://www.amazon.com/ax/account/'
-  //   'https://www.amazon.com/gp/product/handle-buy-box/',
-  //   'https://www.amazon.com/gp/checkoutportal/',
-  //   'https://www.amazon.com/gp/cart/desktop/'
+  'https://www.amazon.com/ax/account/',
+  'https://www.amazon.com/gp/product/handle-buy-box/',
+  'https://www.amazon.com/gp/checkoutportal/',
+  'https://www.amazon.com/gp/cart/desktop/'
 ]
 export const scroll_threshold = 300
