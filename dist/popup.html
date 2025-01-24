@@ -4,16 +4,65 @@
     <title>Extension Popup</title>
     <style>
       body {
-        width: 200px;
+        width: 250px;
         font-family: Arial, sans-serif;
+        background-color: #f9f9f9;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .container {
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      h3 {
+        margin-top: 0;
+        font-size: 22px;
+        color: #333;
+        text-align: center;
+        background: linear-gradient(to right, #007bff, #0056b3);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-bottom: 10px;
       }
 
       button {
         width: 100%;
         margin: 5px 0;
-        padding: 8px;
+        padding: 10px;
         font-size: 14px;
         cursor: pointer;
+        border: none;
+        border-radius: 4px;
+        background-color: #007bff;
+        color: #fff;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
       }
 
       #output {
@@ -23,6 +72,7 @@
         font-size: 12px;
         background-color: #f0f0f0;
         padding: 5px;
+        border-radius: 4px;
       }
 
       #recording {
@@ -30,34 +80,40 @@
         font-size: 12px;
         background-color: #f0f0f0;
         padding: 5px;
+        border-radius: 4px;
       }
+
       #output:empty,
-      #recording:empty {
+      #recording:empty,
+      #user_id_valid:empty {
         display: none;
       }
+
       #user_id_valid {
         margin-top: 10px;
         font-size: 12px;
         background-color: #f0f0f0;
         padding: 5px;
-      }
-      #user_id_valid:empty {
-        display: none;
+        border-radius: 4px;
+        color: red;
       }
     </style>
   </head>
 
   <body>
-    <h3>Data Collector</h3>
-    <div style="margin: 10px 0">
-      <label for="userId">User ID:</label>
-      <input type="text" id="userId" style="width: 100%; padding: 5px; box-sizing: border-box" />
+    <div class="container">
+      <h3>Data Collector</h3>
+      <div style="margin: 10px 0">
+        <label for="userId">User ID: <span id="user_id_prompt"></span></label>
+        <input type="text" id="userId" />
+        <button id="confirmUserId">Confirm User ID</button>
+      </div>
+      <button id="downloadData" style="display: none">Download Data</button>
+      <button id="clearCache" style="display: none">Clear Data</button>
+      <div id="user_id_valid"></div>
+      <div id="output"></div>
+      <div id="recording"></div>
     </div>
-    <button id="downloadData" style="display: none">Download Data</button>
-    <button id="clearCache" style="display: none">Clear Data</button>
-    <div id="user_id_valid"></div>
-    <div id="output"></div>
-    <div id="recording"></div>
     <script src="js/popup.js"></script>
   </body>
 </html>
