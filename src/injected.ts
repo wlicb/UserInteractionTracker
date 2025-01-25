@@ -57,7 +57,6 @@ const work = () => {
         return findClickableParent(element.parentElement, depth + 1, allAttributes)
       }
       const simplifiedHTML = processRecipe()
-      console.log('simplifiedHTML', simplifiedHTML)
       const pageMeta = findPageMeta()
       const allAttributes = findClickableParent(target as HTMLElement)
       // Generate new HTML snapshot ID

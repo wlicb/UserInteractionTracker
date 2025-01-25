@@ -193,7 +193,7 @@ const work = () => {
         // Record the scroll interaction with the accumulated scroll distance
         await captureInteraction(
           'scroll',
-          null,
+          window.location.href,
           scrollTimestamp,
           scrollUuid,
           accumulatedScrollDistance
@@ -400,13 +400,17 @@ const work = () => {
           sendResponse({ success: false, message: 'popup already exists' })
           return
         }
-        createModal(message.question, sendResponse)
+        createModal(message.question, message.placeholder, sendResponse)
         return true // Will respond asynchronously
       }
     }
   )
 
-  function createModal(question: string, sendResponse: (response?: any) => void) {
+  function createModal(
+    question: string,
+    placeholder: string,
+    sendResponse: (response?: any) => void
+  ) {
     const modalHtml = `
         <div id="reason-modal" style="
             position: fixed;
@@ -427,7 +431,7 @@ const work = () => {
                 width: 400px;
             ">
                 <h3>${question}</h3>
-                <textarea id="reason-input" style="
+                <textarea id="reason-input" placeholder="${placeholder}" style="
                     width: 100%;
                     height: 100px;
                     margin: 10px 0;

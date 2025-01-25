@@ -397,13 +397,17 @@ const sendPopup = async (
   ) {
     return
   }
-  const question = getCustomQuestion(eventType, data)
+  console.log('data', data)
+  const { question, placeholder } = getCustomQuestion(eventType, data)
   let probability = popup_probability
   switch (eventType) {
     case 'scroll':
       probability = popup_scroll_probability
       break
     case 'click':
+    case 'click_a':
+    case 'click_b':
+    case 'click_c':
       probability = popup_click_probability
       break
     case 'navigation':
@@ -418,7 +422,8 @@ const sendPopup = async (
     try {
       const reason = await chrome.tabs.sendMessage(tabId, {
         action: 'show_popup',
-        question: question
+        question: question,
+        placeholder: placeholder
       })
       console.log('reason', reason)
       if (reason && reason.input !== null) {
@@ -540,7 +545,7 @@ async function downloadDataLocally() {
 
     let user_id = currentUserId || 'unknown'
 
-    const folderName = `${folder_name}/USER_${user_id}/SESSION_${timestamp}`
+    const folderName = `${folder_name}/USER/${user_id}/data_${timestamp}`
 
     const interactionsToDownload = await db.getAll('interactions')
     const htmlSnapshotsToDownload = await db.getAll('htmlSnapshots')
@@ -551,7 +556,7 @@ async function downloadDataLocally() {
     console.log('downloading zip file')
     const zip = new JSZip()
     zip.file(
-      'session_info.txt',
+      `order_info/order_info_${timestamp}.txt`,
       `Session data for timestamp: ${timestamp}
         \n user id: ${user_id}
               \n order details:
@@ -565,7 +570,7 @@ async function downloadDataLocally() {
     }
 
     const interactions_json = JSON.stringify(fullData, null, 2)
-    zip.file('interactions.json', interactions_json)
+    zip.file(`interactions/interactions_${timestamp}.json`, interactions_json)
 
     const screenshotsFolder = zip.folder('screenshots')
     for (const screenshot of screenshotsToDownload) {

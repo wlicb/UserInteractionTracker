@@ -193,7 +193,12 @@ export function processRecipe() {
 }
 
 // Replace the simple question with a more detailed one based on event type
-export function getCustomQuestion(eventType: string, data: any): string {
+export function getCustomQuestion(
+  eventType: string,
+  data: any
+): { question: string; placeholder: string } {
+  let question = ''
+  let placeholder = 'Enter your reason here...'
   switch (eventType) {
     case 'click_a':
     case 'click_b':
@@ -203,13 +208,17 @@ export function getCustomQuestion(eventType: string, data: any): string {
         data['data-semantic-id'] === 'buybox.delivery.subscribe_save_.purchase_form.set_up_now' ||
         data.target.innerText === 'Set Up Now'
       ) {
-        return 'What makes you choose to subscribe to this product?'
+        question =
+          'You <span style="background-color: yellow;">clicked</span> on the set up now button. What makes you choose to subscribe to this product?'
+        placeholder = 'I choose to subscribe because...'
       } else if (
         data['data-semantic-id'] === 'buybox.delivery.one_time_purchase_.purchase_form.buy_now' ||
         data['data-semantic-id'] === 'buybox.delivery.purchase_form.buy' ||
         data.target.id === 'buy-now-button'
       ) {
-        return 'What do you like about this particular product?'
+        question =
+          'You <span style="background-color: yellow;">clicked</span> on the buy now button. What do you like about this particular product?'
+        placeholder = 'I am buying this product because...'
       } else if (
         data['data-semantic-id']?.startsWith('search_results.') ||
         data['data-semantic-id']?.startsWith('product_list.') ||
@@ -217,44 +226,79 @@ export function getCustomQuestion(eventType: string, data: any): string {
           data['data-semantic-id']?.endsWith('.product_detail')) ||
         data.target.className?.includes('sc-product-link')
       ) {
-        return 'You clicked on this product. What caught your attention compared to the other options you saw?'
+        question =
+          'You <span style="background-color: yellow;">clicked</span> on this product. What caught your attention compared to the other options you saw?'
+        placeholder = 'I like this product becauseß...'
       } else if (
-        data['data-semantic-id'] ===
-          'buybox.delivery.one_time_purchase_.purchase_form.add_to_cart' ||
-        data['data-semantic-id'] === 'buybox.delivery.purchase_form.add_to_cart' ||
+        data['data-semantic-id']?.endsWith('add_to_cart') ||
         data.target.id === 'add-to-cart-button' ||
-        data.target.name === 'submit.addToCart'
+        data.target.name === 'submit.addToCart' ||
+        data.target.innerText === 'Add to Cart'
       ) {
-        return 'What makes you decide to add this item to your cart?'
+        question =
+          'You <span style="background-color: yellow;">clicked</span> on the add to cart button. What makes you decide to add this item to your cart?'
+        placeholder = 'I add this item to my cart because...'
       } else if (data['data-semantic-id'] === 'nav_bar.search_button') {
-        return 'What are you searching for?'
+        question =
+          'You <span style="background-color: yellow;">clicked</span> on the search button. What are you searching for?'
+        placeholder = 'I want to find ...'
       } else if (
         data['data-semantic-id']?.startsWith('refinements.') ||
         data['data-semantic-id']?.startsWith('filters.')
       ) {
-        return 'What are you hoping to find with this filter?'
+        question =
+          'You <span style="background-color: yellow;">clicked</span> on this filter. What are you hoping to find with this filter?'
+        placeholder = 'I want to find ...'
       } else if (data['data-semantic-id']?.startsWith('product_options.')) {
-        return 'What do you like about this product option?'
+        question =
+          'You <span style="background-color: yellow;">clicked</span> on this product option. What do you like about this product option?'
+        if (data['element-meta-name'] === 'product_options' && data['element-meta-data'] !== '') {
+          question = `You <span style="background-color: yellow;">clicked</span> on ${data['element-meta-data']['value']}. What do you like about this product option?`
+        }
+        placeholder = 'I like this product option because...ß'
+      } else if (data['data-semantic-id']?.endsWith('check_out')) {
+        question =
+          'You <span style="background-color: yellow;">clicked</span> checkout button. What makes you choose to checkout?'
+        placeholder = 'I choose to checkout because...'
       } else {
-        return 'You clicked on this element. Could you share what you were trying to do or find?'
+        question =
+          'You <span style="background-color: yellow;">clicked</span> on this element. Could you share what you were trying to do or find?'
+        placeholder = 'Enter your reason here...'
       }
-
+      break
     case 'scroll':
-      return 'You scrolled on this page. What information are you looking for?'
+      question =
+        'You <span style="background-color: yellow;">scrolled</span> on this page. What information are you looking for?'
+      placeholder = 'I want to find ...'
+      break
     case 'input':
-      return 'You typed in this input field. What are you searching for?'
+      question =
+        'You <span style="background-color: yellow;">typed</span> in this input field. What are you searching for?'
+      placeholder = 'I want to find ...'
+      break
     case 'navigation':
       if (data.navigationType === 'back') {
-        return 'Why did you decide to go back to the previous page?'
+        question =
+          'Why did you decide to <span style="background-color: yellow;">go back</span> to the previous page?'
+        placeholder = "I'm back because..."
       } else if (data.navigationType === 'forward') {
-        return 'Why did you decide to return to this page ?'
+        question =
+          'Why did you decide to <span style="background-color: yellow;">return</span> to this page ?'
+        placeholder = 'I want to find ...'
       }
-      return `What is the reason for this ${data.navigationType} navigation?`
+      question = `What is the reason for this <span style="background-color: yellow;">${data.navigationType} navigation</span>?`
+      placeholder = 'Enter your reason here...'
+      break
     case 'tabActivate':
-      return `Why did you switch to this tab?`
+      question = `Why did you <span style="background-color: yellow;">switch to this tab</span>?`
+      placeholder = 'I switched to this tab because...'
+      break
     default:
-      return `What is the reason for the ${eventType} action?`
+      question = `What is the reason for the ${eventType} action?`
+      placeholder = 'Enter your reason here...'
+      break
   }
+  return { question, placeholder }
 }
 
 export function isValidReason(reason: string): boolean {

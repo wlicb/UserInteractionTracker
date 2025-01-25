@@ -60,8 +60,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       displayInteractionStats(result.userId)
       if (result.userId.includes(data_collector_secret_id)) {
         downloadDataBtn.style.display = 'block' // Show button
+        clearCacheBtn.style.display = 'block'
       } else {
         downloadDataBtn.style.display = 'none' // Hide button
+        clearCacheBtn.style.display = 'none'
       }
       check_user_id_valid(result.userId)
     } else {
