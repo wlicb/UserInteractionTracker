@@ -6,16 +6,10 @@
       body {
         width: 250px;
         font-family: Arial, sans-serif;
-        background-color: #f9f9f9;
+        background-color: #fff;
         padding: 20px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      }
-
-      .container {
-        background-color: #fff;
-        padding: 15px;
         border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       }
 
       h3 {
@@ -101,19 +95,17 @@
   </head>
 
   <body>
-    <div class="container">
-      <h3>Data Collector</h3>
-      <div style="margin: 10px 0">
-        <label for="userId">User ID: <span id="user_id_prompt"></span></label>
-        <input type="text" id="userId" />
-        <button id="confirmUserId">Confirm User ID</button>
-      </div>
-      <button id="downloadData" style="display: none">Download Data</button>
-      <button id="clearCache" style="display: none">Clear Data</button>
-      <div id="user_id_valid"></div>
-      <div id="output"></div>
-      <div id="recording"></div>
+    <h3>Data Collector</h3>
+    <div style="margin: 10px 0">
+      <label for="userId">User ID: <span id="user_id_prompt"></span></label>
+      <input type="text" id="userId" />
+      <button id="confirmUserId">Confirm User ID</button>
     </div>
+    <button id="downloadData" style="display: none">Download Data</button>
+    <button id="clearCache" style="display: none">Clear Data</button>
+    <div id="user_id_valid"></div>
+    <div id="output"></div>
+    <div id="recording"></div>
     <script src="js/popup.js"></script>
   </body>
 </html>
