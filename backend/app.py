@@ -69,17 +69,17 @@ def check_user(user_id, user_collection):
         app.logger.error(f"user_id is not available")
         return {"error": f"user_id is not available"}, 400
 
-    # try:
-    #     user_id = ObjectId(user_id)
-    # except:
-    #     app.logger.error(f'User ID is not a valid ObjectId: {user_id}')
-    #     return {f'error': f'User ID is not a valid id:{user_id}'}, 400
-
+    # Check if the user exists
     user = user_collection.find_one({"user_name": user_id})
 
     if not user:
-        app.logger.error(f"User not found. user_id: {user_id}")
-        return {f"error": f"User not found. user_id: {user_id}"}, 403
+        # If user does not exist, create a new one
+        new_user = {"user_name": user_id}
+        result = user_collection.insert_one(new_user)
+        user_id = str(result.inserted_id)
+        app.logger.info(f"Created new user with user_id: {user_id}")
+    else:
+        user_id = str(user['_id'])
 
     return user_id, 200
 

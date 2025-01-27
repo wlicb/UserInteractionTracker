@@ -4,57 +4,88 @@
     <title>Extension Popup</title>
     <style>
       body {
-        width: 200px;
+        width: 220px;
         font-family: Arial, sans-serif;
+        background-color: #ffffff;
+        padding: 10px;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
 
       button {
         width: 100%;
         margin: 5px 0;
         padding: 8px;
-        font-size: 14px;
+        font-size: 12px;
         cursor: pointer;
+        border: none;
+        border-radius: 8px;
+        background-color: #007bff;
+        color: white;
+        transition: background-color 0.3s;
       }
 
-      #output {
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      #output,
+      #recording,
+      #user_id_valid {
         margin-top: 10px;
         max-height: 100px;
         overflow-y: auto;
         font-size: 12px;
-        background-color: #f0f0f0;
-        padding: 5px;
+        background-color: #f1f1f1;
+        margin: 5px 0;
+        padding: 8px;
+        border-radius: 8px;
+        width: 100%;
       }
 
-      #recording {
-        margin-top: 10px;
-        font-size: 12px;
-        background-color: #f0f0f0;
-        padding: 5px;
-      }
       #output:empty,
-      #recording:empty {
-        display: none;
-      }
-      #user_id_valid {
-        margin-top: 10px;
-        font-size: 12px;
-        background-color: #f0f0f0;
-        padding: 5px;
-      }
+      #recording:empty,
       #user_id_valid:empty {
         display: none;
+      }
+
+      #userId {
+        width: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        margin-bottom: 5px;
+        font-size: 18px;
+      }
+
+      #userIdDisplay {
+        display: none;
+        font-size: 18px;
+      }
+
+      .button-container {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
       }
     </style>
   </head>
 
   <body>
-    <h3>Data Collector</h3>
-    <div style="margin: 10px 0">
-      <label for="userId">User ID:</label>
-      <input type="text" id="userId" style="width: 100%; padding: 5px; box-sizing: border-box" />
+    <h3 style="text-align: center; color: #333; font-size: 24px">Data Collector</h3>
+    <div style="margin: 10px 0; width: 100%">
+      <label for="userId" style="font-size: 18px">User ID:</label>
+      <input type="text" id="userId" placeholder="Enter UserID" />
+      <span id="userIdDisplay"></span>
+      <button id="confirmUserId" style="width: 100%; margin-top: 5px">Confirm</button>
     </div>
-    <button id="downloadData" style="display: none">Download Data</button>
-    <button id="clearCache" style="display: none">Clear Data</button>
+    <div class="button-container" style="width: 100%">
+      <button id="downloadData" style="display: none">Download</button>
+      <button id="clearCache" style="display: none">Clear Data</button>
+    </div>
     <div id="user_id_valid"></div>
     <div id="output"></div>
     <div id="recording"></div>

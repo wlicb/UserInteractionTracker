@@ -6,6 +6,8 @@ const clearCacheBtn = document.getElementById('clearCache') as HTMLButtonElement
 const userIdInput = document.getElementById('userId') as HTMLInputElement
 const recordingDiv = document.getElementById('recording') as HTMLDivElement
 const user_id_valid_div = document.getElementById('user_id_valid') as HTMLDivElement
+const confirmUserIdBtn = document.getElementById('confirmUserId') as HTMLButtonElement
+const userIdDisplay = document.getElementById('userIdDisplay') as HTMLSpanElement
 // Add this function to fetch and display interaction stats
 async function displayInteractionStats(userId: string) {
   try {
@@ -57,6 +59,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   chrome.storage.local.get(['userId'], async (result) => {
     if (result.userId) {
       userIdInput.value = result.userId || ''
+      userIdDisplay.textContent = result.userId
+      userIdInput.style.display = 'none'
+      userIdDisplay.style.display = 'inline'
+      confirmUserIdBtn.textContent = 'Edit'
       displayInteractionStats(result.userId)
       if (result.userId.includes(data_collector_secret_id)) {
         downloadDataBtn.style.display = 'block' // Show button
@@ -71,14 +77,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   })
 
-  userIdInput.addEventListener('change', () => {
-    const userId = userIdInput.value.trim()
-    chrome.storage.local.set({ userId: userId }, () => {
-      outputDiv.textContent = 'User ID saved.'
-    })
-    updateRecordingStatus()
-    check_user_id_valid(userId)
-  })
+  // userIdInput.addEventListener('change', () => {
+  //   const userId = userIdInput.value.trim()
+  //   chrome.storage.local.set({ userId: userId }, () => {
+  //     outputDiv.textContent = 'User ID saved.'
+  //   })
+  //   updateRecordingStatus()
+  //   check_user_id_valid(userId)
+  // })
 
   downloadDataBtn.addEventListener('click', () => {
     try {
@@ -106,5 +112,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
       outputDiv.textContent = `Error: ${(error as Error).message}`
     }
+  })
+  confirmUserIdBtn.addEventListener('click', () => {
+    const userId = userIdInput.value.trim()
+    if (confirmUserIdBtn.textContent === 'Confirm') {
+      chrome.storage.local.set({ userId: userId }, () => {
+        outputDiv.textContent = 'User ID saved.'
+      })
+      userIdInput.style.display = 'none'
+      userIdDisplay.textContent = userId
+      userIdDisplay.style.display = 'inline'
+      confirmUserIdBtn.textContent = 'Edit'
+      if (userId.includes(data_collector_secret_id)) {
+        downloadDataBtn.style.display = 'block' // Show button
+        clearCacheBtn.style.display = 'block'
+      } else {
+        downloadDataBtn.style.display = 'none' // Hide button
+        clearCacheBtn.style.display = 'none'
+      }
+    } else {
+      userIdInput.style.display = 'block'
+      userIdDisplay.style.display = 'none'
+      confirmUserIdBtn.textContent = 'Confirm'
+    }
+    updateRecordingStatus()
+    check_user_id_valid(userId)
   })
 })
