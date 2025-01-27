@@ -64,24 +64,21 @@ if not os.path.exists(UPLOAD_FOLDER):
 localhost: 5000
 
 
-def check_user(user_id, user_collection):
-    if not user_id:
-        app.logger.error(f"user_id is not available")
-        return {"error": f"user_id is not available"}, 400
+def check_user(user_name, user_collection):
+    if not user_name:
+        app.logger.error(f"user_name is not available")
+        return {"error": f"user_name is not available"}, 400
 
     # Check if the user exists
-    user = user_collection.find_one({"user_name": user_id})
+    user = user_collection.find_one({"user_name": user_name})
 
     if not user:
         # If user does not exist, create a new one
-        new_user = {"user_name": user_id}
+        new_user = {"user_name": user_name}
         result = user_collection.insert_one(new_user)
-        user_id = str(result.inserted_id)
-        app.logger.info(f"Created new user with user_id: {user_id}")
-    else:
-        user_id = str(user['_id'])
+        app.logger.info(f"Created new user with user_id: {user_name}")
 
-    return user_id, 200
+    return user_name, 200
 
 
 @app.route("/upload", methods=["POST"])
@@ -95,13 +92,13 @@ def upload_file():
         app.logger.info("No selected file")
         return jsonify({"error": "No selected file"}), 400
 
-    user_id = request.form.get("user_id")
+    user_name = request.form.get("user_id")
 
-    result, status = check_user(user_id, user_collection=user_collection)
+    result, status = check_user(user_name, user_collection=user_collection)
     if status != 200:
         return jsonify(result), status
     else:
-        user_id = result
+        user_name = result
 
     if file:
         filepath = ""
@@ -140,17 +137,17 @@ def interactions():
         return jsonify({"error": "Interactions not found"}), 400
 
     # user_id = request.form.get('user_id')
-    user_id = request.args.get("user_id")
+    user_name = request.args.get("user_id")
 
-    result, status = check_user(user_id, user_collection=user_collection)
+    result, status = check_user(user_name, user_collection=user_collection)
     if status != 200:
         return result, status
     else:
-        user_id = result
+        user_name = result
 
     if interactions:
         updated_interactions = [
-            {**interaction, "user_id": user_id}
+            {**interaction, "user_name": user_name}
             for interaction in interactions["interactions"]
         ]
 
@@ -163,21 +160,21 @@ def interactions():
 
 @app.route("/generate_presigned_post", methods=["GET"])
 def generate_presigned_post():
-    user_id = request.args.get("user_id")
+    user_name = request.args.get("user_id")
 
-    result, status = check_user(user_id, user_collection=user_collection)
+    result, status = check_user(user_name, user_collection=user_collection)
 
     if status != 200:
         return result, status
     else:
-        user_id = result
+        user_name = result
 
     expiration = config.EXPIRATION_TIME
     expire_timestamp = int(
         (datetime.now(timezone.utc) + timedelta(seconds=expiration // 2)).timestamp()
     )  # to make sure at least half of the time remains
 
-    prefix = f"user_interaction_data/USER/{user_id}"
+    prefix = f"user_interaction_data/USER/{user_name}"
 
     try:
         # Generate a presigned POST URL
@@ -284,7 +281,11 @@ def check_user_id():
     if user:
         return jsonify({"valid": True}), 200
     else:
-        return jsonify({"valid": False, "error": "User not found"}), 404
+        # If user does not exist, create a new one
+        new_user = {"user_name": user_id}
+        result = user_collection.insert_one(new_user)
+        app.logger.info(f"Created new user with user_name: {user_id}")
+        return jsonify({"valid": True}), 200
 
 
 if __name__ == "__main__":
