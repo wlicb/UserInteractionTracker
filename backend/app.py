@@ -199,7 +199,7 @@ def generate_presigned_post():
         return jsonify({"error": "Credentials not available"}), 403
 
 
-def get_interactions_by_date(user_id, date=None, return_data=None):
+def get_interactions_by_date(user_name, date=None, return_data=None):
     # If no date is specified, use today's date
     if date is None:
         date = datetime.now()
@@ -212,36 +212,36 @@ def get_interactions_by_date(user_id, date=None, return_data=None):
     if return_data:
         interactions_date = interaction_collection.find(
             {
-                "user_id": ObjectId(user_id),
+                "user_name": user_name,
                 "timestamp": {"$gte": start_of_day, "$lt": end_of_day},
             }
         )
         interactions_date = list(interactions_date)
         for interaction in interactions_date:
             interaction["_id"] = str(interaction["_id"])
-            if "user_id" in interaction:
-                interaction["user_id"] = str(interaction["user_id"])
+            if "user_name" in interaction:
+                interaction["user_name"] = str(interaction["user_name"])
 
         interactions_all_time = interaction_collection.find(
             {
-                "user_id": user_id,
+                "user_name": user_name,
             }
         )
         interactions_all_time = list(interactions_all_time)
         for interaction in interactions_all_time:
             interaction["_id"] = str(interaction["_id"])
-            if "user_id" in interaction:
-                interaction["user_id"] = str(interaction["user_id"])
+            if "user_name" in interaction:
+                interaction["user_name"] = str(interaction["user_name"])
 
         return {"on_date": interactions_date, "all_time": interactions_all_time}
 
     else:
         n_documents_date = interaction_collection.count_documents(
-            {"user_id": user_id, "timestamp": {"$gte": start_of_day, "$lt": end_of_day}}
+            {"user_name": user_name, "timestamp": {"$gte": start_of_day, "$lt": end_of_day}}
         )
         n_documents = interaction_collection.count_documents(
             {
-                "user_id": user_id,
+                "user_name": user_name,
             }
         )
         return {"on_date": n_documents_date, "all_time": n_documents}
@@ -249,16 +249,16 @@ def get_interactions_by_date(user_id, date=None, return_data=None):
 
 @app.route("/interactions_record_status", methods=["GET"])
 def interactions_record_status():
-    user_id = request.args.get("user_id")
+    user_name = request.args.get("user_id")
     date_str = request.args.get("date")  # in 'YYYY-MM-DD' format
     return_data = request.args.get("return")
 
-    result, status = check_user(user_id, user_collection=user_collection)
+    result, status = check_user(user_name, user_collection=user_collection)
 
     if status != 200:
         return result, status
     else:
-        user_id = result
+        user_name = result
 
     if date_str:
         try:
@@ -268,7 +268,7 @@ def interactions_record_status():
     else:
         date = None
 
-    interactions = get_interactions_by_date(user_id, date, return_data)
+    interactions = get_interactions_by_date(user_name, date, return_data)
 
     return jsonify(interactions)
 
