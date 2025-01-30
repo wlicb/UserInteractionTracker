@@ -5,7 +5,8 @@ import {
   shouldExclude,
   generateHtmlSnapshotId,
   processRecipe,
-  isValidReason
+  isValidReason,
+  MarkViewableElements
 } from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
 import { scroll_threshold } from './config'
@@ -120,6 +121,7 @@ const work = () => {
 
   document.addEventListener('DOMContentLoaded', () => {
     console.log('DOMContentLoaded event triggered')
+    MarkViewableElements()
     processRecipe()
   })
 
@@ -129,15 +131,20 @@ const work = () => {
     target: any,
     timestamp: string,
     uuid: string,
-    scrollDistance?: number
+    windowSize: { width: number; height: number },
+    scrollDistance?: number,
+    scrollCurrentTop?: number,
+    scrollCurrentLeft?: number,
+    scrollDistance_X?: number
   ) {
     try {
       // Generate new HTML snapshot ID
       const currentSnapshotId = generateHtmlSnapshotId(timestamp, uuid)
 
       const simplifiedHTML = processRecipe()
-      const markedDoc = getClickableElementsInViewport()
-
+      console.log('start time:', new Date().toISOString())
+      MarkViewableElements()
+      console.log('end time:', new Date().toISOString())
       const pageMeta = findPageMeta()
 
       let data = {
@@ -147,11 +154,15 @@ const work = () => {
 
         htmlSnapshotId: currentSnapshotId, // Use the new snapshot ID
         pageMeta: pageMeta || '',
-        htmlContent: markedDoc.documentElement.outerHTML,
+        htmlContent: document.documentElement.outerHTML,
         simplifiedHTML: simplifiedHTML
       }
       if (eventType === 'scroll') {
-        data['scrollDistance'] = scrollDistance
+        data['windowSize'] = windowSize
+        data['scrollDistance_Y'] = scrollDistance
+        data['scrollCurrentTop'] = scrollCurrentTop
+        data['scrollCurrentLeft'] = scrollCurrentLeft
+        data['scrollDistance_X'] = scrollDistance_X
         data['target'] = target
       }
       if (eventType === 'input') {
@@ -170,7 +181,8 @@ const work = () => {
   let scrollTimeout: number | undefined
   let scrollStartTop = window.scrollY || document.documentElement.scrollTop
   let accumulatedScrollDistance = 0
-
+  let scrollStartLeft = window.scrollX || document.documentElement.scrollLeft
+  let accumulatedScrollDistance_X = 0
   // Function to handle the first scroll event in a scroll sequence
   async function handleFirstScroll(scrollUuid: string, scrollTimestamp: string) {
     try {
@@ -189,18 +201,32 @@ const work = () => {
       const currentScrollTop = window.scrollY || document.documentElement.scrollTop
       accumulatedScrollDistance += currentScrollTop - scrollStartTop
 
-      if (accumulatedScrollDistance !== 0) {
+      const currentScrollLeft = window.scrollX || document.documentElement.scrollLeft
+      accumulatedScrollDistance_X += currentScrollLeft - scrollStartLeft
+
+      // INSERT_YOUR_CODE
+      const windowSize = {
+        width: window.innerWidth,
+        height: window.innerHeight
+      }
+      if (accumulatedScrollDistance !== 0 || accumulatedScrollDistance_X !== 0) {
         // Record the scroll interaction with the accumulated scroll distance
         await captureInteraction(
           'scroll',
           window.location.href,
           scrollTimestamp,
           scrollUuid,
-          accumulatedScrollDistance
+          windowSize,
+          accumulatedScrollDistance,
+          currentScrollTop,
+          accumulatedScrollDistance_X,
+          currentScrollLeft
         )
         // Reset accumulated scroll distance
         accumulatedScrollDistance = 0
+        accumulatedScrollDistance_X = 0
         scrollStartTop = currentScrollTop
+        scrollStartLeft = currentScrollLeft
       }
       isScrolling = false
     } catch (error) {
@@ -241,25 +267,6 @@ const work = () => {
       scroll_threshold
     ) // Threshold of 300ms
   })
-
-  // document.addEventListener(
-  //   'blur',
-  //   async (event) => {
-  //     const target = event.target as HTMLElement
-  //     if (isFromPopup(target)) return
-  //     if (
-  //       target &&
-  //       ((target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text') ||
-  //         target.tagName === 'TEXTAREA')
-  //     ) {
-  //       const timestamp = new Date().toISOString()
-  //       const uuid = uuidv4()
-  //       await captureScreenshot(timestamp, uuid)
-  //       await captureInteraction('input', target, timestamp, uuid)
-  //     }
-  //   },
-  //   true
-  // )
 
   document.addEventListener('DOMContentLoaded', () => {
     // Handle all types of order buttons
@@ -388,8 +395,8 @@ const work = () => {
       console.log('message', message)
       if (message.action === 'getHTML') {
         const simplifiedHTML = processRecipe()
-        const markedDoc = getClickableElementsInViewport()
-        const htmlContent = markedDoc.documentElement.outerHTML
+        MarkViewableElements()
+        const htmlContent = document.documentElement.outerHTML
         const pageMeta = findPageMeta()
         sendResponse({ html: htmlContent, pageMeta: pageMeta, simplifiedHTML: simplifiedHTML })
       }

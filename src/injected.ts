@@ -4,7 +4,8 @@ import {
   isFromPopup,
   shouldExclude,
   generateHtmlSnapshotId,
-  processRecipe
+  processRecipe,
+  MarkViewableElements
 } from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
 import { finder } from '@medv/finder'
@@ -71,7 +72,7 @@ const work = () => {
         outerHTML: target.outerHTML
       }
 
-      const markedDoc = getClickableElementsInViewport()
+      MarkViewableElements()
       const data = {
         eventType,
         timestamp: timestamp,
@@ -84,7 +85,7 @@ const work = () => {
         'element-meta-data': allAttributes['data-element-meta-data'] || '',
         'page-meta': pageMeta || '',
         url: url || '',
-        htmlContent: markedDoc.documentElement.outerHTML,
+        htmlContent: document.documentElement.outerHTML,
         simplifiedHTML: simplifiedHTML
       }
       if (target.tagName === 'INPUT' && target.type === 'text') {

@@ -60,6 +60,26 @@ export function getClickableElementsInViewport() {
   return documentCopy
 }
 
+export function MarkViewableElements() {
+  // Create a copy of the document
+
+  // Select all elements
+  const allElements = document.querySelectorAll(
+    'a, button, [onclick], input[type="button"], input[type="submit"]'
+  )
+  // Check if each element is in the viewport and add marker
+  allElements.forEach((element) => {
+    const rect = element.getBoundingClientRect()
+    const inViewport =
+      rect.top >= 0 &&
+      rect.left >= 0 &&
+      rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+      rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+    // Add marker attribute to the element
+    element.setAttribute('visible-clickable-element-marker', inViewport ? 'true' : 'false')
+  })
+}
+
 // Add cleanup function to remove markers when needed
 export function removeClickableMarkers() {
   document.querySelectorAll('[visible-clickable-element-marker]').forEach((element) => {
