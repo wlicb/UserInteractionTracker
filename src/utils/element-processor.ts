@@ -1,3 +1,10 @@
+declare global {
+  interface Window {
+    clickable_recipes: any
+    input_recipes: any
+  }
+}
+
 export function processElement(element: any, recipe: any, parentName = '', nthChild = 0) {
   // console.log("processing element: ", element, recipe);
   // Create a new element using the DOM API

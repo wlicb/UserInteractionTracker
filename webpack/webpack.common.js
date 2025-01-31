@@ -2,6 +2,7 @@ const webpack = require('webpack')
 const path = require('path')
 const CopyPlugin = require('copy-webpack-plugin')
 const srcDir = path.join(__dirname, '..', 'src')
+const { VueLoaderPlugin } = require('vue-loader')
 
 module.exports = {
   devtool: 'inline-source-map',
@@ -19,12 +20,21 @@ module.exports = {
   module: {
     rules: [
       {
+        test: /\.scss$/,
+        use: ['vue-style-loader', 'css-loader', 'sass-loader']
+      },
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader'
+      },
+      {
         test: /\.tsx?$/,
         use: [
           {
-            loader: 'babel-loader',
+            loader: 'ts-loader',
             options: {
-              presets: ['@babel/preset-env', '@babel/preset-typescript']
+              appendTsSuffixTo: [/\.vue$/],
+              transpileOnly: true
             }
           }
         ],
@@ -33,13 +43,12 @@ module.exports = {
     ]
   },
   resolve: {
-    extensions: ['.ts', '.tsx', '.js']
+    extensions: ['.ts', '.tsx', '.js', '.vue']
   },
   plugins: [
+    new VueLoaderPlugin(),
     new CopyPlugin({
-      patterns: [
-        { from: '.', to: '../', context: 'public' } // Make sure this path is correct and the desired outcome.
-      ]
+      patterns: [{ from: '.', to: '../', context: 'public' }]
     })
   ]
 }

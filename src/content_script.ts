@@ -14,11 +14,11 @@ import { scroll_threshold } from './config'
 async function captureScreenshot(timestamp: string, uuid: string) {
   try {
     // const screenshotId = `screenshot_${timestamp}_${uuid}`
-    const response = await chrome.runtime.sendMessage({
+    const response = (await chrome.runtime.sendMessage({
       action: 'captureScreenshot',
       timestamp,
       uuid
-    })
+    })) as any
 
     if (!response.success) {
       throw new Error(response.message || 'Screenshot capture failed')
@@ -61,10 +61,10 @@ window.addEventListener('message', async (event) => {
     try {
       const dataForBackground = { ...event.data.data }
 
-      const response2 = await chrome.runtime.sendMessage({
+      const response2 = (await chrome.runtime.sendMessage({
         action: 'saveData',
         data: dataForBackground
-      })
+      })) as any
       if (!response2.success) {
         throw new Error(response2.message || 'interaction capture failed')
       }
