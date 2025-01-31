@@ -16,6 +16,14 @@ declare global {
     shouldExclude: boolean
   }
 }
+declare global {
+  interface MouseEvent {
+    just_for_default: boolean
+    block_signal: AbortController
+    finish_signals: AbortController[]
+    my_default_prevented: boolean
+  }
+}
 
 const work = () => {
   const monkeyPatch = () => {
@@ -92,7 +100,9 @@ const work = () => {
         data['input-terms'] = target.value
       }
       if (target.id === 'nav-search-submit-button' && target.type === 'submit') {
-        data['input-terms'] = document.querySelector('input[id="twotabsearchtextbox"]')?.value
+        data['input-terms'] = (
+          document.querySelector('input[id="twotabsearchtextbox"]') as HTMLInputElement
+        )?.value
       }
       return data
     }
@@ -123,15 +133,15 @@ const work = () => {
       // }
 
       if (element.tagName.toLowerCase() === 'input') {
-        if (element.type === 'submit') {
+        if ((element as HTMLInputElement).type === 'submit') {
           return true
         }
       }
       return false
     }
     // Monkey patch addEventListener
-    EventTarget.prototype.addEventListener = function (type, listener, options = {}) {
-      if (options && options.skip_monkey_patch) {
+    EventTarget.prototype.addEventListener = function (type, listener, options: any = {}) {
+      if (options && (options as any).skip_monkey_patch) {
         return originalAddEventListener.call(this, type, listener, options)
       }
       const callOriginalListener = (event) => {
@@ -427,7 +437,7 @@ const work = () => {
             console.log('should exclude')
             return
           }
-          if (isFromPopup(event.target)) {
+          if (isFromPopup(event.target as HTMLElement)) {
             return
           }
           if (event.just_for_default) {
@@ -566,10 +576,10 @@ const work = () => {
           }
         },
         {
-          useCapture: true,
+          capture: true,
           skip_monkey_patch: true,
           passive: false
-        }
+        } as any
       ) // Use capture phase to intercept the event earlier
     }
 
