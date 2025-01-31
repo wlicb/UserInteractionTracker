@@ -1,13 +1,16 @@
 import { data_collector_secret_id, interaction_status_url } from './config'
-import { check_user_id, shouldExclude } from './utils/util'
+import { shouldExclude } from './utils/util'
 const downloadDataBtn = document.getElementById('downloadData') as HTMLButtonElement
-const outputDiv = document.getElementById('output') as HTMLDivElement
+const otherInfoDiv = document.getElementById('other_info') as HTMLDivElement
+const outputTotal = document.getElementById('output_total') as HTMLSpanElement
+const outputToday = document.getElementById('output_today') as HTMLSpanElement
 const clearCacheBtn = document.getElementById('clearCache') as HTMLButtonElement
-const userIdInput = document.getElementById('userId') as HTMLInputElement
+const userIdInput = document.getElementById('userIdInput') as HTMLInputElement
 const recordingDiv = document.getElementById('recording') as HTMLDivElement
-const user_id_valid_div = document.getElementById('user_id_valid') as HTMLDivElement
 const confirmUserIdBtn = document.getElementById('confirmUserId') as HTMLButtonElement
+const editUserIdBtn = document.getElementById('editUserId') as HTMLButtonElement
 const userIdDisplay = document.getElementById('userIdDisplay') as HTMLSpanElement
+const userIdInstruction = document.getElementById('userIdInstruction') as HTMLSpanElement
 // Add this function to fetch and display interaction stats
 async function displayInteractionStats(userId: string) {
   try {
@@ -18,12 +21,13 @@ async function displayInteractionStats(userId: string) {
     const data = await response.json()
 
     if (response.ok) {
-      outputDiv.textContent = `Total uploads: ${data.all_time}\nToday's uploads: ${data.on_date}`
+      outputTotal.innerHTML = `Total uploads: <b>${data.all_time}</b>`
+      outputToday.innerHTML = `Today's uploads: <b>${data.on_date}</b>`
     } else {
-      outputDiv.textContent = `Failed to fetch stats: ${data.error || 'Unknown error'}`
+      otherInfoDiv.textContent = `Failed to fetch stats: ${data.error || 'Unknown error'}`
     }
   } catch (error) {
-    outputDiv.textContent = `Error: ${(error as Error).message}`
+    otherInfoDiv.textContent = `Error: ${(error as Error).message}`
   }
 }
 document.addEventListener('DOMContentLoaded', async () => {
@@ -38,31 +42,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (!isExcluded) {
         recordingDiv.innerHTML =
-          '<img src="icon.png" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;" /> Actions on this page will be recorded'
+          '<img src="icon.png" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle;" /> Actions on this page will <b>be recorded</b>'
       } else {
         recordingDiv.innerHTML =
-          '<img src="inactive_icon.png" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;" /> Actions on this page will not be recorded'
+          '<img src="inactive_icon.png" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle;" /> Actions on this page will <b>not be recorded</b>'
       }
     })
     // })
   }
   updateRecordingStatus()
-  const check_user_id_valid = async (user_id: string) => {
-    const user_id_valid = await check_user_id(user_id)
-
-    if (user_id_valid !== 'success') {
-      user_id_valid_div.textContent = 'User ID is invalid, please check your user ID'
-    } else {
-      user_id_valid_div.textContent = ''
-    }
-  }
   chrome.storage.local.get(['userId'], async (result) => {
     if (result.userId) {
       userIdInput.value = result.userId || ''
-      userIdDisplay.textContent = result.userId
+      userIdDisplay.textContent = `User ID: ${result.userId}`
       userIdInput.style.display = 'none'
       userIdDisplay.style.display = 'inline'
-      confirmUserIdBtn.textContent = 'Edit'
+      confirmUserIdBtn.style.display = 'none'
       displayInteractionStats(result.userId)
       if (result.userId.includes(data_collector_secret_id)) {
         downloadDataBtn.style.display = 'block' // Show button
@@ -71,33 +66,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         downloadDataBtn.style.display = 'none' // Hide button
         clearCacheBtn.style.display = 'none'
       }
-      check_user_id_valid(result.userId)
     } else {
-      user_id_valid_div.textContent = 'Please enter your user id'
+      userIdInput.textContent = 'Please enter your user id'
     }
   })
-
-  // userIdInput.addEventListener('change', () => {
-  //   const userId = userIdInput.value.trim()
-  //   chrome.storage.local.set({ userId: userId }, () => {
-  //     outputDiv.textContent = 'User ID saved.'
-  //   })
-  //   updateRecordingStatus()
-  //   check_user_id_valid(userId)
-  // })
 
   downloadDataBtn.addEventListener('click', () => {
     try {
       const userId = userIdInput.value.trim()
       chrome.runtime.sendMessage({ action: 'downloadData', userId }, (response) => {
         if (response.success) {
-          outputDiv.textContent = 'Data downloaded successfully.'
+          otherInfoDiv.textContent = 'Data downloaded successfully.'
         } else {
-          outputDiv.textContent = `Failed to download data: ${response.error || 'Unknown error'}`
+          otherInfoDiv.textContent = `Failed to download data: ${response.error || 'Unknown error'}`
         }
       })
     } catch (error) {
-      outputDiv.textContent = `Error: ${(error as Error).message}`
+      otherInfoDiv.textContent = `Error: ${(error as Error).message}`
     }
   })
   clearCacheBtn.addEventListener('click', () => {
@@ -107,35 +92,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         'lastuploadTimestamp'
       ])
       chrome.runtime.sendMessage({ action: 'clearMemoryCache' }, () => {
-        outputDiv.textContent = 'Cache cleared successfully.'
+        otherInfoDiv.textContent = 'Cache cleared successfully.'
       })
     } catch (error) {
-      outputDiv.textContent = `Error: ${(error as Error).message}`
+      otherInfoDiv.textContent = `Error: ${(error as Error).message}`
     }
   })
   confirmUserIdBtn.addEventListener('click', () => {
     const userId = userIdInput.value.trim()
-    if (confirmUserIdBtn.textContent === 'Confirm') {
-      chrome.storage.local.set({ userId: userId }, () => {
-        outputDiv.textContent = 'User ID saved.'
-      })
-      userIdInput.style.display = 'none'
-      userIdDisplay.textContent = userId
-      userIdDisplay.style.display = 'inline'
-      confirmUserIdBtn.textContent = 'Edit'
-      if (userId.includes(data_collector_secret_id)) {
-        downloadDataBtn.style.display = 'block' // Show button
-        clearCacheBtn.style.display = 'block'
-      } else {
-        downloadDataBtn.style.display = 'none' // Hide button
-        clearCacheBtn.style.display = 'none'
-      }
+    chrome.storage.local.set({ userId: userId }, () => {
+      otherInfoDiv.textContent = 'User ID saved.'
+    })
+    userIdInput.style.display = 'none'
+    userIdDisplay.textContent = `User ID: ${userId}`
+    userIdDisplay.style.display = 'inline'
+    confirmUserIdBtn.style.display = 'none'
+    editUserIdBtn.style.display = 'inline'
+    userIdInstruction.style.display = 'none'
+    if (userId.includes(data_collector_secret_id)) {
+      downloadDataBtn.style.display = 'block' // Show button
+      clearCacheBtn.style.display = 'block'
     } else {
-      userIdInput.style.display = 'block'
-      userIdDisplay.style.display = 'none'
-      confirmUserIdBtn.textContent = 'Confirm'
+      downloadDataBtn.style.display = 'none' // Hide button
+      clearCacheBtn.style.display = 'none'
     }
     updateRecordingStatus()
-    check_user_id_valid(userId)
+  })
+  editUserIdBtn.addEventListener('click', () => {
+    userIdInput.style.display = 'block'
+    userIdDisplay.style.display = 'none'
+    confirmUserIdBtn.style.display = 'inline'
+    editUserIdBtn.style.display = 'none'
+    userIdInstruction.style.display = 'block'
   })
 })

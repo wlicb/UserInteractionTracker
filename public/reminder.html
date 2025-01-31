@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Reminder</title>
+    <style>
+      /* Simple and elegant UI with a light blue theme */
+      body {
+        background-color: #eaf6ff; /* Light blue background */
+        font-family: Arial, sans-serif;
+        color: #333;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .message-container {
+        background-color: #fff;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 123, 255, 0.1);
+        text-align: center;
+      }
+      .message-container h1 {
+        color: #007bff; /* Primary blue color */
+        margin-bottom: 20px;
+      }
+      .message-container p {
+        font-size: 18px;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="message-container">
+      <h1>Congratulations!</h1>
+      <p>
+        You have completed <span id="completed"></span> rationales this week.<br />
+        Only <span id="remaining"></span> more to reach your goal.<br />
+        Thank you for your effort!
+      </p>
+    </div>
+    <script>
+      // Fetch data from the Flask API
+      fetch('/api/rationales')
+        .then((response) => response.json())
+        .then((data) => {
+          document.getElementById('completed').textContent = data.completed
+          document.getElementById('remaining').textContent = data.remaining
+        })
+        .catch((error) => console.error('Error fetching data:', error))
+    </script>
+  </body>
+</html>
