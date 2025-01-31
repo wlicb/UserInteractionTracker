@@ -1227,6 +1227,27 @@ export const recipes = [
     ]
   },
   {
+    match: '/fmc/storefront',
+    match_method: 'url',
+    match_with_ref: true,
+    selector: 'html',
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: [nav]
+      }
+    ]
+  },
+  {
     match: '/s',
     match_method: 'url',
     selector: 'html',
@@ -1635,7 +1656,8 @@ export const recipes = [
                     ]
                   },
                   {
-                    selector: 'div.s-variations-options-elevated',
+                    selector:
+                      'div.s-variations-options-elevated, div.s-variations-options-justify-content',
                     name: 'options',
                     add_text: true,
                     clickable: true,
@@ -1676,7 +1698,7 @@ export const recipes = [
                     class: 'product-delivery'
                   },
                   {
-                    selector: "div[data-cy='add-to-cart'] button",
+                    selector: "div[data-cy='add-to-cart'] button, span[id*='add-to-cart'] input",
                     add_text: true,
                     clickable: true,
                     name: 'add_to_cart'
