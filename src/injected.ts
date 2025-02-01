@@ -93,6 +93,10 @@ const work = () => {
         'element-meta-data': allAttributes['data-element-meta-data'] || '',
         'page-meta': pageMeta || '',
         url: url || '',
+        windowSize: {
+          width: window.innerWidth,
+          height: window.innerHeight
+        },
         htmlContent: document.documentElement.outerHTML,
         simplifiedHTML: simplifiedHTML
       }

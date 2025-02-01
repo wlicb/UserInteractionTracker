@@ -30,7 +30,8 @@ import {
   zip,
   base_url,
   data_collector_secret_id,
-  filter_url
+  filter_url,
+  rationale_status_url
 } from './config'
 
 const upload_url = `${base_url}/upload`
@@ -354,7 +355,8 @@ const saveInteraction = async (
   htmlSnapshotId: string,
   uuid: string,
   navigationType: string | null = null,
-  pageMeta: string | null = null
+  pageMeta: string | null = null,
+  windowSize: { width: number; height: number } | null = null
 ) => {
   const data = {
     eventType,
@@ -362,7 +364,8 @@ const saveInteraction = async (
     target_url,
     htmlSnapshotId,
     uuid,
-    pageMeta
+    pageMeta,
+    windowSize
   }
 
   // Add navigationType only if it exists
@@ -377,13 +380,17 @@ const saveInteraction = async (
 }
 
 const saveScreenshot = async (windowId: number, timestamp: string, uuid: string) => {
-  const screenshotDataUrl = await chrome.tabs.captureVisibleTab(windowId, {
-    format: 'jpeg',
-    quality: 25
-  })
-
-  await saveScreenshot_idb(screenshotDataUrl, timestamp, uuid)
+  try {
+    const screenshotDataUrl = await chrome.tabs.captureVisibleTab(windowId, {
+      format: 'jpeg',
+      quality: 25
+    })
+    await saveScreenshot_idb(screenshotDataUrl, timestamp, uuid)
+  } catch (error) {
+    console.error('Error in saveScreenshot:', error)
+  }
 }
+
 const sendPopup = async (
   tabId: number,
   timestamp: string,
@@ -459,12 +466,12 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       const timestamp = new Date().toISOString()
       const uuid = uuidv4()
       const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}_${uuid}`
-
+      await new Promise((resolve) => setTimeout(resolve, 100))
       chrome.tabs.sendMessage(tabId, { action: 'getHTML' }, async (response) => {
         const htmlContent = response?.html
         const simplifiedHTML = response?.simplifiedHTML
         const pageMeta = response?.pageMeta
-
+        const windowSize = response?.windowSize
         await Promise.all([
           saveHTML(htmlContent, simplifiedHTML, currentSnapshotId, timestamp, uuid),
           saveInteraction(
@@ -474,11 +481,12 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
             currentSnapshotId,
             uuid,
             null,
-            pageMeta
+            pageMeta,
+            windowSize
           ),
-          saveScreenshot(tab.windowId, timestamp, uuid),
-          sendPopup(tabId, timestamp, 'tabActivate', {}, uuid)
+          saveScreenshot(tab.windowId, timestamp, uuid)
         ])
+        await new Promise((resolve) => sendPopup(tabId, timestamp, 'tabActivate', {}, uuid))
       })
     }
   } catch (error) {
@@ -499,6 +507,7 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async (details) => {
       const htmlContent = response?.html
       const simplifiedHTML = response?.simplifiedHTML
       const pageMeta = response?.pageMeta
+      const windowSize = response?.windowSize
       const currentSnapshotId = `html_${hashCode(details.url)}_${timestamp}_${uuid}`
       await Promise.all([
         saveHTML(htmlContent, simplifiedHTML, currentSnapshotId, timestamp, uuid),
@@ -509,7 +518,8 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async (details) => {
           currentSnapshotId,
           uuid,
           navigationType,
-          pageMeta
+          pageMeta,
+          windowSize
         ),
         saveScreenshot((await chrome.tabs.get(details.tabId)).windowId, timestamp, uuid)
       ])
@@ -989,5 +999,35 @@ chrome.storage.local.onChanged.addListener((changes) => {
       const url = tabs[0]?.url
       update_icon(url)
     })
+  }
+})
+
+let hasAmazonPage = false
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  console.log('onUpdated')
+  if (changeInfo.status === 'complete') {
+    if (!(await shouldExclude(tab.url)) && !hasAmazonPage) {
+      hasAmazonPage = false
+      console.log('send reminder')
+      //   chrome.notifications.create({
+      //     type: 'basic',
+      //     iconUrl: '../icon.png', // Path to your notification icon
+      //     title: 'Notice',
+      //     message: 'You are on an Amazon page',
+      //     priority: 2
+      //   })
+      //
+      const userIdResult = await chrome.storage.local.get({ userId: '' })
+      const currentUserId = userIdResult.userId
+      const response = await fetch(`${rationale_status_url}?user_id=${currentUserId}`, {
+        method: 'GET'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        console.log(data)
+        chrome.tabs.sendMessage(tabId, { action: 'showReminder', data: data })
+      }
+      console.log('send finished')
+    }
   }
 })

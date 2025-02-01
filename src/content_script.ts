@@ -398,7 +398,16 @@ const work = () => {
         MarkViewableElements()
         const htmlContent = document.documentElement.outerHTML
         const pageMeta = findPageMeta()
-        sendResponse({ html: htmlContent, pageMeta: pageMeta, simplifiedHTML: simplifiedHTML })
+        const windowSize = {
+          width: window.innerWidth,
+          height: window.innerHeight
+        }
+        sendResponse({
+          html: htmlContent,
+          pageMeta: pageMeta,
+          simplifiedHTML: simplifiedHTML,
+          windowSize: windowSize
+        })
       }
       if (message.action === 'show_popup') {
         console.log('show_popup', message)
@@ -410,9 +419,16 @@ const work = () => {
         createModal(message.question, message.placeholder, sendResponse)
         return true // Will respond asynchronously
       }
+      if (message.action === 'showReminder') {
+        console.log('showReminder')
+        const data = message.data
+        console.log('data', data)
+        alert(
+          `Thank you for participating! You have contributed ${data.on_date} rationales this week, and ${data.all_time} rationales in total. `
+        )
+      }
     }
   )
-
   function createModal(
     question: string,
     placeholder: string,

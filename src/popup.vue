@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { data_collector_secret_id, interaction_status_url } from './config'
 import { shouldExclude } from './utils/util'
-
+import { NButton, NInput, NDivider } from 'naive-ui'
 // State management with refs
 const count = ref(0)
 const userId = ref('')
@@ -24,9 +24,8 @@ const displayInteractionStats = async (userId: string) => {
       method: 'GET'
     })
 
-    const data = await response.json()
-
     if (response.ok) {
+      const data = await response.json()
       stats.value = {
         total: data.all_time,
         today: data.on_date
@@ -110,9 +109,9 @@ onMounted(async () => {
 
 <template>
   <div class="popup-container">
-    <h1>Hello World</h1>
+    <!-- <h1>Hello World</h1>
     {{ count }}
-    <button @click="handleClick">Click me</button>
+    <NButton @click="handleClick">Click me</NButton> -->
 
     <h3>Data Collector</h3>
     <div class="input-container">
@@ -128,18 +127,18 @@ onMounted(async () => {
 
       <div v-else class="user-id-container">
         <span class="user-id-display">User ID: {{ userId }}</span>
-        <button @click="handleEditUserId" class="edit-button">Edit</button>
+        <NButton @click="handleEditUserId" class="edit-button">Edit</NButton>
       </div>
 
-      <button v-if="showUserIdInput" @click="handleConfirmUserId" class="confirm-button">
+      <NButton v-if="showUserIdInput" @click="handleConfirmUserId" class="confirm-button">
         Confirm
-      </button>
+      </NButton>
     </div>
     <div v-if="showDownloadButtons" class="button-container">
-      <button @click="handleDownloadData" class="action-button">Download</button>
-      <button @click="handleClearCache" class="action-button">Clear Data</button>
+      <NButton @click="handleDownloadData" class="action-button">Download</NButton>
+      <NButton @click="handleClearCache" class="action-button">Clear Data</NButton>
     </div>
-    <hr class="divider" />
+    <NDivider class="divider" />
     <div class="info-text">{{ otherInfo }}</div>
     <div class="output-container">
       <div class="output-item">
@@ -154,7 +153,7 @@ onMounted(async () => {
 
 <style lang="scss">
 body {
-  width: 240px;
+  width: 300px;
   font-family: Arial, sans-serif;
   background-color: #ffffff;
   padding: 5px;
@@ -187,7 +186,7 @@ body {
 }
 
 .user-id-label {
-  font-size: 12px;
+  font-size: 14px;
   color: #333;
   margin-bottom: 3px;
 }
@@ -219,6 +218,7 @@ body {
 .button-container {
   display: flex;
   justify-content: space-between;
+  gap: 10px;
   width: 100%;
 }
 
@@ -230,13 +230,9 @@ body {
   cursor: pointer;
   border: none;
   border-radius: 8px;
-  background-color: #007bff;
+  background-color: #76b1ef;
   color: white;
   transition: background-color 0.3s;
-
-  &:hover {
-    background-color: #0056b3;
-  }
 }
 
 .edit-button {
@@ -246,7 +242,6 @@ body {
   border: none;
   background-color: transparent;
   color: #97d3e7;
-  padding: 0;
 
   &:hover {
     color: #78c2f4;
@@ -254,13 +249,12 @@ body {
 }
 
 .action-button {
-  padding: 8px 16px;
+  padding: 12px 40px;
   font-size: 12px;
   cursor: pointer;
   border: none;
-  border-radius: 8px;
-  background-color: #007bff;
-  color: white;
+  background-color: transparent;
+  color: #97d3e7;
   transition: background-color 0.3s;
 
   &:hover {
@@ -269,20 +263,19 @@ body {
 }
 
 .divider {
-  border-color: #0daedb;
+  border-color: #78c2f4;
   width: 100%;
   margin-top: 15px;
 }
 
 .info-text {
-  margin-top: 10px;
   max-height: 100px;
   overflow-y: auto;
   font-size: 12px;
-  background-color: transparent;
+  background-color: #eef8fb;
   margin: 5px 0;
-  padding: 8px;
-  border-radius: 8px;
+  padding: 0 2px;
+  border-radius: 1px;
   width: 100%;
 
   &:empty {
@@ -295,7 +288,7 @@ body {
   overflow-y: auto;
   font-size: 12px;
   background-color: transparent;
-  margin-top: 5px;
+  // margin-top: 5px;
   border-radius: 3px;
   width: 100%;
   display: flex;
@@ -309,7 +302,7 @@ body {
 }
 
 .output-item {
-  margin: 5px 0;
+  margin: 0 0;
 }
 
 h3 {
