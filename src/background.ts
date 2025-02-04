@@ -1007,7 +1007,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   console.log('onUpdated')
   if (changeInfo.status === 'complete') {
     if (!(await shouldExclude(tab.url)) && !hasAmazonPage) {
-      hasAmazonPage = false
+      hasAmazonPage = true
       console.log('send reminder')
       //   chrome.notifications.create({
       //     type: 'basic',
