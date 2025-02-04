@@ -56,6 +56,89 @@ export const nav = {
   ]
 }
 
+export const cart_side_bar = {
+  selector: '#nav-flyout-ewc',
+  name: 'cart_side_bar',
+  children: [
+    {
+      selector: 'div.ewc-cart-header',
+      add_text: true
+    },
+    {
+      selector: 'div.ewc-compact-actions a',
+      add_text: true,
+      clickable: true,
+      name: 'go_to_cart'
+    },
+    {
+      selector: '#ewc-compact-body ul',
+      name: 'product_list',
+      children: [
+        {
+          selector: "li div[id^='sc-item']",
+          name: 'from_text',
+          text_js: (em) => {
+            const titleEm = em.querySelector(
+              'div.ewc-item-image a.sc-product-link img:not(.ewc-sfl-image-small)'
+            )
+            return titleEm?.alt || ''
+          },
+          children: [
+            {
+              selector: 'div.ewc-item-image a.sc-product-link img:not(.ewc-sfl-image-small)',
+              name: 'product_image',
+              clickable: true,
+              add_text: true,
+              text_format: 'Product Image'
+            },
+            {
+              selector: 'span.ewc-unit-price',
+              add_text: true
+            },
+            {
+              selector: 'select',
+              name: 'drop_down_list'
+            },
+            {
+              selector:
+                'div[data-action="a-dropdown-button"], span[data-action="a-dropdown-button"]',
+              name: 'drop_down_list',
+              clickable: true,
+              add_text: true
+            },
+            {
+              selector: 'div.ewc-delete-icon-container button',
+              name: 'delete',
+              add_text: true,
+              text_format: 'delete',
+              clickable: true
+            }
+          ],
+          generate_metadata: (em) => {
+            const asin = em.getAttribute('data-asin')
+            const priceEm = em.querySelector('span.ewc-unit-price')
+            const price = priceEm?.innerText?.replace(/[\n]/g, '')
+            const titleEm = em.querySelector(
+              'div.ewc-item-image a.sc-product-link img:not(.ewc-sfl-image-small)'
+            )
+            const title = titleEm?.alt
+            const urlEm = titleEm?.parentElement
+            const url = urlEm?.getAttribute('href')
+            const quantityEm = em.querySelector(
+              'div[data-action="a-dropdown-button"], span[data-action="a-dropdown-button"]'
+            )
+            const quantity = quantityEm?.innerText
+            return {
+              name: 'cart_items',
+              data: { title, asin, price, url, quantity }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+
 export const refinement_option = [
   {
     selector: 'span.a-size-base.a-color-base.puis-bold-weight-text',
@@ -256,7 +339,10 @@ export const quantity_selector = {
     },
     {
       selector: 'span.a-dropdown-prompt',
-      add_text: true
+      add_text: true,
+      generate_metadata: (em) => {
+        return em.innerText
+      }
     },
     {
       selector: 'select',
@@ -453,6 +539,10 @@ export const cart = [
             add_text: true
           },
           {
+            selector: 'li.sc-product-variation',
+            add_text: true
+          },
+          {
             selector: 'div.sc-item-content-group span.sc-quantity-stepper',
             children: [
               {
@@ -522,10 +612,20 @@ export const cart = [
           const quantity = quantityEm?.innerText
           const selectedEm = em.querySelector('div.sc-item-check-checkbox-selector input')
           const selected = selectedEm?.getAttribute('checked') !== null
+          const optionsEm = em.querySelectorAll('li.sc-product-variation > span')
+          const options = []
+          for (const optionEm of optionsEm) {
+            const optionKeyEm = optionEm?.querySelector('span.a-text-bold')
+            const optionValueEm = optionEm?.querySelector('span:not(.a-text-bold)')
+            const optionKey = optionKeyEm?.innerText
+            const optionValue = optionValueEm?.innerText
+            const option = { [optionKey]: optionValue }
+            options.push(option)
+          }
 
           return {
             name: 'active_items',
-            data: { title, asin, price, url, delivery, quantity, selected }
+            data: { title, asin, price, url, delivery, quantity, selected, options }
           }
         }
       }
@@ -686,6 +786,7 @@ export const fresh_cart = [
 
 export const buy_again = [
   nav,
+  cart_side_bar,
   {
     selector: 'div.a-section:has(div.filter-container)',
     name: 'filters',
@@ -1222,7 +1323,7 @@ export const recipes = [
       },
       {
         selector: 'body',
-        children: [nav]
+        children: [nav, cart_side_bar]
       }
     ]
   },
@@ -1243,7 +1344,7 @@ export const recipes = [
       },
       {
         selector: 'body',
-        children: [nav]
+        children: [nav, cart_side_bar]
       }
     ]
   },
@@ -1265,6 +1366,7 @@ export const recipes = [
         selector: 'body',
         children: [
           nav,
+          cart_side_bar,
           {
             selector: '#s-refinements',
             name: 'refinements',
@@ -1876,7 +1978,39 @@ export const recipes = [
                   }
                 ]
               }
-            ]
+            ],
+            generate_metadata: (em) => {
+              const asin = em.querySelector('div[data-asin]')?.getAttribute('data-asin')
+              const priceEm = em.querySelector(
+                'div.a-popover-inner div.puis-atc-size-variation div.a-row:nth-of-type(2) div.puis-size-variation-price a.a-text-normal span[aria-hidden="true"]'
+              )
+              const price = priceEm?.innerText?.replace(/[\n]/g, '')
+              const titleEm = em.querySelector(
+                'div.a-popover-inner div.puis-atc-size-variation div.a-row:nth-of-type(1) div.puis-size-variation-title a'
+              )
+              const title = titleEm?.innerText
+              const urlEm = titleEm
+              const url = urlEm?.getAttribute('href')
+              const quantityEm = em.querySelector('div[data-action="a-dropdown-button"]')
+              const optionsEm = em.querySelectorAll(
+                'div.a-popover-inner div.puis-atc-size-variation div.a-row:nth-of-type(1) div.puis-size-variation-product-spec, div.a-popover-inner div.puis-atc-size-variation div.a-row:nth-of-type(2) div.puis-size-variation-product-options'
+              )
+              const options = []
+              for (const optionEm of optionsEm) {
+                const optionKeyEm = optionEm?.querySelector('span.a-size-base.a-color-secondary')
+                const optionValueEm = optionEm?.querySelector(
+                  'span.a-size-base.a-color-base, span.a-dropdown-prompt'
+                )
+                const optionKey = optionKeyEm?.innerText
+                const optionValue = optionValueEm?.innerText
+                const option = { [optionKey]: optionValue }
+                options.push(option)
+              }
+              return {
+                name: 'popover_item',
+                data: { title, asin, price, url, options }
+              }
+            }
           }
         ]
       }
@@ -1900,6 +2034,7 @@ export const recipes = [
         selector: 'body',
         children: [
           nav,
+          cart_side_bar,
           {
             selector: '#centerCol',
             class: 'product-card',
@@ -2313,6 +2448,7 @@ export const recipes = [
         selector: 'body',
         children: [
           nav,
+          cart_side_bar,
           {
             selector: '#sw-atc-buy-box',
             children: [
@@ -2366,6 +2502,7 @@ export const recipes = [
         selector: 'body',
         children: [
           nav,
+          cart_side_bar,
           {
             selector: '#sw-atc-buy-box',
             children: [
