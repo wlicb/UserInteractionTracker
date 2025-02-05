@@ -1048,9 +1048,11 @@ export const buy_again = [
                   const url = urlEm?.getAttribute('href')
                   const deliveryEm = em.querySelector('#udmDeliveryMessageComponent')
                   const delivery = deliveryEm?.innerText.replace(/[\n]/g, ' ')
+                  const quantityEm = em.querySelector('div[name="ax-qs"] div[role="spinbutton"]')
+                  const quantity = quantityEm?.innerText || '1'
                   return {
                     name: 'active_items_opened_purchase',
-                    data: { title, asin, price, url, delivery }
+                    data: { title, asin, price, url, delivery, quantity }
                   }
                 }
               },
@@ -1094,7 +1096,7 @@ export const buy_again = [
                     ]
                   },
                   {
-                    selector: 'span[class*="subscriptionButton"]',
+                    selector: 'span[class*="subscriptionButton"] input',
                     add_text: true,
                     name: 'set_up_subscription',
                     clickable: true
@@ -1300,6 +1302,74 @@ export const buy_again = [
         ]
       }
     ]
+  },
+  {
+    selector: '#snsUpsellModal',
+    name: 'subscribe_and_save_popover',
+    children: [
+      {
+        selector: 'div[class*="modalHeader"]',
+        children: [
+          {
+            selector: 'span[class*="modalHeaderText"]',
+            add_text: true
+          },
+          {
+            selector: 'span[data-action="a-popover-close"]',
+            add_text: true,
+            clickable: true,
+            text_format: 'Close',
+            name: 'from_text'
+          }
+        ]
+      },
+      {
+        selector: 'div[class*="modalContent"]',
+        direct_child: true,
+        children: [
+          {
+            selector: 'div:not([class*="buttonContainer"]):not(:has(select))',
+            add_text: true
+          },
+          {
+            selector: 'select',
+            name: 'drop_down_list'
+          },
+          // {
+          //   selector: 'span.a-dropdown-prompt',
+          //   name: 'open_drop_down_list',
+          //   clickable: true,
+          //   add_text: true,
+          //   text_format: "Delivery every: {}",
+          // },
+          {
+            selector: 'div[class*="buttonContainer"]',
+            children: [
+              {
+                selector: 'div[class*="cancelButtonContainer"] input',
+                add_text: true,
+                text_format: 'Cancel',
+                clickable: true,
+                name: 'from_text'
+              },
+              {
+                selector:
+                  'div[class*="subscriptionButtonContainer"] input[name="submit.addToCart"]',
+                add_text: true,
+                text_format: 'Add Subscription to Cart',
+                clickable: true,
+                name: 'from_text'
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    generate_metadata: (em) => {
+      const asinEm = em.querySelector('div[class*="modalContent"]')
+      const asin = asinEm?.id?.split('-')[1]?.trim()
+      return { name: 'popover_item', data: { asin } }
+    }
   }
 ]
 
