@@ -925,7 +925,7 @@ export const buy_again = [
             'div[id^="closedCard"] div[id^="info"] #udmDeliveryMessageComponent'
           )
           const delivery = deliveryEm?.innerText.replace(/[\n]/g, ' ')
-          return { name: 'active_items', data: { title, asin, price, delivery } }
+          return { name: 'active_items_closed', data: { title, asin, price, delivery } }
         }
       },
       {
@@ -1034,12 +1034,8 @@ export const buy_again = [
                   }
                 ],
                 generate_metadata: (em) => {
-                  let asinEm = em.parentElement?.parentElement
-                  let asin = asinEm?.getAttribute('data-asin')
-                  if (asin === null) {
-                    let asinEm = em.parentElement
-                    let asin = asinEm?.getAttribute('data-asin')
-                  }
+                  const asinEm = em.closest('div[data-asin]')
+                  const asin = asinEm?.getAttribute('data-asin')
                   const priceEm = em.querySelector(
                     'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)'
                   )
@@ -1052,7 +1048,10 @@ export const buy_again = [
                   const url = urlEm?.getAttribute('href')
                   const deliveryEm = em.querySelector('#udmDeliveryMessageComponent')
                   const delivery = deliveryEm?.innerText.replace(/[\n]/g, ' ')
-                  return { name: 'active_items', data: { title, asin, price, url, delivery } }
+                  return {
+                    name: 'active_items_opened_purchase',
+                    data: { title, asin, price, url, delivery }
+                  }
                 }
               },
               {
@@ -1102,12 +1101,8 @@ export const buy_again = [
                   }
                 ],
                 generate_metadata: (em) => {
-                  let asinEm = em.parentElement?.parentElement
-                  let asin = asinEm?.getAttribute('data-asin')
-                  if (asin === null) {
-                    asinEm = em.querySelector('input[data-mix-operations="snsModalHandler"]')
-                    asin = asinEm?.getAttribute('data-asin')
-                  }
+                  const asinEm = em.closest('div[data-asin]')
+                  const asin = asinEm?.getAttribute('data-asin')
                   const priceEm = em.querySelector(
                     'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)'
                   )
@@ -1120,7 +1115,10 @@ export const buy_again = [
                   const url = urlEm?.getAttribute('href')
                   const deliveryEm = em.querySelector('#udmDeliveryMessageComponent')
                   const delivery = deliveryEm?.innerText.replace(/[\n]/g, ' ')
-                  return { name: 'active_items', data: { title, asin, price, url, delivery } }
+                  return {
+                    name: 'active_items_opened_sns',
+                    data: { title, asin, price, url, delivery }
+                  }
                 }
               }
             ]
