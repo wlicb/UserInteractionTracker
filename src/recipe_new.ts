@@ -341,7 +341,7 @@ export const quantity_selector = {
       selector: 'span.a-dropdown-prompt',
       add_text: true,
       generate_metadata: (em) => {
-        return em.innerText
+        return { name: 'product_quantity', data: { quantity: em.innerText } }
       }
     },
     {
@@ -617,7 +617,7 @@ export const cart = [
           for (const optionEm of optionsEm) {
             const optionKeyEm = optionEm?.querySelector('span.a-text-bold')
             const optionValueEm = optionEm?.querySelector('span:not(.a-text-bold)')
-            const optionKey = optionKeyEm?.innerText
+            const optionKey = optionKeyEm?.innerText.replace(/[:\n]/g, '').trim()
             const optionValue = optionValueEm?.innerText
             const option = { [optionKey]: optionValue }
             options.push(option)
@@ -2001,7 +2001,7 @@ export const recipes = [
                 const optionValueEm = optionEm?.querySelector(
                   'span.a-size-base.a-color-base, span.a-dropdown-prompt'
                 )
-                const optionKey = optionKeyEm?.innerText
+                const optionKey = optionKeyEm?.innerText.replace(/[:\n]/g, '').trim()
                 const optionValue = optionValueEm?.innerText
                 const option = { [optionKey]: optionValue }
                 options.push(option)
@@ -2118,7 +2118,7 @@ export const recipes = [
                         }
                         // console.log(value);
                       }
-                      return { name: 'product_options', data: { label, value: value.trim() } }
+                      return { name: 'product_options', data: { [label]: value.trim() } }
                     },
                     children: [
                       {
@@ -2208,7 +2208,7 @@ export const recipes = [
                         }
                         // console.log(value);
                       }
-                      return { name: 'product_options', data: { label, value: value.trim() } }
+                      return { name: 'product_options', data: { [label]: value.trim() } }
                     },
                     children: [
                       {
@@ -2284,7 +2284,7 @@ export const recipes = [
                       const value = em.querySelector(
                         'span.inline-twister-dim-title-value-truncate'
                       )?.innerHTML
-                      return { name: 'product_options', data: { label, value: value.trim() } }
+                      return { name: 'product_options', data: { [label]: value.trim() } }
                     }
                   }
                 ]
