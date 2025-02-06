@@ -142,9 +142,9 @@ const work = () => {
       const currentSnapshotId = generateHtmlSnapshotId(timestamp, uuid)
 
       const simplifiedHTML = processRecipe()
-      console.log('start time:', new Date().toISOString())
+      // console.log('start time:', new Date().toISOString())
       MarkViewableElements()
-      console.log('end time:', new Date().toISOString())
+      // console.log('end time:', new Date().toISOString())
       const pageMeta = findPageMeta()
 
       let data = {
@@ -398,7 +398,16 @@ const work = () => {
         MarkViewableElements()
         const htmlContent = document.documentElement.outerHTML
         const pageMeta = findPageMeta()
-        sendResponse({ html: htmlContent, pageMeta: pageMeta, simplifiedHTML: simplifiedHTML })
+        const windowSize = {
+          width: window.innerWidth,
+          height: window.innerHeight
+        }
+        sendResponse({
+          html: htmlContent,
+          pageMeta: pageMeta,
+          simplifiedHTML: simplifiedHTML,
+          windowSize: windowSize
+        })
       }
       if (message.action === 'show_popup') {
         console.log('show_popup', message)
@@ -410,9 +419,16 @@ const work = () => {
         createModal(message.question, message.placeholder, sendResponse)
         return true // Will respond asynchronously
       }
+      if (message.action === 'showReminder') {
+        console.log('showReminder')
+        const data = message.data
+        // console.log('data', data)
+        alert(
+          `Thank you for participating!\nYou have contributed ${data.on_date} rationales this week\nYou have contributed ${data.all_time} rationales in total. `
+        )
+      }
     }
   )
-
   function createModal(
     question: string,
     placeholder: string,
@@ -437,6 +453,17 @@ const work = () => {
                 border-radius: 8px;
                 width: 400px;
             ">
+                <style>
+                    .highlight-question {
+                        padding: 0px 6px;
+                        border-radius: 3px;
+                        display: inline-block;
+                        color: rgb(24, 160, 88);
+                        border: 1px solid rgba(24, 160, 88, 0.3);
+                        background: rgba(24, 160, 88, 0.1);
+                        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    }
+                </style>
                 <h3>${question}</h3>
                 <textarea id="reason-input" placeholder="${placeholder}" style="
                     width: 100%;
@@ -489,12 +516,12 @@ const work = () => {
       }
 
       modalContainer.remove()
-      sendResponse({ input: value })
+      sendResponse({ input: value, success: true })
     })
     document.getElementById('reason-skip').addEventListener('click', () => {
       const input = document.getElementById('reason-input') as HTMLTextAreaElement
       modalContainer.remove()
-      sendResponse({ input: null })
+      sendResponse({ input: null, success: false })
     })
   }
 }

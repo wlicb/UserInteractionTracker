@@ -10,6 +10,7 @@ export const base_url = 'http://userdatacollect.hailab.io'
 export const data_collector_secret_id = 'hailab'
 export const url_includes = ['www.amazon.com']
 export const interaction_status_url = `${base_url}/interactions_record_status`
+export const rationale_status_url = `${base_url}/rationale_status`
 export const check_user_id_url = `${base_url}/check_user_id`
 export const filter_url = [
   'https://www.amazon.com/checkout/',
@@ -22,6 +23,7 @@ export const filter_url = [
   'https://www.amazon.com/ax/account/',
   'https://www.amazon.com/gp/product/handle-buy-box/',
   'https://www.amazon.com/gp/checkoutportal/',
-  'https://www.amazon.com/gp/cart/desktop/'
+  'https://www.amazon.com/gp/cart/desktop/',
+  'https://www.amazon.com/gp/primecentral/editPaymentPreference'
 ]
 export const scroll_threshold = 300

@@ -10,11 +10,13 @@ import json
 from pymongo import MongoClient
 import boto3
 from botocore.exceptions import NoCredentialsError
+from pymongo.errors import DuplicateKeyError
 
 import config
 
 client = MongoClient(config.MONGO_URI)
 db = client[config.DATABASE_NAME]
+rationale_collection = db[config.RATIONALE_COLLECTION_NAME]
 interaction_collection = db[config.INTERACTION_COLLECTION_NAME]
 user_collection = db[config.USER_COLLECTION_NAME]
 UPLOAD_FOLDER = config.UPLOAD_FOLDER
@@ -27,6 +29,11 @@ s3_client = boto3.client(
     "s3", aws_access_key_id=AWS_ACCESS_KEY, aws_secret_access_key=AWS_SECRET_KEY
 )
 
+# Ensure unique index on 'uuid' field for interaction_collection
+interaction_collection.create_index("uuid", unique=True)
+
+# Ensure unique index on 'uuid' field for rationale_collection
+rationale_collection.create_index("uuid", unique=True)
 
 # db_schema
 #       interactions:
@@ -150,8 +157,20 @@ def interactions():
             {**interaction, "user_name": user_name}
             for interaction in interactions["interactions"]
         ]
-
-        interaction_collection.insert_many(updated_interactions)
+        updated_rationale = [
+            {**rationale, "user_name": user_name}
+            for rationale in interactions["reasons"]
+        ]
+        if updated_interactions:
+            try:
+                interaction_collection.insert_many(updated_interactions, ordered=False)
+            except DuplicateKeyError as e:
+                app.logger.info("Duplicate uuids found in interactions, skipping duplicates.")
+        if updated_rationale:
+            try:
+                rationale_collection.insert_many(updated_rationale, ordered=False)
+            except DuplicateKeyError as e:
+                app.logger.info("Duplicate uuids found in rationales, skipping duplicates.")
 
         return jsonify({"message": f"Interactions added successfully"}), 200
 
@@ -272,6 +291,48 @@ def interactions_record_status():
 
     return jsonify(interactions)
 
+
+def get_rationale_by_date(user_name, date=None):
+    # If no date is specified, use today's date
+    if date is None:
+        date = datetime.now()
+    start_of_week = (date - timedelta(days=date.weekday())).strftime("%Y-%m-%dT00:00:00.000Z")
+    end_of_week = (date + timedelta(days=(6 - date.weekday()))).strftime("%Y-%m-%dT23:59:59.999Z")
+
+    n_documents_date = rationale_collection.count_documents(
+        {"user_name": user_name, "timestamp": {"$gte": start_of_week, "$lt": end_of_week}}
+    )
+    n_documents = rationale_collection.count_documents(
+        {
+            "user_name": user_name,
+        }
+    )
+    return {"on_date": n_documents_date, "all_time": n_documents}
+
+@app.route("/rationale_status", methods=["GET"])
+def rationale_status():
+    user_name = request.args.get("user_id")
+    date_str = request.args.get("date")  # in 'YYYY-MM-DD' format
+    return_data = request.args.get("return")
+
+    result, status = check_user(user_name, user_collection=user_collection)
+
+    if status != 200:
+        return result, status
+    else:
+        user_name = result
+
+    if date_str:
+        try:
+            date = datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            return jsonify({"error": "Invalid date format, should be YYYY-MM-DD"}), 400
+    else:
+        date = None
+
+    interactions = get_rationale_by_date(user_name, date)
+
+    return jsonify(interactions)
 
 @app.route("/check_user_id", methods=["GET"])
 def check_user_id():

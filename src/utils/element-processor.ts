@@ -196,7 +196,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
       let childElements
       if (childRecipe.use_root) {
         childElements = document.querySelectorAll(selector)
-        console.log('use root for ', childElements)
+        // console.log('use root for ', childElements)
       } else childElements = element.querySelectorAll(selector)
       childElements.forEach((childElement: any, index: number) => {
         const childNode = processElement(childElement, childRecipe, parentName, index)
