@@ -135,7 +135,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
 
     const options = document.querySelectorAll('a[id^="' + selectId + '"]')
     options.forEach(async (option) => {
-      const optionValue = option.textContent.trim()
+      const optionValue = option.textContent.trim() || option.querySelector('input').value
       const optionName = elementName + '.' + optionValue
       const newOption = document.createElement('a')
       newOption.textContent = option.textContent
