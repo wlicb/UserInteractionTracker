@@ -91,7 +91,7 @@ const work = () => {
         'data-semantic-id': allAttributes['data-clickable-id'] || '',
         'element-meta-name': allAttributes['data-element-meta-name'] || '',
         'element-meta-data': allAttributes['data-element-meta-data'] || '',
-        'page-meta': pageMeta || '',
+        pageMeta: pageMeta || '',
         url: url || '',
         windowSize: {
           width: window.innerWidth,
