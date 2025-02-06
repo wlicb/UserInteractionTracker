@@ -723,7 +723,30 @@ export const fresh_carousel_card = {
   }
 }
 
-export const fresh_substitution_card = {}
+export const fresh_substitution_card = {
+  selector: 'div.subs-cart-item',
+  name: 'from_text',
+  text_selector: 'div.a-spacing-top-base span.a-size-base',
+  children: [
+    {
+      selector: 'div.a-spacing-top-base span.a-size-base',
+      add_text: true
+    },
+    {
+      selector: 'div.a-spacing-top-mini span.a-color-price',
+      add_text: true
+    }
+  ],
+  generate_metadata: (em) => {
+    const asinEm = em.querySelector('div[data-cart-item-asin]')
+    const asin = asinEm?.getAttribute('data-cart-item-asin')
+    const titleEm = em.querySelector('div.a-spacing-top-base span.a-size-base')
+    const title = titleEm?.innerText
+    const priceEm = em.querySelector('div.a-spacing-top-mini span.a-color-price')
+    const price = priceEm?.innerText
+    return { name: 'active_items', data: { asin, title, price } }
+  }
+}
 
 export const fresh_cart = [
   nav,
