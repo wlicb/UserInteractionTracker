@@ -476,7 +476,7 @@ export const cart = [
   nav,
   {
     selector: '#sc-collapsed-carts-container',
-    name: 'amazon_fresh_cart',
+    name: 'cart',
     children: [
       {
         selector: 'div.sc-localmarket-text-logo',
@@ -639,6 +639,92 @@ export const cart = [
   }
 ]
 
+export const fresh_carousel_card = {
+  selector: 'li.a-carousel-card, div[id^="gridElement"]',
+  name: 'from_text',
+  text_selector: 'span.a-truncate-full',
+  children: [
+    {
+      selector: 'a:has(div.a-image-container)',
+      name: 'product_image',
+      add_text: true,
+      text_format: 'Product Image',
+      clickable: true
+    },
+    {
+      selector: "span[id^='qs-widget-atc-button']",
+      name: 'add_to_cart',
+      add_text: true,
+      text_format: 'Add To Cart',
+      clickable: true
+    },
+    {
+      selector: 'div[id^="qs-widget-button-container-atfc"]',
+      name: 'quantity_selector',
+      children: [
+        {
+          selector: "input[aria-label^='Remove']",
+          add_text: true,
+          text_format: 'Decrease quantity by 1',
+          name: 'from_text',
+          clickable: true
+        },
+        {
+          selector: "button[id^='qs-widget-button-atfc']",
+          add_text: true
+        },
+        {
+          selector: "input[aria-label^='Add']",
+          add_text: true,
+          text_format: 'Increase quantity by 1',
+          name: 'from_text',
+          clickable: true
+        }
+      ]
+    },
+    {
+      selector: 'a > span > span > span.a-truncate-full',
+      add_text: true,
+      name: 'product_detail',
+      clickable: true
+    },
+    {
+      selector: 'div > span > span > span.a-truncate-full',
+      add_text: true
+    },
+    {
+      selector: 'div[class*="priceToPay"] span.a-offscreen',
+      add_text: true
+    },
+    {
+      selector: 'li.a-carousel-card a.a-size-mini',
+      name: 'from_text',
+      clickable: true,
+      add_text: true
+    }
+  ],
+  generate_metadata: (em) => {
+    const asinEm = em.querySelector('div[data-csa-c-item-id^="amzn1.asin"]')
+    const asin = asinEm?.getAttribute('data-csa-c-item-id')?.split(':')[0].split('.').pop()
+    const priceEm = em.querySelector('div[class*="priceToPay"] span.a-offscreen')
+    const price = priceEm?.innerText?.replace(/[\n]/g, '')
+    const titleEm = em.querySelector('span.a-truncate-full')
+    const title = titleEm?.innerText
+    const urlEm = em.querySelector('a:has(span.a-truncate-full)')
+    const url = urlEm?.getAttribute('href')
+    const quantityEm = em.querySelector(
+      'div[id^="qs-widget-button-container-atfc"] button[id^="qs-widget-button-atfc"]'
+    )
+    const quantity = quantityEm?.innerText
+    return {
+      name: 'promotion_items',
+      data: { title, asin, price, url, quantity }
+    }
+  }
+}
+
+export const fresh_substitution_card = {}
+
 export const fresh_cart = [
   nav,
   {
@@ -764,6 +850,7 @@ export const fresh_cart = [
       }
     ]
   },
+  fresh_carousel_card,
   {
     selector: 'div.sc-buy-box-inner-box input[name^="proceedToALMCheckout"]',
     clickable: true,
@@ -2665,6 +2752,63 @@ export const recipes = [
       {
         selector: 'body',
         children: fresh_cart
+      }
+    ]
+  },
+  {
+    match: '/alm/byg',
+    match_method: 'url',
+    selector: 'html',
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: [
+          {
+            selector: 'a[name="proceedToCheckout"]',
+            name: 'check_out',
+            add_text: true,
+            clickable: true
+          },
+          fresh_carousel_card
+        ]
+      }
+    ]
+  },
+  {
+    match: '/alm/substitution',
+    match_method: 'url',
+    selector: 'html',
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: [
+          {
+            selector: '#subsContinueButton input',
+            name: 'check_out',
+            add_text: true,
+            clickable: true,
+            text_format: 'Continue'
+          },
+          fresh_substitution_card
+        ]
       }
     ]
   },
