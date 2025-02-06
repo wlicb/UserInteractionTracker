@@ -10,6 +10,7 @@ import json
 from pymongo import MongoClient
 import boto3
 from botocore.exceptions import NoCredentialsError
+from pymongo.errors import DuplicateKeyError
 
 import config
 
@@ -28,6 +29,11 @@ s3_client = boto3.client(
     "s3", aws_access_key_id=AWS_ACCESS_KEY, aws_secret_access_key=AWS_SECRET_KEY
 )
 
+# Ensure unique index on 'uuid' field for interaction_collection
+interaction_collection.create_index("uuid", unique=True)
+
+# Ensure unique index on 'uuid' field for rationale_collection
+rationale_collection.create_index("uuid", unique=True)
 
 # db_schema
 #       interactions:
@@ -156,9 +162,15 @@ def interactions():
             for rationale in interactions["reasons"]
         ]
         if updated_interactions:
-            interaction_collection.insert_many(updated_interactions)
+            try:
+                interaction_collection.insert_many(updated_interactions, ordered=False)
+            except DuplicateKeyError as e:
+                app.logger.info("Duplicate uuids found in interactions, skipping duplicates.")
         if updated_rationale:
-            rationale_collection.insert_many(updated_rationale)
+            try:
+                rationale_collection.insert_many(updated_rationale, ordered=False)
+            except DuplicateKeyError as e:
+                app.logger.info("Duplicate uuids found in rationales, skipping duplicates.")
 
         return jsonify({"message": f"Interactions added successfully"}), 200
 

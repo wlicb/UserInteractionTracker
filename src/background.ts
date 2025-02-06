@@ -433,12 +433,12 @@ const sendPopup = async (
         placeholder: placeholder
       })
       console.log('reason', reason)
-      if (reason && reason.input !== null) {
+      if (reason && reason.input !== null && reason.success !== false) {
         const newitem = {
           uuid: uuid,
           timestamp: timestamp,
           eventType: eventType,
-          reason: reason
+          reason: reason.input
         }
         await db.add('reasonsAnnotation', {
           ...newitem,

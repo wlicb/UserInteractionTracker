@@ -229,7 +229,7 @@ export function getCustomQuestion(
         data.target.innerText === 'Set Up Now'
       ) {
         question =
-          'You <span style="background-color: yellow;">clicked</span> on the set up now button. What makes you choose to subscribe to this product?'
+          'You <span class="highlight-question">clicked</span> on the set up now button. What makes you choose to subscribe to this product?'
         placeholder = 'I choose to subscribe because...'
       } else if (
         data['data-semantic-id'] === 'buybox.delivery.one_time_purchase_.purchase_form.buy_now' ||
@@ -237,7 +237,7 @@ export function getCustomQuestion(
         data.target.id === 'buy-now-button'
       ) {
         question =
-          'You <span style="background-color: yellow;">clicked</span> on the buy now button. What do you like about this particular product?'
+          'You <span class="highlight-question">clicked</span> on the buy now button. What do you like about this particular product?'
         placeholder = 'I am buying this product because...'
       } else if (
         data['data-semantic-id']?.startsWith('search_results.') ||
@@ -247,7 +247,7 @@ export function getCustomQuestion(
         data.target.className?.includes('sc-product-link')
       ) {
         question =
-          'You <span style="background-color: yellow;">clicked</span> on this product. What caught your attention compared to the other options you saw?'
+          'You <span class="highlight-question">clicked</span> on this product. What caught your attention compared to the other options you saw?'
         placeholder = 'I like this product becauseß...'
       } else if (
         data['data-semantic-id']?.endsWith('add_to_cart') ||
@@ -256,61 +256,61 @@ export function getCustomQuestion(
         data.target.innerText === 'Add to Cart'
       ) {
         question =
-          'You <span style="background-color: yellow;">clicked</span> on the add to cart button. What makes you decide to add this item to your cart?'
+          'You <span class="highlight-question">clicked</span> on the add to cart button. What makes you decide to add this item to your cart?'
         placeholder = 'I add this item to my cart because...'
       } else if (data['data-semantic-id'] === 'nav_bar.search_button') {
         question =
-          'You <span style="background-color: yellow;">clicked</span> on the search button. What are you searching for?'
+          'You <span class="highlight-question">clicked</span> on the search button. What are you searching for?'
         placeholder = 'I want to find ...'
       } else if (
         data['data-semantic-id']?.startsWith('refinements.') ||
         data['data-semantic-id']?.startsWith('filters.')
       ) {
         question =
-          'You <span style="background-color: yellow;">clicked</span> on this filter. What are you hoping to find with this filter?'
+          'You <span class="highlight-question">clicked</span> on this filter. What are you hoping to find with this filter?'
         placeholder = 'I want to find ...'
       } else if (data['data-semantic-id']?.startsWith('product_options.')) {
         question =
-          'You <span style="background-color: yellow;">clicked</span> on this product option. What do you like about this product option?'
+          'You <span class="highlight-question">clicked</span> on this product option. What do you like about this product option?'
         if (data['element-meta-name'] === 'product_options' && data['element-meta-data'] !== '') {
-          question = `You <span style="background-color: yellow;">clicked</span> on ${data['element-meta-data']['value']}. What do you like about this product option?`
+          question = `You <span class="highlight-question">clicked</span> on ${data['element-meta-data']['value']}. What do you like about this product option?`
         }
         placeholder = 'I like this product option because...ß'
       } else if (data['data-semantic-id']?.endsWith('check_out')) {
         question =
-          'You <span style="background-color: yellow;">clicked</span> checkout button. What makes you choose to checkout?'
+          'You <span class="highlight-question">clicked</span> checkout button. What makes you choose to checkout?'
         placeholder = 'I choose to checkout because...'
       } else {
         question =
-          'You <span style="background-color: yellow;">clicked</span> on this element. Could you share what you were trying to do or find?'
+          'You <span class="highlight-question">clicked</span> on this element. Could you share what you were trying to do or find?'
         placeholder = 'Enter your reason here...'
       }
       break
     case 'scroll':
       question =
-        'You <span style="background-color: yellow;">scrolled</span> on this page. What information are you looking for?'
+        'You <span class="highlight-question">scrolled</span> on this page. What information are you looking for?'
       placeholder = 'I want to find ...'
       break
     case 'input':
       question =
-        'You <span style="background-color: yellow;">typed</span> in this input field. What are you searching for?'
+        'You <span class="highlight-question">typed</span> in this input field. What are you searching for?'
       placeholder = 'I want to find ...'
       break
     case 'navigation':
       if (data.navigationType === 'back') {
         question =
-          'Why did you decide to <span style="background-color: yellow;">go back</span> to the previous page?'
+          'Why did you decide to <span class="highlight-question">go back</span> to the previous page?'
         placeholder = "I'm back because..."
       } else if (data.navigationType === 'forward') {
         question =
-          'Why did you decide to <span style="background-color: yellow;">return</span> to this page ?'
+          'Why did you decide to <span class="highlight-question">return</span> to this page ?'
         placeholder = 'I want to find ...'
       }
-      question = `What is the reason for this <span style="background-color: yellow;">${data.navigationType} navigation</span>?`
+      question = `What is the reason for this <span class="highlight-question">${data.navigationType} navigation</span>?`
       placeholder = 'Enter your reason here...'
       break
     case 'tabActivate':
-      question = `Why did you <span style="background-color: yellow;">switch to this tab</span>?`
+      question = `Why did you <span class="highlight-question">switch to this tab</span>?`
       placeholder = 'I switched to this tab because...'
       break
     default:

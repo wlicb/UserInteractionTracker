@@ -424,7 +424,7 @@ const work = () => {
         const data = message.data
         console.log('data', data)
         alert(
-          `Thank you for participating! You have contributed ${data.on_date} rationales this week, and ${data.all_time} rationales in total. `
+          `Thank you for participating!\nYou have contributed ${data.on_date} rationales this week\nand ${data.all_time} rationales in total. `
         )
       }
     }
@@ -453,6 +453,17 @@ const work = () => {
                 border-radius: 8px;
                 width: 400px;
             ">
+                <style>
+                    .highlight-question {
+                        padding: 0px 6px;
+                        border-radius: 3px;
+                        display: inline-block;
+                        color: rgb(24, 160, 88);
+                        border: 1px solid rgba(24, 160, 88, 0.3);
+                        background: rgba(24, 160, 88, 0.1);
+                        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    }
+                </style>
                 <h3>${question}</h3>
                 <textarea id="reason-input" placeholder="${placeholder}" style="
                     width: 100%;
@@ -505,12 +516,12 @@ const work = () => {
       }
 
       modalContainer.remove()
-      sendResponse({ input: value })
+      sendResponse({ input: value, success: true })
     })
     document.getElementById('reason-skip').addEventListener('click', () => {
       const input = document.getElementById('reason-input') as HTMLTextAreaElement
       modalContainer.remove()
-      sendResponse({ input: null })
+      sendResponse({ input: null, success: false })
     })
   }
 }
