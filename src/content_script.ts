@@ -142,9 +142,9 @@ const work = () => {
       const currentSnapshotId = generateHtmlSnapshotId(timestamp, uuid)
 
       const simplifiedHTML = processRecipe()
-      console.log('start time:', new Date().toISOString())
+      // console.log('start time:', new Date().toISOString())
       MarkViewableElements()
-      console.log('end time:', new Date().toISOString())
+      // console.log('end time:', new Date().toISOString())
       const pageMeta = findPageMeta()
 
       let data = {
@@ -422,9 +422,9 @@ const work = () => {
       if (message.action === 'showReminder') {
         console.log('showReminder')
         const data = message.data
-        console.log('data', data)
+        // console.log('data', data)
         alert(
-          `Thank you for participating!\nYou have contributed ${data.on_date} rationales this week\nand ${data.all_time} rationales in total. `
+          `Thank you for participating!\nYou have contributed ${data.on_date} rationales this week\nYou have contributed ${data.all_time} rationales in total. `
         )
       }
     }

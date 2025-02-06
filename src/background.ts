@@ -240,7 +240,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log('get screenshot request')
         const start_time = new Date().getTime()
         const screenshotDataUrl = await captureScreenshot()
-        console.log('capture screenshot time: ', new Date().getTime() - start_time)
+        // console.log('capture screenshot time: ', new Date().getTime() - start_time)
         if (screenshotDataUrl) {
           const success = await saveScreenshot_idb(
             screenshotDataUrl,
@@ -248,7 +248,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             message.uuid
           )
           console.log('save screenshot success', success)
-          console.log('time: ', new Date().toISOString())
+          // console.log('time: ', new Date().toISOString())
           sendResponse({
             success,
             message: success ? undefined : 'Failed to capture screenshot'
@@ -404,7 +404,7 @@ const sendPopup = async (
   ) {
     return
   }
-  console.log('data', data)
+  // console.log('data', data)
   const { question, placeholder } = getCustomQuestion(eventType, data)
   let probability = popup_probability
   switch (eventType) {
@@ -1024,7 +1024,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       })
       if (response.ok) {
         const data = await response.json()
-        console.log(data)
+        // console.log(data)
         chrome.tabs.sendMessage(tabId, { action: 'showReminder', data: data })
       }
       console.log('send finished')
