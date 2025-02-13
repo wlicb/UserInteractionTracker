@@ -19,8 +19,13 @@ export async function update_icon(url) {
   }
 }
 
-export function findPageMeta() {
-  const all_element_with_meta_data = document.querySelectorAll('[data-element-meta-name]')
+export function findPageMeta(root = null) {
+  let all_element_with_meta_data
+  if (root) {
+    all_element_with_meta_data = root.querySelectorAll('[data-element-meta-name]')
+  } else {
+    all_element_with_meta_data = document.querySelectorAll('[data-element-meta-name]')
+  }
 
   const groupedResult = {}
 
@@ -154,10 +159,15 @@ export async function check_user_id(user_id: string) {
   return 'Unknown error'
 }
 
-import { recipes } from '../recipe_new'
+import { cart, recipes } from '../recipe_new'
 import { processElement } from './element-processor'
-function selectRecipe() {
-  const parsedUrl = new URL(window.location.href)
+function selectRecipe(url) {
+  let parsedUrl
+  if (url) {
+    parsedUrl = new URL(url)
+  } else {
+    parsedUrl = new URL(window.location.href)
+  }
   let path = parsedUrl.pathname
   path = path !== '/' ? path.replace(/\/+$/, '') : path
 
@@ -197,11 +207,16 @@ function selectRecipe() {
   throw new Error(`No matching recipe found for path: ${path}`)
 }
 
-export function processRecipe() {
+export function processRecipe(root = null, url = null) {
   console.log('start process recipe')
   try {
-    const recipe = selectRecipe()
-    const rootElement = document.querySelector(recipe.selector)
+    const recipe = selectRecipe(url)
+    let rootElement
+    if (root) {
+      rootElement = root
+    } else {
+      rootElement = document.querySelector(recipe.selector)
+    }
     if (rootElement) {
       const newRoot = processElement(rootElement, recipe)
       const simplifiedHTML = newRoot.outerHTML
@@ -336,4 +351,34 @@ export function isValidReason(reason: string): boolean {
     }
   }
   return true
+}
+
+export async function fetchCartInfo() {
+  try {
+    const start = performance.now()
+
+    // get the html of cart page
+    const url = 'https://www.amazon.com/cart/'
+    const response = await fetch(url)
+    const htmlContent = await response.text()
+
+    const mid = performance.now()
+    console.log(`Execution Time of fetch: ${mid - start} ms`)
+
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(htmlContent, 'text/html')
+    const rootElement = doc.querySelector('html')
+
+    // get metadata from the html
+    const simplifiedHTML = processRecipe(rootElement, url)
+    const pageMeta = findPageMeta(rootElement)
+
+    const end = performance.now()
+    console.log(`Execution Time of processing: ${end - mid} ms`)
+
+    return pageMeta
+  } catch (error) {
+    console.error('Error fetching cart information:' + error)
+    return {}
+  }
 }

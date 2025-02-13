@@ -117,7 +117,7 @@ export const cart_side_bar = {
           generate_metadata: (em) => {
             const asin = em.getAttribute('data-asin')
             const priceEm = em.querySelector('span.ewc-unit-price')
-            const price = priceEm?.innerText?.replace(/[\n]/g, '')
+            const price = priceEm?.innerText?.replace(/[\n]/g, '').trim()
             const titleEm = em.querySelector(
               'div.ewc-item-image a.sc-product-link img:not(.ewc-sfl-image-small)'
             )
@@ -618,7 +618,7 @@ export const cart = [
             const optionKeyEm = optionEm?.querySelector('span.a-text-bold')
             const optionValueEm = optionEm?.querySelector('span:not(.a-text-bold)')
             const optionKey = optionKeyEm?.innerText.replace(/[:\n]/g, '').trim()
-            const optionValue = optionValueEm?.innerText
+            const optionValue = optionValueEm?.innerText.replace(/[:\n]/g, '').trim()
             const option = { [optionKey]: optionValue }
             options.push(option)
           }
@@ -2180,7 +2180,7 @@ export const recipes = [
                   'span.a-size-base.a-color-base, span.a-dropdown-prompt'
                 )
                 const optionKey = optionKeyEm?.innerText.replace(/[:\n]/g, '').trim()
-                const optionValue = optionValueEm?.innerText
+                const optionValue = optionValueEm?.innerText.replace(/[:\n]/g, '').trim()
                 const option = { [optionKey]: optionValue }
                 options.push(option)
               }
@@ -2648,7 +2648,8 @@ export const recipes = [
                 add_text: true,
                 text_selector: 'div.sc-without-multicart',
                 clickable: true,
-                name: 'check_out'
+                name: 'check_out',
+                fetch_cart_info: true
               },
               {
                 selector: '#sw-gtc a',
@@ -2702,7 +2703,8 @@ export const recipes = [
                 add_text: true,
                 text_selector: 'div.sc-without-multicart',
                 clickable: true,
-                name: 'check_out'
+                name: 'check_out',
+                fetch_cart_info: true
               },
               {
                 selector: '#sw-gtc a',

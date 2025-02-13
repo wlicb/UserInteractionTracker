@@ -99,6 +99,11 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     }
     window.clickable_recipes[elementName] = recipe
   }
+
+  if (recipe.fetch_cart_info) {
+    element.setAttribute('data-fetch-cart-info', 'true')
+  }
+
   if (tagName === 'input') {
     const inputType = element.getAttribute('type')
     if (['text', 'number'].includes(inputType)) {
