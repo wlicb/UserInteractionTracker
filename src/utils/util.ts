@@ -353,12 +353,12 @@ export function isValidReason(reason: string): boolean {
   return true
 }
 
-export async function fetchCartInfo() {
+export async function fetchCartInfo(path) {
   try {
     const start = performance.now()
 
     // get the html of cart page
-    const url = 'https://www.amazon.com/cart/'
+    const url = 'https://www.amazon.com' + path
     const response = await fetch(url)
     const htmlContent = await response.text()
 

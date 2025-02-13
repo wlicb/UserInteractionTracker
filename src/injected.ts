@@ -63,8 +63,8 @@ const work = () => {
             element.getAttribute('data-element-meta-data') || ''
         }
 
-        if (element.hasAttribute('data-fetch-cart-info')) {
-          allAttributes['data-fetch-cart-info'] = element.getAttribute('data-fetch-cart-info') || ''
+        if (element.hasAttribute('data-fetch-url')) {
+          allAttributes['data-fetch-url'] = element.getAttribute('data-fetch-url') || ''
         }
 
         // Continue searching up the tree, passing along collected attributes
@@ -86,7 +86,8 @@ const work = () => {
       }
 
       let cartInfo
-      if (allAttributes['data-fetch-cart-info']) cartInfo = await fetchCartInfo()
+      if (allAttributes.hasOwnProperty('data-fetch-url'))
+        cartInfo = await fetchCartInfo(allAttributes['data-fetch-url'])
 
       MarkViewableElements()
       const data = {

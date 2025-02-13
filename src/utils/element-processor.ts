@@ -100,8 +100,8 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     window.clickable_recipes[elementName] = recipe
   }
 
-  if (recipe.fetch_cart_info) {
-    element.setAttribute('data-fetch-cart-info', 'true')
+  if (recipe.fetch_url) {
+    element.setAttribute('data-fetch-url', recipe.fetch_url)
   }
 
   if (tagName === 'input') {

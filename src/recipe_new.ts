@@ -2649,7 +2649,7 @@ export const recipes = [
                 text_selector: 'div.sc-without-multicart',
                 clickable: true,
                 name: 'check_out',
-                fetch_cart_info: true
+                fetch_url: '/cart'
               },
               {
                 selector: '#sw-gtc a',
