@@ -5,8 +5,7 @@ import {
   shouldExclude,
   generateHtmlSnapshotId,
   processRecipe,
-  MarkViewableElements,
-  fetchCartInfo
+  MarkViewableElements
 } from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
 import { finder } from '@medv/finder'
@@ -85,9 +84,11 @@ const work = () => {
         outerHTML: target.outerHTML
       }
 
-      let cartInfo
-      if (allAttributes.hasOwnProperty('data-fetch-url'))
-        cartInfo = await fetchCartInfo(allAttributes['data-fetch-url'])
+      let fetchUrl
+      if (allAttributes.hasOwnProperty('data-fetch-url')) {
+        // cartInfo = await fetchCartInfo(allAttributes['data-fetch-url'])
+        fetchUrl = allAttributes['data-fetch-url']
+      }
 
       MarkViewableElements()
       const data = {
@@ -101,7 +102,7 @@ const work = () => {
         'element-meta-name': allAttributes['data-element-meta-name'] || '',
         'element-meta-data': allAttributes['data-element-meta-data'] || '',
         pageMeta: pageMeta || '',
-        cartInfo: cartInfo || '',
+        fetchUrl: fetchUrl || '',
         url: url || '',
         windowSize: {
           width: window.innerWidth,
