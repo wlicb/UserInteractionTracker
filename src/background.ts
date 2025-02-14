@@ -236,7 +236,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               const cartdata = {
                 url: fetchUrl,
                 timestamp: message.data.timestamp,
-                metadata: JSON.stringify(cartInfo, null, 2)
+                metadata: cartInfo
               }
               console.log(cartdata)
             })
