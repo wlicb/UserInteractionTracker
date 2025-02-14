@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { data_collector_secret_id, interaction_status_url } from './config'
+import { data_collector_secret_id, interaction_status_url, rationale_status_url } from './config'
 import { shouldExclude } from './utils/util'
 import { NButton, NInput, NDivider } from 'naive-ui'
 // State management with refs
@@ -11,6 +11,7 @@ const showEditButton = ref(false)
 const recordingStatus = ref('')
 const otherInfo = ref('')
 const stats = ref({ total: 0, today: 0 })
+const reasonStats = ref({ total: 0, today: 0 })
 const showDownloadButtons = ref(false)
 
 // Methods
@@ -23,10 +24,25 @@ const displayInteractionStats = async (userId: string) => {
     const response = await fetch(`${interaction_status_url}?user_id=${userId}`, {
       method: 'GET'
     })
-
+    const data = await response.json()
     if (response.ok) {
-      const data = await response.json()
       stats.value = {
+        total: data.all_time,
+        today: data.on_date
+      }
+    } else {
+      otherInfo.value = `Failed to fetch stats: ${data.error || 'Unknown error'}`
+    }
+  } catch (error) {
+    otherInfo.value = `Error: ${(error as Error).message}`
+  }
+  try {
+    const response = await fetch(`${rationale_status_url}?user_id=${userId}`, {
+      method: 'GET'
+    })
+    const data = await response.json()
+    if (response.ok) {
+      reasonStats.value = {
         total: data.all_time,
         today: data.on_date
       }
@@ -142,10 +158,18 @@ onMounted(async () => {
     <div class="info-text">{{ otherInfo }}</div>
     <div class="output-container">
       <div class="output-item">
-        Total uploads: <b>{{ stats.total }}</b>
+        Total action uploads: <b>{{ stats.total }}</b>
       </div>
       <div class="output-item">
-        Today's uploads: <b>{{ stats.today }}</b>
+        Today's action uploads: <b>{{ stats.today }}</b>
+      </div>
+    </div>
+    <div class="output-container">
+      <div class="output-item">
+        Total reason uploads: <b>{{ reasonStats.total }}</b>
+      </div>
+      <div class="output-item">
+        Today's reason uploads: <b>{{ reasonStats.today }}</b>
       </div>
     </div>
   </div>
@@ -153,7 +177,7 @@ onMounted(async () => {
 
 <style lang="scss">
 body {
-  width: 300px;
+  width: 320px;
   font-family: Arial, sans-serif;
   background-color: #ffffff;
   padding: 5px;
