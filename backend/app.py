@@ -10,11 +10,13 @@ import json
 from pymongo import MongoClient
 import boto3
 from botocore.exceptions import NoCredentialsError
+from pymongo.errors import DuplicateKeyError
 
 import config
 
 client = MongoClient(config.MONGO_URI)
 db = client[config.DATABASE_NAME]
+rationale_collection = db[config.RATIONALE_COLLECTION_NAME]
 interaction_collection = db[config.INTERACTION_COLLECTION_NAME]
 user_collection = db[config.USER_COLLECTION_NAME]
 UPLOAD_FOLDER = config.UPLOAD_FOLDER
@@ -27,6 +29,11 @@ s3_client = boto3.client(
     "s3", aws_access_key_id=AWS_ACCESS_KEY, aws_secret_access_key=AWS_SECRET_KEY
 )
 
+# Ensure unique index on 'uuid' field for interaction_collection
+interaction_collection.create_index("uuid", unique=True)
+
+# Ensure unique index on 'uuid' field for rationale_collection
+rationale_collection.create_index("uuid", unique=True)
 
 # db_schema
 #       interactions:
@@ -64,24 +71,21 @@ if not os.path.exists(UPLOAD_FOLDER):
 localhost: 5000
 
 
-def check_user(user_id, user_collection):
-    if not user_id:
-        app.logger.error(f"user_id is not available")
-        return {"error": f"user_id is not available"}, 400
+def check_user(user_name, user_collection):
+    if not user_name:
+        app.logger.error(f"user_name is not available")
+        return {"error": f"user_name is not available"}, 400
 
-    # try:
-    #     user_id = ObjectId(user_id)
-    # except:
-    #     app.logger.error(f'User ID is not a valid ObjectId: {user_id}')
-    #     return {f'error': f'User ID is not a valid id:{user_id}'}, 400
-
-    user = user_collection.find_one({"user_name": user_id})
+    # Check if the user exists
+    user = user_collection.find_one({"user_name": user_name})
 
     if not user:
-        app.logger.error(f"User not found. user_id: {user_id}")
-        return {f"error": f"User not found. user_id: {user_id}"}, 403
+        # If user does not exist, create a new one
+        new_user = {"user_name": user_name}
+        result = user_collection.insert_one(new_user)
+        app.logger.info(f"Created new user with user_id: {user_name}")
 
-    return user_id, 200
+    return user_name, 200
 
 
 @app.route("/upload", methods=["POST"])
@@ -95,13 +99,13 @@ def upload_file():
         app.logger.info("No selected file")
         return jsonify({"error": "No selected file"}), 400
 
-    user_id = request.form.get("user_id")
+    user_name = request.form.get("user_id")
 
-    result, status = check_user(user_id, user_collection=user_collection)
+    result, status = check_user(user_name, user_collection=user_collection)
     if status != 200:
         return jsonify(result), status
     else:
-        user_id = result
+        user_name = result
 
     if file:
         filepath = ""
@@ -140,21 +144,33 @@ def interactions():
         return jsonify({"error": "Interactions not found"}), 400
 
     # user_id = request.form.get('user_id')
-    user_id = request.args.get("user_id")
+    user_name = request.args.get("user_id")
 
-    result, status = check_user(user_id, user_collection=user_collection)
+    result, status = check_user(user_name, user_collection=user_collection)
     if status != 200:
         return result, status
     else:
-        user_id = result
+        user_name = result
 
     if interactions:
         updated_interactions = [
-            {**interaction, "user_id": user_id}
+            {**interaction, "user_name": user_name}
             for interaction in interactions["interactions"]
         ]
-
-        interaction_collection.insert_many(updated_interactions)
+        updated_rationale = [
+            {**rationale, "user_name": user_name}
+            for rationale in interactions["reasons"]
+        ]
+        if updated_interactions:
+            try:
+                interaction_collection.insert_many(updated_interactions, ordered=False)
+            except DuplicateKeyError as e:
+                app.logger.info("Duplicate uuids found in interactions, skipping duplicates.")
+        if updated_rationale:
+            try:
+                rationale_collection.insert_many(updated_rationale, ordered=False)
+            except DuplicateKeyError as e:
+                app.logger.info("Duplicate uuids found in rationales, skipping duplicates.")
 
         return jsonify({"message": f"Interactions added successfully"}), 200
 
@@ -163,21 +179,21 @@ def interactions():
 
 @app.route("/generate_presigned_post", methods=["GET"])
 def generate_presigned_post():
-    user_id = request.args.get("user_id")
+    user_name = request.args.get("user_id")
 
-    result, status = check_user(user_id, user_collection=user_collection)
+    result, status = check_user(user_name, user_collection=user_collection)
 
     if status != 200:
         return result, status
     else:
-        user_id = result
+        user_name = result
 
     expiration = config.EXPIRATION_TIME
     expire_timestamp = int(
         (datetime.now(timezone.utc) + timedelta(seconds=expiration // 2)).timestamp()
     )  # to make sure at least half of the time remains
 
-    prefix = f"user_interaction_data/USER/{user_id}"
+    prefix = f"user_interaction_data/USER/{user_name}"
 
     try:
         # Generate a presigned POST URL
@@ -202,7 +218,7 @@ def generate_presigned_post():
         return jsonify({"error": "Credentials not available"}), 403
 
 
-def get_interactions_by_date(user_id, date=None, return_data=None):
+def get_interactions_by_date(user_name, date=None, return_data=None):
     # If no date is specified, use today's date
     if date is None:
         date = datetime.now()
@@ -215,36 +231,36 @@ def get_interactions_by_date(user_id, date=None, return_data=None):
     if return_data:
         interactions_date = interaction_collection.find(
             {
-                "user_id": ObjectId(user_id),
+                "user_name": user_name,
                 "timestamp": {"$gte": start_of_day, "$lt": end_of_day},
             }
         )
         interactions_date = list(interactions_date)
         for interaction in interactions_date:
             interaction["_id"] = str(interaction["_id"])
-            if "user_id" in interaction:
-                interaction["user_id"] = str(interaction["user_id"])
+            if "user_name" in interaction:
+                interaction["user_name"] = str(interaction["user_name"])
 
         interactions_all_time = interaction_collection.find(
             {
-                "user_id": user_id,
+                "user_name": user_name,
             }
         )
         interactions_all_time = list(interactions_all_time)
         for interaction in interactions_all_time:
             interaction["_id"] = str(interaction["_id"])
-            if "user_id" in interaction:
-                interaction["user_id"] = str(interaction["user_id"])
+            if "user_name" in interaction:
+                interaction["user_name"] = str(interaction["user_name"])
 
         return {"on_date": interactions_date, "all_time": interactions_all_time}
 
     else:
         n_documents_date = interaction_collection.count_documents(
-            {"user_id": user_id, "timestamp": {"$gte": start_of_day, "$lt": end_of_day}}
+            {"user_name": user_name, "timestamp": {"$gte": start_of_day, "$lt": end_of_day}}
         )
         n_documents = interaction_collection.count_documents(
             {
-                "user_id": user_id,
+                "user_name": user_name,
             }
         )
         return {"on_date": n_documents_date, "all_time": n_documents}
@@ -252,16 +268,16 @@ def get_interactions_by_date(user_id, date=None, return_data=None):
 
 @app.route("/interactions_record_status", methods=["GET"])
 def interactions_record_status():
-    user_id = request.args.get("user_id")
+    user_name = request.args.get("user_id")
     date_str = request.args.get("date")  # in 'YYYY-MM-DD' format
     return_data = request.args.get("return")
 
-    result, status = check_user(user_id, user_collection=user_collection)
+    result, status = check_user(user_name, user_collection=user_collection)
 
     if status != 200:
         return result, status
     else:
-        user_id = result
+        user_name = result
 
     if date_str:
         try:
@@ -271,10 +287,52 @@ def interactions_record_status():
     else:
         date = None
 
-    interactions = get_interactions_by_date(user_id, date, return_data)
+    interactions = get_interactions_by_date(user_name, date, return_data)
 
     return jsonify(interactions)
 
+
+def get_rationale_by_date(user_name, date=None):
+    # If no date is specified, use today's date
+    if date is None:
+        date = datetime.now()
+    start_of_week = (date - timedelta(days=date.weekday())).strftime("%Y-%m-%dT00:00:00.000Z")
+    end_of_week = (date + timedelta(days=(6 - date.weekday()))).strftime("%Y-%m-%dT23:59:59.999Z")
+
+    n_documents_date = rationale_collection.count_documents(
+        {"user_name": user_name, "timestamp": {"$gte": start_of_week, "$lt": end_of_week}}
+    )
+    n_documents = rationale_collection.count_documents(
+        {
+            "user_name": user_name,
+        }
+    )
+    return {"on_date": n_documents_date, "all_time": n_documents}
+
+@app.route("/rationale_status", methods=["GET"])
+def rationale_status():
+    user_name = request.args.get("user_id")
+    date_str = request.args.get("date")  # in 'YYYY-MM-DD' format
+    return_data = request.args.get("return")
+
+    result, status = check_user(user_name, user_collection=user_collection)
+
+    if status != 200:
+        return result, status
+    else:
+        user_name = result
+
+    if date_str:
+        try:
+            date = datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            return jsonify({"error": "Invalid date format, should be YYYY-MM-DD"}), 400
+    else:
+        date = None
+
+    interactions = get_rationale_by_date(user_name, date)
+
+    return jsonify(interactions)
 
 @app.route("/check_user_id", methods=["GET"])
 def check_user_id():
@@ -284,7 +342,11 @@ def check_user_id():
     if user:
         return jsonify({"valid": True}), 200
     else:
-        return jsonify({"valid": False, "error": "User not found"}), 404
+        # If user does not exist, create a new one
+        new_user = {"user_name": user_id}
+        result = user_collection.insert_one(new_user)
+        app.logger.info(f"Created new user with user_name: {user_id}")
+        return jsonify({"valid": True}), 200
 
 
 if __name__ == "__main__":

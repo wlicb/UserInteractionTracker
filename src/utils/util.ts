@@ -1,3 +1,4 @@
+import { startsWith } from 'lodash'
 import { filter_url, url_includes, check_user_id_url } from '../config'
 
 export function isFromPopup(element: HTMLElement): boolean {
@@ -18,8 +19,13 @@ export async function update_icon(url) {
   }
 }
 
-export function findPageMeta() {
-  const all_element_with_meta_data = document.querySelectorAll('[data-element-meta-name]')
+export function findPageMeta(root = null, document = globalThis.document) {
+  let all_element_with_meta_data
+  if (root) {
+    all_element_with_meta_data = root.querySelectorAll('[data-element-meta-name]')
+  } else {
+    all_element_with_meta_data = document.querySelectorAll('[data-element-meta-name]')
+  }
 
   const groupedResult = {}
 
@@ -57,6 +63,26 @@ export function getClickableElementsInViewport() {
     }
   })
   return documentCopy
+}
+
+export function MarkViewableElements() {
+  // Create a copy of the document
+
+  // Select all elements
+  const allElements = document.querySelectorAll(
+    'a, button, [onclick], input[type="button"], input[type="submit"]'
+  )
+  // Check if each element is in the viewport and add marker
+  allElements.forEach((element) => {
+    const rect = element.getBoundingClientRect()
+    const inViewport =
+      rect.top >= 0 &&
+      rect.left >= 0 &&
+      rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+      rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+    // Add marker attribute to the element
+    element.setAttribute('visible-clickable-element-marker', inViewport ? 'true' : 'false')
+  })
 }
 
 // Add cleanup function to remove markers when needed
@@ -133,11 +159,17 @@ export async function check_user_id(user_id: string) {
   return 'Unknown error'
 }
 
-import { recipes } from '../recipe_new'
+import { cart, recipes } from '../recipe_new'
 import { processElement } from './element-processor'
-function selectRecipe() {
-  const parsedUrl = new URL(window.location.href)
-  const path = parsedUrl.pathname
+function selectRecipe(url = null, document = globalThis.document, window = globalThis.window) {
+  let parsedUrl
+  if (url) {
+    parsedUrl = new URL(url)
+  } else {
+    parsedUrl = new URL(window.location.href)
+  }
+  let path = parsedUrl.pathname
+  path = path !== '/' ? path.replace(/\/+$/, '') : path
 
   for (const recipe of recipes) {
     const matchMethod = recipe.match_method || 'text'
@@ -152,30 +184,177 @@ function selectRecipe() {
             (element.textContent?.toLowerCase().includes(recipe.match_text.toLowerCase()) ?? false))
 
         if (hasMatch) {
+          console.log('matched with recipe ', recipe.match)
           return recipe
         }
       } catch (error) {
         console.error('Error checking text match:', error)
       }
-    } else if (matchMethod === 'url' && recipe.match === path) {
-      return recipe
+    } else if (matchMethod === 'url') {
+      if (recipe.match === path) {
+        console.log('matched with recipe ', recipe.match)
+        return recipe
+      } else if (
+        recipe.match_with_ref &&
+        (path.startsWith(recipe.match + '/ref=') || path.startsWith(recipe.match + 'ref='))
+      ) {
+        console.log('matched with recipe ', recipe.match)
+        return recipe
+      }
     }
   }
 
   throw new Error(`No matching recipe found for path: ${path}`)
 }
 
-export function processRecipe() {
+export function processRecipe(
+  root = null,
+  url = null,
+  document = globalThis.document,
+  window = globalThis.window
+) {
   console.log('start process recipe')
   try {
-    const recipe = selectRecipe()
-    const rootElement = document.querySelector(recipe.selector)
+    const recipe = selectRecipe(url, document, window)
+    let rootElement
+    if (root) {
+      rootElement = root
+    } else {
+      rootElement = document.querySelector(recipe.selector)
+    }
     if (rootElement) {
-      const newRoot = processElement(rootElement, recipe)
+      // console.log(document)
+      const newRoot = processElement(rootElement, recipe, '', 0, document, window)
       const simplifiedHTML = newRoot.outerHTML
       return simplifiedHTML
     }
   } catch (error) {
     console.error('Error processing recipe:', error)
   }
+}
+
+// Replace the simple question with a more detailed one based on event type
+export function getCustomQuestion(
+  eventType: string,
+  data: any
+): { question: string; placeholder: string } {
+  let question = ''
+  let placeholder = 'Enter your reason here...'
+  switch (eventType) {
+    case 'click_a':
+    case 'click_b':
+    case 'click_c':
+      // Check if it's a specific type of click
+      if (
+        data['data-semantic-id'] === 'buybox.delivery.subscribe_save_.purchase_form.set_up_now' ||
+        data.target.innerText === 'Set Up Now'
+      ) {
+        question =
+          'You <span class="highlight-question">clicked</span> on the set up now button. What makes you choose to subscribe to this product?'
+        placeholder = 'I choose to subscribe because...'
+      } else if (
+        data['data-semantic-id'] === 'buybox.delivery.one_time_purchase_.purchase_form.buy_now' ||
+        data['data-semantic-id'] === 'buybox.delivery.purchase_form.buy' ||
+        data.target.id === 'buy-now-button'
+      ) {
+        question =
+          'You <span class="highlight-question">clicked</span> on the buy now button. What do you like about this particular product?'
+        placeholder = 'I am buying this product because...'
+      } else if (
+        data['data-semantic-id']?.startsWith('search_results.') ||
+        data['data-semantic-id']?.startsWith('product_list.') ||
+        (data['data-semantic-id']?.startsWith('active_item_list.') &&
+          data['data-semantic-id']?.endsWith('.product_detail')) ||
+        data.target.className?.includes('sc-product-link')
+      ) {
+        question =
+          'You <span class="highlight-question">clicked</span> on this product. What caught your attention compared to the other options you saw?'
+        placeholder = 'I like this product becauseß...'
+      } else if (
+        data['data-semantic-id']?.endsWith('add_to_cart') ||
+        data.target.id === 'add-to-cart-button' ||
+        data.target.name === 'submit.addToCart' ||
+        data.target.innerText === 'Add to Cart'
+      ) {
+        question =
+          'You <span class="highlight-question">clicked</span> on the add to cart button. What makes you decide to add this item to your cart?'
+        placeholder = 'I add this item to my cart because...'
+      } else if (data['data-semantic-id'] === 'nav_bar.search_button') {
+        question =
+          'You <span class="highlight-question">clicked</span> on the search button. What are you searching for?'
+        placeholder = 'I want to find ...'
+      } else if (
+        data['data-semantic-id']?.startsWith('refinements.') ||
+        data['data-semantic-id']?.startsWith('filters.')
+      ) {
+        question =
+          'You <span class="highlight-question">clicked</span> on this filter. What are you hoping to find with this filter?'
+        placeholder = 'I want to find ...'
+      } else if (data['data-semantic-id']?.startsWith('product_options.')) {
+        question =
+          'You <span class="highlight-question">clicked</span> on this product option. What do you like about this product option?'
+        if (data['element-meta-name'] === 'product_options' && data['element-meta-data'] !== '') {
+          question = `You <span class="highlight-question">clicked</span> on ${data['element-meta-data']['value']}. What do you like about this product option?`
+        }
+        placeholder = 'I like this product option because...ß'
+      } else if (data['data-semantic-id']?.endsWith('check_out')) {
+        question =
+          'You <span class="highlight-question">clicked</span> checkout button. What makes you choose to checkout?'
+        placeholder = 'I choose to checkout because...'
+      } else {
+        question =
+          'You <span class="highlight-question">clicked</span> on this element. Could you share what you were trying to do or find?'
+        placeholder = 'Enter your reason here...'
+      }
+      break
+    case 'scroll':
+      question =
+        'You <span class="highlight-question">scrolled</span> on this page. What information are you looking for?'
+      placeholder = 'I want to find ...'
+      break
+    case 'input':
+      question =
+        'You <span class="highlight-question">typed</span> in this input field. What are you searching for?'
+      placeholder = 'I want to find ...'
+      break
+    case 'navigation':
+      if (data.navigationType === 'back') {
+        question =
+          'Why did you decide to <span class="highlight-question">go back</span> to the previous page?'
+        placeholder = "I'm back because..."
+      } else if (data.navigationType === 'forward') {
+        question =
+          'Why did you decide to <span class="highlight-question">return</span> to this page ?'
+        placeholder = 'I want to find ...'
+      }
+      question = `What is the reason for this <span class="highlight-question">${data.navigationType} navigation</span>?`
+      placeholder = 'Enter your reason here...'
+      break
+    case 'tabActivate':
+      question = `Why did you <span class="highlight-question">switch to this tab</span>?`
+      placeholder = 'I switched to this tab because...'
+      break
+    default:
+      question = `What is the reason for the ${eventType} action?`
+      placeholder = 'Enter your reason here...'
+      break
+  }
+  return { question, placeholder }
+}
+
+export function isValidReason(reason: string): boolean {
+  if (!reason || reason.trim().length === 0) {
+    return false // Empty input
+  }
+  if (reason.trim().length < 2 || reason.length < 5) {
+    return false // Too short to be meaningful, at least 5 characters and 2 words
+  }
+  // Check for repetitive or meaningless input (e.g., "aaa","!!!")
+  const meaninglessPatterns = [/^(.)\1{3,}$/, /^[^a-zA-Z0-9]+$/]
+  for (const pattern of meaninglessPatterns) {
+    if (pattern.test(reason.toLowerCase().replace(/\s+/g, ''))) {
+      return false
+    }
+  }
+  return true
 }

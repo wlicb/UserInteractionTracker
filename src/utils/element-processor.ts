@@ -1,4 +1,18 @@
-export function processElement(element: any, recipe: any, parentName = '', nthChild = 0) {
+declare global {
+  interface Window {
+    clickable_recipes: any
+    input_recipes: any
+  }
+}
+
+export function processElement(
+  element: any,
+  recipe: any,
+  parentName = '',
+  nthChild = 0,
+  document = globalThis.document,
+  window = globalThis.window
+) {
   // console.log("processing element: ", element, recipe);
   // Create a new element using the DOM API
   let tagName = recipe.tag_name || element.tagName.toLowerCase()
@@ -92,6 +106,11 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     }
     window.clickable_recipes[elementName] = recipe
   }
+
+  if (recipe.fetch_url) {
+    element.setAttribute('data-fetch-url', recipe.fetch_url)
+  }
+
   if (tagName === 'input') {
     const inputType = element.getAttribute('type')
     if (['text', 'number'].includes(inputType)) {
@@ -128,7 +147,7 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
 
     const options = document.querySelectorAll('a[id^="' + selectId + '"]')
     options.forEach(async (option) => {
-      const optionValue = option.textContent.trim()
+      const optionValue = option.textContent.trim() || option.querySelector('input').value
       const optionName = elementName + '.' + optionValue
       const newOption = document.createElement('a')
       newOption.textContent = option.textContent
@@ -186,9 +205,20 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
       const selector = childRecipe.direct_child
         ? `:scope > ${childRecipe.selector}`
         : childRecipe.selector
-      const childElements = element.querySelectorAll(selector)
+      let childElements
+      if (childRecipe.use_root) {
+        childElements = document.querySelectorAll(selector)
+        // console.log('use root for ', childElements)
+      } else childElements = element.querySelectorAll(selector)
       childElements.forEach((childElement: any, index: number) => {
-        const childNode = processElement(childElement, childRecipe, parentName, index)
+        const childNode = processElement(
+          childElement,
+          childRecipe,
+          parentName,
+          index,
+          document,
+          window
+        )
         newElement.appendChild(childNode)
         if (childRecipe.insert_split_marker) {
           const every = childRecipe.insert_split_marker_every || 1

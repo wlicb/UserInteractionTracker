@@ -4,20 +4,21 @@ import {
   getClickableElementsInViewport,
   shouldExclude,
   generateHtmlSnapshotId,
-  processRecipe
+  processRecipe,
+  isValidReason,
+  MarkViewableElements
 } from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
-import { debounce } from 'lodash'
 import { scroll_threshold } from './config'
 
 async function captureScreenshot(timestamp: string, uuid: string) {
   try {
     // const screenshotId = `screenshot_${timestamp}_${uuid}`
-    const response = await chrome.runtime.sendMessage({
+    const response = (await chrome.runtime.sendMessage({
       action: 'captureScreenshot',
       timestamp,
       uuid
-    })
+    })) as any
 
     if (!response.success) {
       throw new Error(response.message || 'Screenshot capture failed')
@@ -60,10 +61,10 @@ window.addEventListener('message', async (event) => {
     try {
       const dataForBackground = { ...event.data.data }
 
-      const response2 = await chrome.runtime.sendMessage({
+      const response2 = (await chrome.runtime.sendMessage({
         action: 'saveData',
         data: dataForBackground
-      })
+      })) as any
       if (!response2.success) {
         throw new Error(response2.message || 'interaction capture failed')
       }
@@ -120,6 +121,7 @@ const work = () => {
 
   document.addEventListener('DOMContentLoaded', () => {
     console.log('DOMContentLoaded event triggered')
+    MarkViewableElements()
     processRecipe()
   })
 
@@ -129,15 +131,20 @@ const work = () => {
     target: any,
     timestamp: string,
     uuid: string,
-    scrollDistance?: number
+    windowSize: { width: number; height: number },
+    scrollDistance?: number,
+    scrollCurrentTop?: number,
+    scrollCurrentLeft?: number,
+    scrollDistance_X?: number
   ) {
     try {
       // Generate new HTML snapshot ID
       const currentSnapshotId = generateHtmlSnapshotId(timestamp, uuid)
 
       const simplifiedHTML = processRecipe()
-      const markedDoc = getClickableElementsInViewport()
-
+      // console.log('start time:', new Date().toISOString())
+      MarkViewableElements()
+      // console.log('end time:', new Date().toISOString())
       const pageMeta = findPageMeta()
 
       let data = {
@@ -147,11 +154,15 @@ const work = () => {
 
         htmlSnapshotId: currentSnapshotId, // Use the new snapshot ID
         pageMeta: pageMeta || '',
-        htmlContent: markedDoc.documentElement.outerHTML,
+        htmlContent: document.documentElement.outerHTML,
         simplifiedHTML: simplifiedHTML
       }
       if (eventType === 'scroll') {
-        data['scrollDistance'] = scrollDistance
+        data['windowSize'] = windowSize
+        data['scrollDistance_Y'] = scrollDistance
+        data['scrollCurrentTop'] = scrollCurrentTop
+        data['scrollCurrentLeft'] = scrollCurrentLeft
+        data['scrollDistance_X'] = scrollDistance_X
         data['target'] = target
       }
       if (eventType === 'input') {
@@ -165,82 +176,13 @@ const work = () => {
       console.error(`Error during ${eventType} event handling:`, error)
     }
   }
-
-  // let accumulatedScrollDistance = 0
-  // let lastScrollTop = window.scrollY || document.documentElement.scrollTop
-  // let lastScrollTime = 0 // Track last scroll timestamp
-  // const SCROLL_THRESHOLD = 1500 // Minimum time in ms between screenshots for scroll actions
-  // // Capture scroll interactions
-  // document.addEventListener('scroll', async (event) => {
-  //   try {
-  //     // scroll don't have a specific target, so we judge whether popup is open
-  //     if (document.getElementById('reason-modal')) {
-  //       return
-  //     }
-  //     const currentScrollTop = window.scrollY || document.documentElement.scrollTop
-  //     accumulatedScrollDistance += Math.abs(currentScrollTop - lastScrollTop)
-  //     lastScrollTop = currentScrollTop
-  //     const currentTime = Date.now()
-  //     if (currentTime - lastScrollTime >= SCROLL_THRESHOLD) {
-  //       lastScrollTime = currentTime
-  //       const timestamp = new Date().toISOString()
-  //       const uuid = uuidv4()
-  //       await captureInteraction('scroll', event.target, timestamp,  uuid,accumulatedScrollDistance)
-  //       await captureScreenshot(timestamp, uuid)
-  //       accumulatedScrollDistance = 0
-  //     }
-  //   } catch (error) {
-  //     console.error('Error during scroll event handling:', error)
-  //   }
-  // })
-
-  // let lastScrollTop = window.scrollY || document.documentElement.scrollTop
-  // let accumulatedScrollDistance = 0
-
-  // const handleScrollStop = debounce(async () => {
-  //   try {
-  //     console.log('handle scroll event')
-  //     const currentScrollTop = window.scrollY || document.documentElement.scrollTop
-  //     accumulatedScrollDistance = currentScrollTop - lastScrollTop
-  //     // console.log(window.scrollY, currentScrollTop, lastScrollTop, accumulatedScrollDistance)
-  //     if (accumulatedScrollDistance !== 0) {
-  //       const timestamp = new Date().toISOString()
-  //       const uuid = uuidv4()
-  //       await captureInteraction('scroll', null, timestamp, uuid, accumulatedScrollDistance)
-  //       await captureScreenshot(timestamp, uuid)
-
-  //       // Reset after capturing
-  //       lastScrollTop = currentScrollTop
-  //       accumulatedScrollDistance = 0
-  //     }
-  //   } catch (error) {
-  //     console.error('Error during scroll event handling:', error)
-  //   }
-  // }, scroll_threshold) // Using the 400ms threshold
-
-  // document.addEventListener('scroll', (event) => {
-  //   console.log('scroll event')
-
-  //   if (document.getElementById('reason-modal')) {
-  //     return
-  //   }
-  //   if (
-  //     event.target !== window &&
-  //     event.target !== document &&
-  //     event.target !== document.documentElement
-  //   ) {
-  //     console.log('Scroll event ignored from a nested scrollable container')
-  //     return
-  //   }
-  //   handleScrollStop()
-  // })
-
   // Variables to track scroll events
   let isScrolling = false
   let scrollTimeout: number | undefined
   let scrollStartTop = window.scrollY || document.documentElement.scrollTop
   let accumulatedScrollDistance = 0
-
+  let scrollStartLeft = window.scrollX || document.documentElement.scrollLeft
+  let accumulatedScrollDistance_X = 0
   // Function to handle the first scroll event in a scroll sequence
   async function handleFirstScroll(scrollUuid: string, scrollTimestamp: string) {
     try {
@@ -259,18 +201,32 @@ const work = () => {
       const currentScrollTop = window.scrollY || document.documentElement.scrollTop
       accumulatedScrollDistance += currentScrollTop - scrollStartTop
 
-      if (accumulatedScrollDistance !== 0) {
+      const currentScrollLeft = window.scrollX || document.documentElement.scrollLeft
+      accumulatedScrollDistance_X += currentScrollLeft - scrollStartLeft
+
+      // INSERT_YOUR_CODE
+      const windowSize = {
+        width: window.innerWidth,
+        height: window.innerHeight
+      }
+      if (accumulatedScrollDistance !== 0 || accumulatedScrollDistance_X !== 0) {
         // Record the scroll interaction with the accumulated scroll distance
         await captureInteraction(
           'scroll',
-          null,
+          window.location.href,
           scrollTimestamp,
           scrollUuid,
-          accumulatedScrollDistance
+          windowSize,
+          accumulatedScrollDistance,
+          currentScrollTop,
+          accumulatedScrollDistance_X,
+          currentScrollLeft
         )
         // Reset accumulated scroll distance
         accumulatedScrollDistance = 0
+        accumulatedScrollDistance_X = 0
         scrollStartTop = currentScrollTop
+        scrollStartLeft = currentScrollLeft
       }
       isScrolling = false
     } catch (error) {
@@ -311,25 +267,6 @@ const work = () => {
       scroll_threshold
     ) // Threshold of 300ms
   })
-
-  // document.addEventListener(
-  //   'blur',
-  //   async (event) => {
-  //     const target = event.target as HTMLElement
-  //     if (isFromPopup(target)) return
-  //     if (
-  //       target &&
-  //       ((target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text') ||
-  //         target.tagName === 'TEXTAREA')
-  //     ) {
-  //       const timestamp = new Date().toISOString()
-  //       const uuid = uuidv4()
-  //       await captureScreenshot(timestamp, uuid)
-  //       await captureInteraction('input', target, timestamp, uuid)
-  //     }
-  //   },
-  //   true
-  // )
 
   document.addEventListener('DOMContentLoaded', () => {
     // Handle all types of order buttons
@@ -458,10 +395,19 @@ const work = () => {
       console.log('message', message)
       if (message.action === 'getHTML') {
         const simplifiedHTML = processRecipe()
-        const markedDoc = getClickableElementsInViewport()
-        const htmlContent = markedDoc.documentElement.outerHTML
+        MarkViewableElements()
+        const htmlContent = document.documentElement.outerHTML
         const pageMeta = findPageMeta()
-        sendResponse({ html: htmlContent, pageMeta: pageMeta, simplifiedHTML: simplifiedHTML })
+        const windowSize = {
+          width: window.innerWidth,
+          height: window.innerHeight
+        }
+        sendResponse({
+          html: htmlContent,
+          pageMeta: pageMeta,
+          simplifiedHTML: simplifiedHTML,
+          windowSize: windowSize
+        })
       }
       if (message.action === 'show_popup') {
         console.log('show_popup', message)
@@ -470,13 +416,24 @@ const work = () => {
           sendResponse({ success: false, message: 'popup already exists' })
           return
         }
-        createModal(message.question, sendResponse)
+        createModal(message.question, message.placeholder, sendResponse)
         return true // Will respond asynchronously
+      }
+      if (message.action === 'showReminder') {
+        console.log('showReminder')
+        const data = message.data
+        // console.log('data', data)
+        alert(
+          `Thank you for participating!\nYou have contributed ${data.on_date} rationales this week\nYou have contributed ${data.all_time} rationales in total. `
+        )
       }
     }
   )
-
-  function createModal(question: string, sendResponse: (response?: any) => void) {
+  function createModal(
+    question: string,
+    placeholder: string,
+    sendResponse: (response?: any) => void
+  ) {
     const modalHtml = `
         <div id="reason-modal" style="
             position: fixed;
@@ -496,12 +453,31 @@ const work = () => {
                 border-radius: 8px;
                 width: 400px;
             ">
+                <style>
+                    .highlight-question {
+                        padding: 0px 6px;
+                        border-radius: 3px;
+                        display: inline-block;
+                        color: rgb(24, 160, 88);
+                        border: 1px solid rgba(24, 160, 88, 0.3);
+                        background: rgba(24, 160, 88, 0.1);
+                        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    }
+                </style>
                 <h3>${question}</h3>
-                <textarea id="reason-input" style="
+                <textarea id="reason-input" placeholder="${placeholder}" style="
                     width: 100%;
                     height: 100px;
                     margin: 10px 0;
                 "></textarea>
+                <div id="error-message" style="
+                    color: red;
+                    display: none;
+                    font-size: 12px;
+                    margin-top: 5px;
+                ">
+                    Please enter a valid reason.
+                </div>
                 <div style="
                     text-align: right;
                     display: flex;
@@ -529,15 +505,23 @@ const work = () => {
     // Add event listeners
     document.getElementById('reason-submit').addEventListener('click', () => {
       const input = document.getElementById('reason-input') as HTMLTextAreaElement
-      console.log('submitBtn clicked')
+      const errorMessage = document.getElementById('error-message') as HTMLElement
       const value = input.value
+
+      if (!isValidReason(value)) {
+        errorMessage.style.display = 'block' // Show the error message
+        return // Prevent submission if the reason is invalid
+      } else {
+        errorMessage.style.display = 'none' // Hide the error message
+      }
+
       modalContainer.remove()
-      sendResponse({ input: value })
+      sendResponse({ input: value, success: true })
     })
     document.getElementById('reason-skip').addEventListener('click', () => {
       const input = document.getElementById('reason-input') as HTMLTextAreaElement
       modalContainer.remove()
-      sendResponse({ input: null })
+      sendResponse({ input: null, success: false })
     })
   }
 }

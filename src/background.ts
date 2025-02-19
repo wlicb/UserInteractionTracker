@@ -3,9 +3,15 @@
 import { v4 as uuidv4 } from 'uuid'
 import { nav, refinement_option, recipes } from './recipe_new'
 import JSZip from 'jszip'
-import { update_icon } from './utils/util'
-import { shouldExclude } from './utils/util'
+import {
+  update_icon,
+  shouldExclude,
+  getCustomQuestion,
+  processRecipe,
+  findPageMeta
+} from './utils/util'
 import axios from 'axios'
+import { DOMParser, parseHTML } from 'linkedom'
 
 let interactions: any[] = []
 let screenshots: [string, string][] = []
@@ -31,7 +37,8 @@ import {
   zip,
   base_url,
   data_collector_secret_id,
-  filter_url
+  filter_url,
+  rationale_status_url
 } from './config'
 
 const upload_url = `${base_url}/upload`
@@ -47,6 +54,44 @@ interface TabHistory {
 const tabNavigationHistory: {
   [tabId: number]: TabHistory
 } = {}
+
+async function fetchCartInfo(path) {
+  if (path === null || path === '') {
+    return ''
+  }
+  try {
+    const start = performance.now()
+
+    // get the html of cart page
+    const url = 'https://www.amazon.com' + path
+    const response = await fetch(url)
+    const htmlContent = await response.text()
+
+    // return htmlContent
+
+    const mid = performance.now()
+    console.log(`Execution Time of fetch: ${mid - start} ms`)
+
+    const document = new DOMParser().parseFromString(htmlContent)
+    const rootElement = document.querySelector('html')
+
+    const { defaultView: window } = document
+
+    const { Event, CustomEvent, HTMLElement, customElements } = window
+
+    // get metadata from the html
+    const simplifiedHTML = processRecipe(rootElement, url, document, window)
+    const pageMeta = findPageMeta(rootElement, document)
+
+    const end = performance.now()
+    console.log(`Execution Time of processing: ${end - mid} ms`)
+
+    return pageMeta
+  } catch (error) {
+    console.error('Error fetching cart information:' + error)
+    return ''
+  }
+}
 
 import { openDB } from 'idb'
 const db = await openDB('userInteractions', 1, {
@@ -140,42 +185,6 @@ function analyzeNavigation(tabId: number, url: string): 'new' | 'back' | 'forwar
   return 'new'
 }
 
-// Replace the simple question with a more detailed one based on event type
-function getCustomQuestion(eventType: string, data: any): string {
-  switch (eventType) {
-    case 'click_a':
-    case 'click_b':
-    case 'click_c':
-      // Check if it's a specific type of click
-      if (data.target.innerText === 'Set Up Now') {
-        return "Why did you choose 'Set Up Now' instead of buy once, and why do you like this particular product?"
-      } else if (data.target.id === 'buy-now-button') {
-        return 'Why did you choose to buy this product immediately, and what convinced you to skip further exploration of other options? Why do you like this particular product?'
-      } else if (data.target.className?.includes('sc-product-link')) {
-        return 'What made you click on this product, and what specific aspects attracted your attention compared to other search results?'
-      } else if (data.target.id === 'add-to-cart-button') {
-        return 'Why did you decide to add this item to your cart, and are you planning to buy it now or later? What convinced you that this item was the right choice for your needs?'
-      } else {
-        return 'What was your reason for clicking on this element?'
-      }
-    case 'scroll':
-      return 'What are you doing while scrolling—are you browsing search results, looking at reviews, or something else, and what are you hoping to find?'
-    case 'input':
-      return 'What are you searching for, and how did you decide on the search terms you used? Are you looking for a specific product, brand, or feature?'
-    case 'navigation':
-      if (data.navigationType === 'back') {
-        return 'Why did you decide to go back to the previous page, and what were you hoping to revisit or reconsider?'
-      } else if (data.navigationType === 'forward') {
-        return 'Why did you decide to return to this page after previously navigating away, and what new or unresolved information are you looking for now?'
-      }
-      return `What is the reason for this ${data.navigationType} navigation?`
-    case 'tabActivate':
-      return `Why did you switch to this tab? Do you have specific task or information in mind?`
-    default:
-      return `What is the reason for the ${eventType} action?`
-  }
-}
-
 // Add new function to handle screenshot saving
 async function saveScreenshot_idb(screenshotDataUrl: string, timestamp: string, uuid: string) {
   if (screenshotDataUrl) {
@@ -211,16 +220,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           uuid: uuid
         }
 
+        const fetchUrl = message.data.fetchUrl || ''
+
         delete message.data.htmlContent
         delete message.data.simplifiedHTML
+        delete message.data.fetchUrl
 
         const saveData = async () => {
           console.log('saveData ', message.data.eventType)
+          console.log(fetchUrl)
+          if (fetchUrl !== '') {
+            // const cartInfo = await fetchCartInfo(fetchUrl)
+            // console.log(cartInfo)
+            fetchCartInfo(fetchUrl).then((cartInfo) => {
+              const cartdata = {
+                url: fetchUrl,
+                timestamp: message.data.timestamp,
+                metadata: cartInfo
+              }
+              console.log(cartdata)
+            })
+          }
           await db.add('interactions', {
             ...message.data,
             uploaded: 0
           })
         }
+
         await Promise.all([
           saveData(),
           saveHTML(
@@ -276,7 +302,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log('get screenshot request')
         const start_time = new Date().getTime()
         const screenshotDataUrl = await captureScreenshot()
-        console.log('capture screenshot time: ', new Date().getTime() - start_time)
+        // console.log('capture screenshot time: ', new Date().getTime() - start_time)
         if (screenshotDataUrl) {
           const success = await saveScreenshot_idb(
             screenshotDataUrl,
@@ -284,7 +310,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             message.uuid
           )
           console.log('save screenshot success', success)
-          console.log('time: ', new Date().toISOString())
+          // console.log('time: ', new Date().toISOString())
           sendResponse({
             success,
             message: success ? undefined : 'Failed to capture screenshot'
@@ -391,7 +417,8 @@ const saveInteraction = async (
   htmlSnapshotId: string,
   uuid: string,
   navigationType: string | null = null,
-  pageMeta: string | null = null
+  pageMeta: string | null = null,
+  windowSize: { width: number; height: number } | null = null
 ) => {
   const data = {
     eventType,
@@ -399,7 +426,8 @@ const saveInteraction = async (
     target_url,
     htmlSnapshotId,
     uuid,
-    pageMeta
+    pageMeta,
+    windowSize
   }
 
   // Add navigationType only if it exists
@@ -414,13 +442,17 @@ const saveInteraction = async (
 }
 
 const saveScreenshot = async (windowId: number, timestamp: string, uuid: string) => {
-  const screenshotDataUrl = await chrome.tabs.captureVisibleTab(windowId, {
-    format: 'jpeg',
-    quality: 25
-  })
-
-  await saveScreenshot_idb(screenshotDataUrl, timestamp, uuid)
+  try {
+    const screenshotDataUrl = await chrome.tabs.captureVisibleTab(windowId, {
+      format: 'jpeg',
+      quality: 25
+    })
+    await saveScreenshot_idb(screenshotDataUrl, timestamp, uuid)
+  } catch (error) {
+    console.error('Error in saveScreenshot:', error)
+  }
 }
+
 const sendPopup = async (
   tabId: number,
   timestamp: string,
@@ -434,13 +466,17 @@ const sendPopup = async (
   ) {
     return
   }
-  const question = getCustomQuestion(eventType, data)
+  // console.log('data', data)
+  const { question, placeholder } = getCustomQuestion(eventType, data)
   let probability = popup_probability
   switch (eventType) {
     case 'scroll':
       probability = popup_scroll_probability
       break
     case 'click':
+    case 'click_a':
+    case 'click_b':
+    case 'click_c':
       probability = popup_click_probability
       break
     case 'navigation':
@@ -455,15 +491,16 @@ const sendPopup = async (
     try {
       const reason = await chrome.tabs.sendMessage(tabId, {
         action: 'show_popup',
-        question: question
+        question: question,
+        placeholder: placeholder
       })
       console.log('reason', reason)
-      if (reason && reason.input !== null) {
+      if (reason && reason.input !== null && reason.success !== false) {
         const newitem = {
           uuid: uuid,
           timestamp: timestamp,
           eventType: eventType,
-          reason: reason
+          reason: reason.input
         }
         await db.add('reasonsAnnotation', {
           ...newitem,
@@ -491,12 +528,12 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       const timestamp = new Date().toISOString()
       const uuid = uuidv4()
       const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}_${uuid}`
-
+      await new Promise((resolve) => setTimeout(resolve, 100))
       chrome.tabs.sendMessage(tabId, { action: 'getHTML' }, async (response) => {
         const htmlContent = response?.html
         const simplifiedHTML = response?.simplifiedHTML
         const pageMeta = response?.pageMeta
-
+        const windowSize = response?.windowSize
         await Promise.all([
           saveHTML(htmlContent, simplifiedHTML, currentSnapshotId, timestamp, uuid),
           saveInteraction(
@@ -506,11 +543,12 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
             currentSnapshotId,
             uuid,
             null,
-            pageMeta
+            pageMeta,
+            windowSize
           ),
-          saveScreenshot(tab.windowId, timestamp, uuid),
-          sendPopup(tabId, timestamp, 'tabActivate', {}, uuid)
+          saveScreenshot(tab.windowId, timestamp, uuid)
         ])
+        await new Promise((resolve) => sendPopup(tabId, timestamp, 'tabActivate', {}, uuid))
       })
     }
   } catch (error) {
@@ -518,13 +556,11 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
   }
 })
 
-chrome.webNavigation.onCommitted.addListener(async (details) => {
+chrome.webNavigation.onDOMContentLoaded.addListener(async (details) => {
   if (details.frameId !== 0) return
-  console.log('webNavigation onHistoryStateUpdated event triggered:', details)
+  console.log('webNavigation onDOMContentLoaded event triggered:', details)
   update_icon(details.url)
   if (!(await shouldExclude(details.url))) {
-    // chrome.tabs.sendMessage(details.tabId, { action: 'processRecipe' })
-
     const navigationType = analyzeNavigation(details.tabId, details.url)
     console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`)
     const timestamp = new Date().toISOString()
@@ -533,6 +569,7 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
       const htmlContent = response?.html
       const simplifiedHTML = response?.simplifiedHTML
       const pageMeta = response?.pageMeta
+      const windowSize = response?.windowSize
       const currentSnapshotId = `html_${hashCode(details.url)}_${timestamp}_${uuid}`
       await Promise.all([
         saveHTML(htmlContent, simplifiedHTML, currentSnapshotId, timestamp, uuid),
@@ -543,7 +580,8 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
           currentSnapshotId,
           uuid,
           navigationType,
-          pageMeta
+          pageMeta,
+          windowSize
         ),
         saveScreenshot((await chrome.tabs.get(details.tabId)).windowId, timestamp, uuid)
       ])
@@ -579,7 +617,7 @@ async function downloadDataLocally() {
 
     let user_id = currentUserId || 'unknown'
 
-    const folderName = `${folder_name}/USER_${user_id}/SESSION_${timestamp}`
+    const folderName = `${folder_name}/USER/${user_id}/data_${timestamp}`
 
     const interactionsToDownload = await db.getAll('interactions')
     const htmlSnapshotsToDownload = await db.getAll('htmlSnapshots')
@@ -590,7 +628,7 @@ async function downloadDataLocally() {
     console.log('downloading zip file')
     const zip = new JSZip()
     zip.file(
-      'session_info.txt',
+      `order_info/order_info_${timestamp}.txt`,
       `Session data for timestamp: ${timestamp}
         \n user id: ${user_id}
               \n order details:
@@ -604,7 +642,7 @@ async function downloadDataLocally() {
     }
 
     const interactions_json = JSON.stringify(fullData, null, 2)
-    zip.file('interactions.json', interactions_json)
+    zip.file(`interactions/interactions_${timestamp}.json`, interactions_json)
 
     const screenshotsFolder = zip.folder('screenshots')
     for (const screenshot of screenshotsToDownload) {
@@ -1023,5 +1061,35 @@ chrome.storage.local.onChanged.addListener((changes) => {
       const url = tabs[0]?.url
       update_icon(url)
     })
+  }
+})
+
+let hasAmazonPage = false
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  console.log('onUpdated')
+  if (changeInfo.status === 'complete') {
+    if (!(await shouldExclude(tab.url)) && !hasAmazonPage) {
+      hasAmazonPage = true
+      console.log('send reminder')
+      //   chrome.notifications.create({
+      //     type: 'basic',
+      //     iconUrl: '../icon.png', // Path to your notification icon
+      //     title: 'Notice',
+      //     message: 'You are on an Amazon page',
+      //     priority: 2
+      //   })
+      //
+      const userIdResult = await chrome.storage.local.get({ userId: '' })
+      const currentUserId = userIdResult.userId
+      const response = await fetch(`${rationale_status_url}?user_id=${currentUserId}`, {
+        method: 'GET'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        // console.log(data)
+        chrome.tabs.sendMessage(tabId, { action: 'showReminder', data: data })
+      }
+      console.log('send finished')
+    }
   }
 })
