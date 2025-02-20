@@ -69,8 +69,8 @@ async function fetchCartInfo(path) {
 
     // return htmlContent
 
-    const mid = performance.now()
-    console.log(`Execution Time of fetch: ${mid - start} ms`)
+    // const mid = performance.now()
+    // console.log(`Execution Time of fetch: ${mid - start} ms`)
 
     const document = new DOMParser().parseFromString(htmlContent)
     const rootElement = document.querySelector('html')
@@ -83,8 +83,8 @@ async function fetchCartInfo(path) {
     const simplifiedHTML = processRecipe(rootElement, url, document, window)
     const pageMeta = findPageMeta(rootElement, document)
 
-    const end = performance.now()
-    console.log(`Execution Time of processing: ${end - mid} ms`)
+    // const end = performance.now()
+    // console.log(`Execution Time of processing: ${end - mid} ms`)
 
     return pageMeta
   } catch (error) {
@@ -230,17 +230,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           console.log('saveData ', message.data.eventType)
           console.log(fetchUrl)
           if (fetchUrl !== '') {
-            // const cartInfo = await fetchCartInfo(fetchUrl)
-            // console.log(cartInfo)
-            fetchCartInfo(fetchUrl).then((cartInfo) => {
+            fetchCartInfo(fetchUrl).then(async (cartInfo) => {
               const cartdata = {
                 url: fetchUrl,
                 timestamp: message.data.timestamp,
+                uuid: message.data.uuid,
                 metadata: cartInfo
               }
-              console.log(cartdata)
+              console.log('cartdata', cartdata)
+              await db.add('order', {
+                ...cartdata,
+                uploaded: 0
+              })
             })
           }
+          console.log('start save db', performance.now())
           await db.add('interactions', {
             ...message.data,
             uploaded: 0

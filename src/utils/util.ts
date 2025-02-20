@@ -66,11 +66,11 @@ export function getClickableElementsInViewport() {
 }
 
 export function MarkViewableElements() {
-  // Create a copy of the document
+  MarkInputStatus()
 
   // Select all elements
   const allElements = document.querySelectorAll(
-    'a, button, [onclick], input[type="button"], input[type="submit"]'
+    'a, button, select, [onclick], input[type="button"], input[type="submit"]'
   )
   // Check if each element is in the viewport and add marker
   allElements.forEach((element) => {
@@ -81,10 +81,34 @@ export function MarkViewableElements() {
       rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
       rect.right <= (window.innerWidth || document.documentElement.clientWidth)
     // Add marker attribute to the element
-    element.setAttribute('visible-clickable-element-marker', inViewport ? 'true' : 'false')
+    element.setAttribute('data-processed-visible-clickable-marker', inViewport ? 'true' : 'false')
   })
 }
+export function MarkInputStatus() {
+  // Exclude hidden inputs by using ':not([type="hidden"])'
+  const inputs = document.querySelectorAll('input:not([type="hidden"]), select, textarea')
+  inputs.forEach((element) => {
+    const input = element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
 
+    if (input.value !== null) {
+      input.setAttribute('data-processed-input-value', input.value)
+    }
+
+    if (
+      input instanceof HTMLInputElement &&
+      (input.type === 'checkbox' || input.type === 'radio')
+    ) {
+      input.setAttribute('data-processed-input-checked', String(input.checked))
+    }
+
+    if (input instanceof HTMLSelectElement) {
+      const selectedTexts = Array.from(input.selectedOptions)
+        .map((opt) => opt.textContent?.trim() ?? '')
+        .join('||')
+      input.setAttribute('data-processed-input-selected-text', selectedTexts)
+    }
+  })
+}
 // Add cleanup function to remove markers when needed
 export function removeClickableMarkers() {
   document.querySelectorAll('[visible-clickable-element-marker]').forEach((element) => {
