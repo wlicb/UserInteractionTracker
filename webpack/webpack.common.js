@@ -50,5 +50,9 @@ module.exports = {
     new CopyPlugin({
       patterns: [{ from: '.', to: '../', context: 'public' }]
     })
-  ]
+  ],
+  externals: {
+    canvas: 'commonjs canvas',
+    perf_hooks: 'commonjs perf_hooks'
+  }
 }

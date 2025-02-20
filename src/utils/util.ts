@@ -19,8 +19,13 @@ export async function update_icon(url) {
   }
 }
 
-export function findPageMeta() {
-  const all_element_with_meta_data = document.querySelectorAll('[data-element-meta-name]')
+export function findPageMeta(root = null, document = globalThis.document) {
+  let all_element_with_meta_data
+  if (root) {
+    all_element_with_meta_data = root.querySelectorAll('[data-element-meta-name]')
+  } else {
+    all_element_with_meta_data = document.querySelectorAll('[data-element-meta-name]')
+  }
 
   const groupedResult = {}
 
@@ -61,11 +66,11 @@ export function getClickableElementsInViewport() {
 }
 
 export function MarkViewableElements() {
-  // Create a copy of the document
+  MarkInputStatus()
 
   // Select all elements
   const allElements = document.querySelectorAll(
-    'a, button, [onclick], input[type="button"], input[type="submit"]'
+    'a, button, select, [onclick], input[type="button"], input[type="submit"]'
   )
   // Check if each element is in the viewport and add marker
   allElements.forEach((element) => {
@@ -76,10 +81,34 @@ export function MarkViewableElements() {
       rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
       rect.right <= (window.innerWidth || document.documentElement.clientWidth)
     // Add marker attribute to the element
-    element.setAttribute('visible-clickable-element-marker', inViewport ? 'true' : 'false')
+    element.setAttribute('data-processed-visible-clickable-marker', inViewport ? 'true' : 'false')
   })
 }
+export function MarkInputStatus() {
+  // Exclude hidden inputs by using ':not([type="hidden"])'
+  const inputs = document.querySelectorAll('input:not([type="hidden"]), select, textarea')
+  inputs.forEach((element) => {
+    const input = element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
 
+    if (input.value !== null) {
+      input.setAttribute('data-processed-input-value', input.value)
+    }
+
+    if (
+      input instanceof HTMLInputElement &&
+      (input.type === 'checkbox' || input.type === 'radio')
+    ) {
+      input.setAttribute('data-processed-input-checked', String(input.checked))
+    }
+
+    if (input instanceof HTMLSelectElement) {
+      const selectedTexts = Array.from(input.selectedOptions)
+        .map((opt) => opt.textContent?.trim() ?? '')
+        .join('||')
+      input.setAttribute('data-processed-input-selected-text', selectedTexts)
+    }
+  })
+}
 // Add cleanup function to remove markers when needed
 export function removeClickableMarkers() {
   document.querySelectorAll('[visible-clickable-element-marker]').forEach((element) => {
@@ -154,10 +183,15 @@ export async function check_user_id(user_id: string) {
   return 'Unknown error'
 }
 
-import { recipes } from '../recipe_new'
+import { cart, recipes } from '../recipe_new'
 import { processElement } from './element-processor'
-function selectRecipe() {
-  const parsedUrl = new URL(window.location.href)
+function selectRecipe(url = null, document = globalThis.document, window = globalThis.window) {
+  let parsedUrl
+  if (url) {
+    parsedUrl = new URL(url)
+  } else {
+    parsedUrl = new URL(window.location.href)
+  }
   let path = parsedUrl.pathname
   path = path !== '/' ? path.replace(/\/+$/, '') : path
 
@@ -197,13 +231,24 @@ function selectRecipe() {
   throw new Error(`No matching recipe found for path: ${path}`)
 }
 
-export function processRecipe() {
+export function processRecipe(
+  root = null,
+  url = null,
+  document = globalThis.document,
+  window = globalThis.window
+) {
   console.log('start process recipe')
   try {
-    const recipe = selectRecipe()
-    const rootElement = document.querySelector(recipe.selector)
+    const recipe = selectRecipe(url, document, window)
+    let rootElement
+    if (root) {
+      rootElement = root
+    } else {
+      rootElement = document.querySelector(recipe.selector)
+    }
     if (rootElement) {
-      const newRoot = processElement(rootElement, recipe)
+      // console.log(document)
+      const newRoot = processElement(rootElement, recipe, '', 0, document, window)
       const simplifiedHTML = newRoot.outerHTML
       return simplifiedHTML
     }

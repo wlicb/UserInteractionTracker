@@ -5,7 +5,14 @@ declare global {
   }
 }
 
-export function processElement(element: any, recipe: any, parentName = '', nthChild = 0) {
+export function processElement(
+  element: any,
+  recipe: any,
+  parentName = '',
+  nthChild = 0,
+  document = globalThis.document,
+  window = globalThis.window
+) {
   // console.log("processing element: ", element, recipe);
   // Create a new element using the DOM API
   let tagName = recipe.tag_name || element.tagName.toLowerCase()
@@ -99,6 +106,11 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
     }
     window.clickable_recipes[elementName] = recipe
   }
+
+  if (recipe.fetch_url) {
+    element.setAttribute('data-fetch-url', recipe.fetch_url)
+  }
+
   if (tagName === 'input') {
     const inputType = element.getAttribute('type')
     if (['text', 'number'].includes(inputType)) {
@@ -199,7 +211,14 @@ export function processElement(element: any, recipe: any, parentName = '', nthCh
         // console.log('use root for ', childElements)
       } else childElements = element.querySelectorAll(selector)
       childElements.forEach((childElement: any, index: number) => {
-        const childNode = processElement(childElement, childRecipe, parentName, index)
+        const childNode = processElement(
+          childElement,
+          childRecipe,
+          parentName,
+          index,
+          document,
+          window
+        )
         newElement.appendChild(childNode)
         if (childRecipe.insert_split_marker) {
           const every = childRecipe.insert_split_marker_every || 1

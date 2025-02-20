@@ -33,7 +33,7 @@ const work = () => {
     // Add this at the top of the file
     const TimeOut = 30000
 
-    function captureInteraction(
+    async function captureInteraction(
       eventType: string,
       target: any,
       timestamp: string,
@@ -62,6 +62,10 @@ const work = () => {
             element.getAttribute('data-element-meta-data') || ''
         }
 
+        if (element.hasAttribute('data-fetch-url')) {
+          allAttributes['data-fetch-url'] = element.getAttribute('data-fetch-url') || ''
+        }
+
         // Continue searching up the tree, passing along collected attributes
         return findClickableParent(element.parentElement, depth + 1, allAttributes)
       }
@@ -80,6 +84,12 @@ const work = () => {
         outerHTML: target.outerHTML
       }
 
+      let fetchUrl
+      if (allAttributes.hasOwnProperty('data-fetch-url')) {
+        // cartInfo = await fetchCartInfo(allAttributes['data-fetch-url'])
+        fetchUrl = allAttributes['data-fetch-url']
+      }
+
       MarkViewableElements()
       const data = {
         eventType,
@@ -92,6 +102,7 @@ const work = () => {
         'element-meta-name': allAttributes['data-element-meta-name'] || '',
         'element-meta-data': allAttributes['data-element-meta-data'] || '',
         pageMeta: pageMeta || '',
+        fetchUrl: fetchUrl || '',
         url: url || '',
         windowSize: {
           width: window.innerWidth,
@@ -144,7 +155,7 @@ const work = () => {
       return false
     }
     // Monkey patch addEventListener
-    EventTarget.prototype.addEventListener = function (type, listener, options: any = {}) {
+    EventTarget.prototype.addEventListener = async function (type, listener, options: any = {}) {
       if (options && (options as any).skip_monkey_patch) {
         return originalAddEventListener.call(this, type, listener, options)
       }
@@ -260,7 +271,7 @@ const work = () => {
               const selector = finder(event.target, {
                 maxNumberOfPathChecks: 0
               })
-              const data = captureInteraction(
+              const data = await captureInteraction(
                 'click_a',
                 event.target,
                 timestamp,
@@ -352,7 +363,7 @@ const work = () => {
                 reject(new Error('Screenshot timeout'))
               }, TimeOut)
             })
-            const data = captureInteraction(
+            const data = await captureInteraction(
               'click_b',
               event.target,
               timestamp,
@@ -503,7 +514,7 @@ const work = () => {
                 { type: 'CAPTURE_SCREENSHOT', timestamp: timestamp, uuid: uuid },
                 '*'
               )
-              const data = captureInteraction(
+              const data = await captureInteraction(
                 'click_c',
                 event.target,
                 timestamp,

@@ -3,8 +3,15 @@
 import { v4 as uuidv4 } from 'uuid'
 import { nav, refinement_option, recipes } from './recipe_new'
 import JSZip from 'jszip'
-import { update_icon, shouldExclude, getCustomQuestion } from './utils/util'
+import {
+  update_icon,
+  shouldExclude,
+  getCustomQuestion,
+  processRecipe,
+  findPageMeta
+} from './utils/util'
 import axios from 'axios'
+import { DOMParser, parseHTML } from 'linkedom'
 
 let interactions: any[] = []
 let screenshots: [string, string][] = []
@@ -47,6 +54,44 @@ interface TabHistory {
 const tabNavigationHistory: {
   [tabId: number]: TabHistory
 } = {}
+
+async function fetchCartInfo(path) {
+  if (path === null || path === '') {
+    return ''
+  }
+  try {
+    const start = performance.now()
+
+    // get the html of cart page
+    const url = 'https://www.amazon.com' + path
+    const response = await fetch(url)
+    const htmlContent = await response.text()
+
+    // return htmlContent
+
+    // const mid = performance.now()
+    // console.log(`Execution Time of fetch: ${mid - start} ms`)
+
+    const document = new DOMParser().parseFromString(htmlContent)
+    const rootElement = document.querySelector('html')
+
+    const { defaultView: window } = document
+
+    const { Event, CustomEvent, HTMLElement, customElements } = window
+
+    // get metadata from the html
+    const simplifiedHTML = processRecipe(rootElement, url, document, window)
+    const pageMeta = findPageMeta(rootElement, document)
+
+    // const end = performance.now()
+    // console.log(`Execution Time of processing: ${end - mid} ms`)
+
+    return pageMeta
+  } catch (error) {
+    console.error('Error fetching cart information:' + error)
+    return ''
+  }
+}
 
 import { openDB } from 'idb'
 const db = await openDB('userInteractions', 1, {
@@ -175,16 +220,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           uuid: uuid
         }
 
+        const fetchUrl = message.data.fetchUrl || ''
+
         delete message.data.htmlContent
         delete message.data.simplifiedHTML
+        delete message.data.fetchUrl
 
         const saveData = async () => {
           console.log('saveData ', message.data.eventType)
+          console.log(fetchUrl)
+          if (fetchUrl !== '') {
+            fetchCartInfo(fetchUrl).then(async (cartInfo) => {
+              const cartdata = {
+                url: fetchUrl,
+                timestamp: message.data.timestamp,
+                uuid: message.data.uuid,
+                metadata: cartInfo
+              }
+              console.log('cartdata', cartdata)
+              await db.add('order', {
+                ...cartdata,
+                uploaded: 0
+              })
+            })
+          }
+          console.log('start save db', performance.now())
           await db.add('interactions', {
             ...message.data,
             uploaded: 0
           })
         }
+
         await Promise.all([
           saveData(),
           saveHTML(

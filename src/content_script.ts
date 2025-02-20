@@ -268,127 +268,127 @@ const work = () => {
     ) // Threshold of 300ms
   })
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // Handle all types of order buttons
-    const placeOrderButtons = document.querySelectorAll(
-      'input[id="placeOrder"], input[id="turbo-checkout-pyo-button"]'
-    )
-    const buyNowButton = document.querySelector('input[id="buy-now-button"]')
-    const setupNowButton = document.querySelector(
-      'button[id="rcx-subscribe-submit-button-announce"]'
-    )
-    const proceedToCheckoutButton = document.querySelector('input[name="proceedToRetailCheckout"]')
+  // document.addEventListener('DOMContentLoaded', () => {
+  //   // Handle all types of order buttons
+  //   const placeOrderButtons = document.querySelectorAll(
+  //     'input[id="placeOrder"], input[id="turbo-checkout-pyo-button"]'
+  //   )
+  //   const buyNowButton = document.querySelector('input[id="buy-now-button"]')
+  //   const setupNowButton = document.querySelector(
+  //     'button[id="rcx-subscribe-submit-button-announce"]'
+  //   )
+  //   const proceedToCheckoutButton = document.querySelector('input[name="proceedToRetailCheckout"]')
 
-    // Handle Buy Now and Set Up Now buttons if present
-    ;[buyNowButton, setupNowButton].forEach((button) => {
-      if (button) {
-        button.addEventListener('click', async () => {
-          try {
-            const productInfo = {
-              title: (document.querySelector('#title') as HTMLElement)?.innerText?.trim() || '',
-              price:
-                (
-                  document.querySelector(
-                    'span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay'
-                  ) as HTMLElement
-                )?.innerText?.trim() || '',
-              asin: (document.querySelector('input#ASIN') as HTMLInputElement)?.value || '',
-              options: {}
-            }
+  //   // Handle Buy Now and Set Up Now buttons if present
+  //   ;[buyNowButton, setupNowButton].forEach((button) => {
+  //     if (button) {
+  //       button.addEventListener('click', async () => {
+  //         try {
+  //           const productInfo = {
+  //             title: (document.querySelector('#title') as HTMLElement)?.innerText?.trim() || '',
+  //             price:
+  //               (
+  //                 document.querySelector(
+  //                   'span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay'
+  //                 ) as HTMLElement
+  //               )?.innerText?.trim() || '',
+  //             asin: (document.querySelector('input#ASIN') as HTMLInputElement)?.value || '',
+  //             options: {}
+  //           }
 
-            // Get all option selections
-            const optionRows = Array.from(
-              document.querySelectorAll(
-                '#twister div.a-row:has(label.a-form-label):has(span.selection)'
-              )
-            )
-            optionRows.forEach((row) => {
-              const label =
-                (row.querySelector('label.a-form-label') as HTMLElement)?.innerText?.replace(
-                  ': ',
-                  ''
-                ) || ''
-              const value = (row.querySelector('span.selection') as HTMLElement)?.innerText || ''
-              if (label && value) {
-                ;(productInfo.options as any)[label] = value
-              }
-            })
+  //           // Get all option selections
+  //           const optionRows = Array.from(
+  //             document.querySelectorAll(
+  //               '#twister div.a-row:has(label.a-form-label):has(span.selection)'
+  //             )
+  //           )
+  //           optionRows.forEach((row) => {
+  //             const label =
+  //               (row.querySelector('label.a-form-label') as HTMLElement)?.innerText?.replace(
+  //                 ': ',
+  //                 ''
+  //               ) || ''
+  //             const value = (row.querySelector('span.selection') as HTMLElement)?.innerText || ''
+  //             if (label && value) {
+  //               ;(productInfo.options as any)[label] = value
+  //             }
+  //           })
 
-            console.log(`${button.id} clicked - Product Info:`, productInfo)
+  //           console.log(`${button.id} clicked - Product Info:`, productInfo)
 
-            await chrome.runtime.sendMessage({
-              action: 'saveOrder',
-              data: {
-                timestamp: new Date().toISOString(),
-                name: productInfo.title,
-                price: parseFloat(productInfo.price.replace(/[^0-9.]/g, '')),
-                asin: productInfo.asin,
-                options: productInfo.options
-              }
-            })
-          } catch (error) {
-            console.error(`Error capturing ${button.id} product info:`, error)
-          }
-        })
-      }
-    })
-    if (proceedToCheckoutButton) {
-      proceedToCheckoutButton.addEventListener('click', async (event) => {
-        try {
-          const selectedItems = []
-          const cartItems = Array.from(document.querySelectorAll('[id^="sc-active-"]')).filter(
-            (item) => item.id !== 'sc-active-cart'
-          )
-          for (const item of cartItems) {
-            const checkbox = item.querySelector('input[type="checkbox"]') as HTMLInputElement
-            if (checkbox && checkbox.checked) {
-              const productLink = item.querySelector('.sc-item-product-title-cont .sc-product-link')
-              if (productLink) {
-                const fullNameElement = productLink.querySelector('.a-truncate-full')
-                const name = fullNameElement?.textContent?.trim() || ''
+  //           await chrome.runtime.sendMessage({
+  //             action: 'saveOrder',
+  //             data: {
+  //               timestamp: new Date().toISOString(),
+  //               name: productInfo.title,
+  //               price: parseFloat(productInfo.price.replace(/[^0-9.]/g, '')),
+  //               asin: productInfo.asin,
+  //               options: productInfo.options
+  //             }
+  //           })
+  //         } catch (error) {
+  //           console.error(`Error capturing ${button.id} product info:`, error)
+  //         }
+  //       })
+  //     }
+  //   })
+  //   if (proceedToCheckoutButton) {
+  //     proceedToCheckoutButton.addEventListener('click', async (event) => {
+  //       try {
+  //         const selectedItems = []
+  //         const cartItems = Array.from(document.querySelectorAll('[id^="sc-active-"]')).filter(
+  //           (item) => item.id !== 'sc-active-cart'
+  //         )
+  //         for (const item of cartItems) {
+  //           const checkbox = item.querySelector('input[type="checkbox"]') as HTMLInputElement
+  //           if (checkbox && checkbox.checked) {
+  //             const productLink = item.querySelector('.sc-item-product-title-cont .sc-product-link')
+  //             if (productLink) {
+  //               const fullNameElement = productLink.querySelector('.a-truncate-full')
+  //               const name = fullNameElement?.textContent?.trim() || ''
 
-                const href = productLink.getAttribute('href') || ''
-                const asin = href.match(/product\/([A-Z0-9]{10})/)?.[1] || ''
+  //               const href = productLink.getAttribute('href') || ''
+  //               const asin = href.match(/product\/([A-Z0-9]{10})/)?.[1] || ''
 
-                const priceElement = item.querySelector('.sc-item-price-block .a-offscreen')
-                const price = priceElement
-                  ? parseFloat(priceElement.textContent?.replace(/[^0-9.]/g, '') || '0')
-                  : 0
+  //               const priceElement = item.querySelector('.sc-item-price-block .a-offscreen')
+  //               const price = priceElement
+  //                 ? parseFloat(priceElement.textContent?.replace(/[^0-9.]/g, '') || '0')
+  //                 : 0
 
-                const options: { [key: string]: string } = {}
-                const variationElements = item.querySelectorAll('.sc-product-variation')
-                variationElements.forEach((variation) => {
-                  const label =
-                    variation.querySelector('.a-text-bold')?.textContent?.trim().replace(':', '') ||
-                    ''
-                  const value =
-                    variation
-                      .querySelector('.a-size-small:not(.a-text-bold)')
-                      ?.textContent?.trim() || ''
-                  if (label && value) {
-                    options[label] = value
-                  }
-                })
+  //               const options: { [key: string]: string } = {}
+  //               const variationElements = item.querySelectorAll('.sc-product-variation')
+  //               variationElements.forEach((variation) => {
+  //                 const label =
+  //                   variation.querySelector('.a-text-bold')?.textContent?.trim().replace(':', '') ||
+  //                   ''
+  //                 const value =
+  //                   variation
+  //                     .querySelector('.a-size-small:not(.a-text-bold)')
+  //                     ?.textContent?.trim() || ''
+  //                 if (label && value) {
+  //                   options[label] = value
+  //                 }
+  //               })
 
-                selectedItems.push({
-                  timestamp: new Date().toISOString(),
-                  name,
-                  asin,
-                  price,
-                  options
-                })
-              }
-            }
-          }
-          if (selectedItems.length > 0) {
-            await chrome.runtime.sendMessage({ action: 'saveOrder', data: selectedItems })
-          }
-        } catch (error) {
-          console.error('Error capturing selected cart items:', error)
-        }
-      })
-    }
-  })
+  //               selectedItems.push({
+  //                 timestamp: new Date().toISOString(),
+  //                 name,
+  //                 asin,
+  //                 price,
+  //                 options
+  //               })
+  //             }
+  //           }
+  //         }
+  //         if (selectedItems.length > 0) {
+  //           await chrome.runtime.sendMessage({ action: 'saveOrder', data: selectedItems })
+  //         }
+  //       } catch (error) {
+  //         console.error('Error capturing selected cart items:', error)
+  //       }
+  //     })
+  //   }
+  // })
 
   chrome.runtime.onMessage.addListener(
     (message, sender, sendResponse: (response?: any) => void) => {
