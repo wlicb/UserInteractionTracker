@@ -9,3 +9,4 @@ backend/config.py
 uploads*
 src/_config.ts
 .DS_Store
+backend/*.json
