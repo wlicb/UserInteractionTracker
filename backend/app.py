@@ -18,6 +18,8 @@ client = MongoClient(config.MONGO_URI)
 db = client[config.DATABASE_NAME]
 rationale_collection = db[config.RATIONALE_COLLECTION_NAME]
 interaction_collection = db[config.INTERACTION_COLLECTION_NAME]
+order_collection = db[config.ORDER_COLLECTION_NAME]
+order_processed_collection = db[config.ORDER_PROCESSED_COLLECTION_NAME]
 user_collection = db[config.USER_COLLECTION_NAME]
 UPLOAD_FOLDER = config.UPLOAD_FOLDER
 
@@ -34,6 +36,9 @@ interaction_collection.create_index("uuid", unique=True)
 
 # Ensure unique index on 'uuid' field for rationale_collection
 rationale_collection.create_index("uuid", unique=True)
+
+# Ensure unique index on 'uuid' field for order_collection
+order_collection.create_index("uuid", unique=True)
 
 # db_schema
 #       interactions:
@@ -68,7 +73,6 @@ app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024
 REMOVE_ZIP_FILE = True
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
-localhost: 5000
 
 
 def check_user(user_name, user_collection):
@@ -161,6 +165,10 @@ def interactions():
             {**rationale, "user_name": user_name}
             for rationale in interactions["reasons"]
         ]
+        updated_orders = [
+            {**order, "user_name": user_name}
+            for order in interactions["orderDetails"]
+        ]
         if updated_interactions:
             try:
                 interaction_collection.insert_many(updated_interactions, ordered=False)
@@ -171,6 +179,11 @@ def interactions():
                 rationale_collection.insert_many(updated_rationale, ordered=False)
             except DuplicateKeyError as e:
                 app.logger.info("Duplicate uuids found in rationales, skipping duplicates.")
+        if updated_orders:
+            try:
+                order_collection.insert_many(updated_orders, ordered=False)
+            except DuplicateKeyError as e:
+                app.logger.info("Duplicate uuids found in orders, skipping duplicates.")
 
         return jsonify({"message": f"Interactions added successfully"}), 200
 
@@ -331,6 +344,48 @@ def rationale_status():
         date = None
 
     interactions = get_rationale_by_date(user_name, date)
+
+    return jsonify(interactions)
+
+def get_order_by_date(user_name, date=None):
+    # If no date is specified, use today's date
+    if date is None:
+        date = datetime.now()
+    start_of_week = (date - timedelta(days=date.weekday())).strftime("%Y-%m-%dT00:00:00.000Z")
+    end_of_week = (date + timedelta(days=(6 - date.weekday()))).strftime("%Y-%m-%dT23:59:59.999Z")
+
+    n_documents_date = order_processed_collection.count_documents(
+        {"user_name": user_name, "timestamp": {"$gte": start_of_week, "$lt": end_of_week}}
+    )
+    n_documents = order_processed_collection.count_documents(
+        {
+            "user_name": user_name,
+        }
+    )
+    return {"on_date": n_documents_date, "all_time": n_documents}
+
+@app.route("/order_status", methods=["GET"])
+def order_status():
+    user_name = request.args.get("user_id")
+    date_str = request.args.get("date")  # in 'YYYY-MM-DD' format
+    return_data = request.args.get("return")
+
+    result, status = check_user(user_name, user_collection=user_collection)
+
+    if status != 200:
+        return result, status
+    else:
+        user_name = result
+
+    if date_str:
+        try:
+            date = datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            return jsonify({"error": "Invalid date format, should be YYYY-MM-DD"}), 400
+    else:
+        date = None
+
+    interactions = get_order_by_date(user_name, date)
 
     return jsonify(interactions)
 
