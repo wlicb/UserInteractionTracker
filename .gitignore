@@ -11,4 +11,5 @@ src/_config.ts
 .DS_Store
 backend/*.json
 backend/__pycache__/
+backend/logs/
 
