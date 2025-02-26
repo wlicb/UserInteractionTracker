@@ -2658,6 +2658,213 @@ export const recipes = [
             }
           },
           {
+            selector: '#product-comparison_feature_div',
+            name: 'product_comparison',
+            children: [
+              {
+                selector: 'h2',
+                add_text: true
+              },
+              {
+                selector: 'tr:has(div[class^="_product-comparison-desktop_titleStyle"])',
+                children: [
+                  {
+                    selector: 'td[class*="asin"]',
+                    name: 'from_text',
+                    text_selector: 'div[class^="_product-comparison-desktop_titleStyle"]',
+                    children: [
+                      {
+                        selector: 'a > div[id^="imageContainer"]',
+                        name: 'product_image',
+                        clickable: true,
+                        add_text: true,
+                        text_format: 'Product Image'
+                      },
+                      {
+                        selector: 'div > div[id^="imageContainer"]',
+                        name: 'product_image',
+                        add_text: true,
+                        text_format: 'Product Image'
+                      },
+                      {
+                        selector: 'a > div[class^="_product-comparison-desktop_titleStyle"]',
+                        add_text: true,
+                        clickable: true,
+                        name: 'product_title'
+                      },
+                      {
+                        selector: 'div > div[class^="_product-comparison-desktop_titleStyle"]',
+                        add_text: true,
+                        name: 'product_title'
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                selector: 'tr:has(input[name="submit.addToCart"])',
+                children: [
+                  {
+                    selector: 'td[class*="asin"]',
+                    name: 'from_text',
+                    text_js: (em) => {
+                      const classes = em.classList.value
+                      const selector = classes
+                        .split(' ')
+                        .map((cls) => `.${cls}`)
+                        .join(', ')
+                      const textEm = em
+                        .closest('tbody')
+                        ?.querySelector(
+                          'tr:has(div[class^="_product-comparison-desktop_titleStyle"])'
+                        )
+                        ?.querySelector(selector)
+                        ?.querySelector('div[class^="_product-comparison-desktop_titleStyle"]')
+                      return textEm?.innerText || ''
+                    },
+                    children: [
+                      {
+                        selector: 'input[name="submit.addToCart"]',
+                        name: 'add_to_cart',
+                        clickable: true,
+                        add_text: true
+                      }
+                    ],
+                    generate_metadata: (em) => {
+                      const classes = em.classList.value
+                      const selector = classes
+                        .split(' ')
+                        .map((cls) => `.${cls}`)
+                        .join(', ')
+                      const titleEm = em
+                        .closest('tbody')
+                        ?.querySelector(
+                          'tr:has(div[class^="_product-comparison-desktop_titleStyle"])'
+                        )
+                        ?.querySelector(selector)
+                        ?.querySelector('div[class^="_product-comparison-desktop_titleStyle"]')
+                      const title = titleEm?.innerText || ''
+                      const asin = em
+                        .querySelector('input[name="submit.addToCart"]')
+                        ?.getAttribute('data-asins')
+                        ?.replace(/[\[\]"]/g, '')
+                      const priceEm = em
+                        .closest('tbody')
+                        ?.querySelector('tr:has(span.a-price)')
+                        ?.querySelector(selector)
+                        ?.querySelector('span.a-price span.a-offscreen')
+                      const price = priceEm?.innerText
+                      const urlEm = em
+                        .closest('tbody')
+                        ?.querySelector(
+                          'tr:has(div[class^="_product-comparison-desktop_titleStyle"])'
+                        )
+                        ?.querySelector(selector)
+                        ?.querySelector(
+                          'a:has(div[class^="_product-comparison-desktop_titleStyle"])'
+                        )
+                      const url = urlEm?.href || window.location.href
+                      return { name: 'comparison_items', data: { title, asin, price, url } }
+                    }
+                  }
+                ]
+              },
+              {
+                selector: 'tr:has(span.a-price)',
+                children: [
+                  {
+                    selector: 'td[class*="asin"]',
+                    name: 'from_text',
+                    text_js: (em) => {
+                      const classes = em.classList.value
+                      const selector = classes
+                        .split(' ')
+                        .map((cls) => `.${cls}`)
+                        .join(', ')
+                      const textEm = em
+                        .closest('tbody')
+                        ?.querySelectorAll('tr')[0]
+                        ?.querySelector(selector)
+                        ?.querySelector('div[class^="_product-comparison-desktop_titleStyle"]')
+                      return textEm?.innerText || ''
+                    },
+                    children: [
+                      {
+                        selector: 'span.a-price span.a-offscreen',
+                        name: 'product_price',
+                        add_text: true
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                selector: 'tr:has(div[class*="delivery"])',
+                children: [
+                  {
+                    selector: 'td[class*="asin"]',
+                    name: 'from_text',
+                    text_js: (em) => {
+                      const classes = em.classList.value
+                      const selector = classes
+                        .split(' ')
+                        .map((cls) => `.${cls}`)
+                        .join(', ')
+                      const textEm = em
+                        .closest('tbody')
+                        ?.querySelectorAll('tr')[0]
+                        ?.querySelector(selector)
+                        ?.querySelector('div[class^="_product-comparison-desktop_titleStyle"]')
+                      return textEm?.innerText || ''
+                    },
+                    children: [
+                      {
+                        selector: 'div[class*="delivery"]',
+                        name: 'product_delivery',
+                        add_text: true
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                selector: 'tr:has(div[class*="reviews-rating"])',
+                children: [
+                  {
+                    selector: 'td[class*="asin"]',
+                    name: 'from_text',
+                    text_js: (em) => {
+                      const classes = em.classList.value
+                      const selector = classes
+                        .split(' ')
+                        .map((cls) => `.${cls}`)
+                        .join(', ')
+                      const textEm = em
+                        .closest('tbody')
+                        ?.querySelectorAll('tr')[0]
+                        ?.querySelector(selector)
+                        ?.querySelector('div[class^="_product-comparison-desktop_titleStyle"]')
+                      return textEm?.innerText || ''
+                    },
+                    children: [
+                      {
+                        selector: 'div[class*="reviews-rating"]',
+                        name: 'product_reviews',
+                        add_text: true,
+                        text_js: (em) => {
+                          const icon = em.querySelector('i')
+                          const span = em.querySelector('span.a-size-base.a-color-link')
+                          return icon?.innerText + ' Reviewed by ' + span?.innerText || ''
+                        },
+                        clickable: true
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
             selector: '#attach-warranty-pane #attach-warranty-display',
             name: 'warranty-box',
             children: [
