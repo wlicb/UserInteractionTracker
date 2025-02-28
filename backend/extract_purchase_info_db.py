@@ -266,12 +266,27 @@ def process_order_info(user_name):
 
     return order_result  # Optionally return the structure if needed by the caller
 
+import sys
+
+def get_username_from_args():
+    """
+    Retrieve username from command-line arguments, if provided.
+    Returns the username as a string or None if no username argument is given.
+    """
+    if len(sys.argv) > 1:
+        return sys.argv[1]
+    return None
 
 if __name__ == "__main__":
-    # Gather all distinct users from both the interaction and order collections
-    distinct_users = set(interaction_collection.distinct("user_name")).union(
-        order_collection.distinct("user_name")
-    )
+    user_arg = get_username_from_args()
+    if user_arg:
+        # Process only the specified user if a username is passed in
+        distinct_users = [user_arg]
+    else:
+        # Gather all distinct users from both the interaction and order collections
+        distinct_users = set(interaction_collection.distinct("user_name")).union(
+            order_collection.distinct("user_name")
+        )
 
     # For each user found, run process_order_info
     for user in distinct_users:
