@@ -65,7 +65,10 @@ export function processElement(
         // console.log("element text not found");
         elementName = ''
       } else {
-        elementName += elementText.toLowerCase().replace(/[^\w]+/g, '_')
+        elementName += elementText
+          .toLowerCase()
+          .replace(/[^\w]+/g, '_')
+          .replace(/^_+|_+$/g, '')
       }
     } else if (recipe.name === 'from_nth_child') {
       elementName = parentName ? parentName + '.' : ''
