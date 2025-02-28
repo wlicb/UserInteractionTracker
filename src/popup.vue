@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { data_collector_secret_id, interaction_status_url, rationale_status_url } from './config'
+import {
+  data_collector_secret_id,
+  interaction_status_url,
+  rationale_status_url,
+  purchase_status_url
+} from './config'
 import { shouldExclude } from './utils/util'
 import { NButton, NInput, NDivider } from 'naive-ui'
 // State management with refs
@@ -11,7 +16,8 @@ const showEditButton = ref(false)
 const recordingStatus = ref('')
 const otherInfo = ref('')
 const stats = ref({ total: 0, today: 0 })
-const reasonStats = ref({ total: 0, today: 0 })
+const reasonStats = ref({ total: 0, week: 0 })
+const purchaseStats = ref({ total: 0, week: 0 })
 const showDownloadButtons = ref(false)
 
 // Methods
@@ -44,7 +50,23 @@ const displayInteractionStats = async (userId: string) => {
     if (response.ok) {
       reasonStats.value = {
         total: data.all_time,
-        today: data.on_date
+        week: data.on_date
+      }
+    } else {
+      otherInfo.value = `Failed to fetch stats: ${data.error || 'Unknown error'}`
+    }
+  } catch (error) {
+    otherInfo.value = `Error: ${(error as Error).message}`
+  }
+  try {
+    const response = await fetch(`${purchase_status_url}?user_id=${userId}`, {
+      method: 'GET'
+    })
+    const data = await response.json()
+    if (response.ok) {
+      purchaseStats.value = {
+        total: data.all_time,
+        week: data.on_date
       }
     } else {
       otherInfo.value = `Failed to fetch stats: ${data.error || 'Unknown error'}`
@@ -156,20 +178,29 @@ onMounted(async () => {
     </div>
     <NDivider class="divider" />
     <div class="info-text">{{ otherInfo }}</div>
+
+    <div class="output-container">
+      <div class="output-item">
+        Total reason uploads: <b>{{ reasonStats.total }}</b>
+      </div>
+      <div class="output-item">
+        This week's reason: <b>{{ reasonStats.week }}</b>
+      </div>
+    </div>
+    <div class="output-container">
+      <div class="output-item">
+        Total purchase recorded: <b>{{ purchaseStats.total }}</b>
+      </div>
+      <div class="output-item">
+        This week's purchase: <b>{{ purchaseStats.week }}</b>
+      </div>
+    </div>
     <div class="output-container">
       <div class="output-item">
         Total action uploads: <b>{{ stats.total }}</b>
       </div>
       <div class="output-item">
         Today's action uploads: <b>{{ stats.today }}</b>
-      </div>
-    </div>
-    <div class="output-container">
-      <div class="output-item">
-        Total reason uploads: <b>{{ reasonStats.total }}</b>
-      </div>
-      <div class="output-item">
-        Today's reason uploads: <b>{{ reasonStats.today }}</b>
       </div>
     </div>
   </div>
