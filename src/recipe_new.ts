@@ -52,6 +52,19 @@ export const nav = {
           clickable: true
         }
       ]
+    },
+    {
+      selector: '#nav-xshop',
+      name: 'stores',
+      children: [
+        {
+          selector: 'a',
+          direct_child: true,
+          clickable: true,
+          add_text: true,
+          name: 'from_text'
+        }
+      ]
     }
   ]
 }
@@ -476,20 +489,20 @@ export const carousel_card = {
   selector: 'li.a-carousel-card:not(.a-carousel-card-empty)',
   name: 'from_text',
   text_js: (em) => {
-    const titleEm = em.querySelector('a div[class*="sc-truncate-desktop"]')
+    const titleEm = em.querySelector('a div[class*="sc-truncate-desktop"], a span.title')
     const title = titleEm?.title || titleEm?.innerText || ''
     return title
   },
   children: [
     {
-      selector: 'a:has(img[class*="product-image"])',
+      selector: 'a:has(img[class*="product-image"], img.a-dynamic-image)',
       name: 'product_image',
       add_text: true,
       text_format: 'Product Image',
       clickable: true
     },
     {
-      selector: 'a div[class*="sc-truncate-desktop"]',
+      selector: 'a div[class*="sc-truncate-desktop"], a span.title',
       add_text: true,
       name: 'product_title',
       clickable: true
@@ -511,6 +524,17 @@ export const carousel_card = {
       clickable: true
     },
     {
+      selector: 'span.a-price span.a-offscreen',
+      add_text: true,
+      name: 'product_price'
+    },
+    {
+      selector: 'pBooks-sf-points-component',
+      add_text: true,
+      clickable: true,
+      name: 'product_points'
+    },
+    {
       selector: 'input[name="submit.addToCart"]',
       name: 'add_to_cart',
       add_text: true,
@@ -518,52 +542,43 @@ export const carousel_card = {
       clickable: true
     },
     {
-      selector: 'div[name="ax-qs"]',
+      selector: 'div[name="ax-qs"], div[id^="atcStepperSection"]',
       children: [
         {
-          selector: "button[aria-label='Decrease quantity by one']",
+          selector: "button[aria-label='Decrease quantity by one'], button[data-action='remove']",
           add_text: true,
-          text_js: function (element) {
-            if (element.hasAttribute('aria-label')) {
-              return element.getAttribute('aria-label')
-            }
-            return ''
-          },
-
+          text_format: 'Decrease quantity by one',
           clickable: true,
-          name: 'decrease_quantity_by_one'
+          name: 'from_text'
         },
         {
-          selector: "div[role='spinbutton']",
+          selector: "div[role='spinbutton'], span.atcStepperQuantity",
           add_text: true,
           text_format: 'Current Quantity: {}'
         },
         {
-          selector: "button[aria-label='Increase quantity by one']",
+          selector: "button[aria-label='Increase quantity by one'], button[data-action='add']",
           add_text: true,
-          text_js: function (element) {
-            if (element.hasAttribute('aria-label')) {
-              return element.getAttribute('aria-label')
-            }
-            return ''
-          },
+          text_format: 'Increase quantity by one',
           clickable: true,
-          name: 'increase_quantity_by_one'
+          name: 'from_text'
         }
       ]
     }
   ],
   generate_metadata: (em) => {
-    const asinEm = em.querySelector('div[id*="sc-turbo-container"]')
-    const asin = asinEm?.getAttribute('id')?.split('-').pop()
-    const priceEm = em.querySelector('a span[class*="sc-price"]')
+    const asinEm = em.querySelector('div[id*="sc-turbo-container"], div[data-asin]')
+    const asin = asinEm?.getAttribute('id')?.split('-').pop() || asinEm?.getAttribute('data-asin')
+    const priceEm = em.querySelector('a span[class*="sc-price"], span.a-price span.a-offscreen')
     const price = priceEm?.innerText?.replace(/[\n]/g, '')
-    const titleEm = em.querySelector('a div[class*="sc-truncate-desktop"]')
-    const title = titleEm?.title
-    const urlEm = em.querySelector('a:has(div[class*="sc-truncate-desktop"])')
+    const titleEm = em.querySelector('a div[class*="sc-truncate-desktop"], a span.title')
+    const title = titleEm?.title || titleEm?.innerText || ''
+    const urlEm = em.querySelector('a:has(div[class*="sc-truncate-desktop"]), a:has(span.title)')
     const url = urlEm?.getAttribute('href')
-    const quantityEm = em.querySelector('div[name="ax-qs"] div[role="spinbutton"]')
-    const quantity = quantityEm?.innerText
+    const quantityEm = em.querySelector(
+      'div[name="ax-qs"] div[role="spinbutton"], div[id^="atcStepperSection"] span.atcStepperQuantity'
+    )
+    const quantity = quantityEm?.innerText || '0'
     return {
       name: 'promotion_items',
       data: { title, asin, price, url, quantity }
@@ -972,7 +987,18 @@ export const fresh_cart = [
       }
     ]
   },
-  fresh_carousel_card,
+  {
+    selector: 'div[id^="CardInstance"]',
+    text_selector: 'h2.a-carousel-heading',
+    name: 'from_text',
+    children: [
+      {
+        selector: 'h2.a-carousel-heading',
+        add_text: true
+      },
+      fresh_carousel_card
+    ]
+  },
   {
     selector: 'div.sc-buy-box-inner-box input[name^="proceedToALMCheckout"]',
     clickable: true,
@@ -1582,6 +1608,77 @@ export const buy_again = [
   }
 ]
 
+export const popular_products = [
+  {
+    selector: 'head',
+    children: [
+      {
+        selector: 'title',
+        add_text: true
+      }
+    ]
+  },
+  {
+    selector: 'body',
+    children: [
+      nav,
+      {
+        selector: '#zg_header',
+        name: 'categories',
+        children: [
+          {
+            selector: 'li a',
+            clickable: true,
+            name: 'from_text',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'div[class*="zg-banner-landing-page-header"]',
+        add_text: true
+      },
+      {
+        selector: 'div[class*="g-nav-tree-all_style_zg-browse-root"]',
+        name: 'departments',
+        children: [
+          {
+            selector:
+              'div[class*="zg-nav-tree-all_style_zg-root-browse-item"] > a, div[class*="zg-nav-tree-all_style_zg-browse-item"] > a',
+            add_text: true,
+            clickable: true,
+            name: 'from_text'
+          },
+          {
+            selector:
+              'div[class*="zg-nav-tree-all_style_zg-root-browse-item"] > span, div[class*="zg-nav-tree-all_style_zg-browse-item"] > span',
+            name: 'from_text',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'div[id^="CardInstance"]',
+        text_selector: 'h2.a-carousel-heading',
+        name: 'from_text',
+        children: [
+          {
+            selector: 'h2.a-carousel-heading',
+            add_text: true
+          },
+          {
+            selector: 'div.a-carousel-header-row a',
+            add_text: true,
+            clickable: true,
+            name: 'from_text'
+          },
+          carousel_card
+        ]
+      }
+    ]
+  }
+]
+
 export const recipes = [
   {
     match: '/',
@@ -2002,7 +2099,7 @@ export const recipes = [
                     name: 'product_name'
                   },
                   {
-                    selector: 'div.s-product-image-container',
+                    selector: 'div.s-product-image-container, div.s-image-overlay-black',
                     add_text: true,
                     name: 'product_image',
                     clickable: true,
@@ -2066,8 +2163,11 @@ export const recipes = [
                     class: 'product-price',
                     children: [
                       {
-                        selector: 'a.a-link-normal > span.a-price > span.a-offscreen',
-                        add_text: true
+                        selector: 'a.a-link-normal:has(> span.a-price > span.a-offscreen)',
+                        clickable: true,
+                        name: 'product_price',
+                        add_text: true,
+                        text_selector: 'a > span.a-price > span.a-offscreen'
                       }
                     ]
                   },
@@ -3357,7 +3457,18 @@ export const recipes = [
             add_text: true,
             clickable: true
           },
-          fresh_carousel_card
+          {
+            selector: 'div[id^="CardInstance"]',
+            text_selector: 'h2.a-carousel-heading',
+            name: 'from_text',
+            children: [
+              {
+                selector: 'h2.a-carousel-heading',
+                add_text: true
+              },
+              fresh_carousel_card
+            ]
+          }
         ]
       }
     ]
@@ -3421,10 +3532,180 @@ export const recipes = [
             add_text: true,
             clickable: true
           },
-          carousel_card
+          {
+            selector: 'div[id^="CardInstance"]',
+            text_selector: 'h2.a-carousel-heading',
+            name: 'from_text',
+            children: [
+              {
+                selector: 'h2.a-carousel-heading',
+                add_text: true
+              },
+              carousel_card
+            ]
+          }
         ]
       }
     ]
+  },
+  {
+    match: '/fmc/ssd-storefront',
+    match_method: 'url',
+    selector: 'html',
+    match_with_ref: true,
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: [
+          nav,
+          {
+            selector: 'div[class*="store-subnav-desktop_style_subnav-content-container"]',
+            name: 'sub_stores',
+            children: [
+              {
+                selector: 'a[class*="store-subnav-desktop_style"]',
+                add_text: true,
+                clickable: true,
+                name: 'from_text',
+                text_js: (em) => {
+                  return em.innerText || 'Same Day Store'
+                }
+              }
+            ]
+          },
+          {
+            selector: 'div[id^="CardInstance"]',
+            text_selector: 'h2.seeMoreTitleHeader',
+            name: 'from_text',
+            children: [
+              {
+                selector: 'h2.a-carousel-heading',
+                add_text: true
+              },
+              carousel_card
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    match: '/fmc/ssd-category',
+    match_method: 'url',
+    selector: 'html',
+    match_with_ref: true,
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: [
+          nav,
+          {
+            selector: 'div[class*="store-subnav-desktop_style_subnav-content-container"]',
+            name: 'sub_stores',
+            children: [
+              {
+                selector: 'a[class*="store-subnav-desktop_style"]',
+                add_text: true,
+                clickable: true,
+                name: 'from_text',
+                text_js: (em) => {
+                  return em.innerText || 'Same Day Store'
+                }
+              }
+            ]
+          },
+          {
+            selector: 'div.dcl-container',
+            name: 'categories',
+            children: [
+              {
+                selector: 'h2.dcl-header-title',
+                add_text: true
+              },
+              {
+                selector: 'li.a-carousel-card.dcl-carousel-element a',
+                text_selector: 'div.dcl-card-footer',
+                add_text: true,
+                clickable: true,
+                name: 'from_text'
+              }
+            ]
+          },
+          {
+            selector: 'div[id^="CardInstance"]',
+            text_selector: 'h2.seeMoreTitleHeader',
+            name: 'from_text',
+            children: [
+              {
+                selector: 'h2.a-carousel-heading',
+                add_text: true
+              },
+              carousel_card
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    match: '/gp/bestsellers',
+    match_method: 'url',
+    selector: 'html',
+    match_with_ref: true,
+    children: popular_products
+  },
+  {
+    match: '/gp/new-releases',
+    match_method: 'url',
+    selector: 'html',
+    match_with_ref: true,
+    children: popular_products
+  },
+  {
+    match: '/gp/movers-and-shakers',
+    match_method: 'url',
+    selector: 'html',
+    match_with_ref: true,
+    children: popular_products
+  },
+  {
+    match: '/gp/most-wished-for',
+    match_method: 'url',
+    selector: 'html',
+    match_with_ref: true,
+    children: popular_products
+  },
+  {
+    match: '/gp/most-gifted',
+    match_method: 'url',
+    selector: 'html',
+    match_with_ref: true,
+    children: popular_products
+  },
+  {
+    match: '/Best-Sellers/zgbs',
+    match_method: 'url',
+    selector: 'html',
+    match_with_ref: true,
+    children: popular_products
   },
   {
     match: '/ap/signin',
