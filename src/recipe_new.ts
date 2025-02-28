@@ -215,7 +215,12 @@ export const refinement_option = [
         }
       }
       const nameEm = element.closest('ul')?.parentElement?.firstElementChild
-      const name = nameEm?.innerText?.trim().replace(/[ ]/g, '_').toLowerCase().trim()
+      const name = nameEm?.innerText
+        ?.trim()
+        .replace(/[ ]/g, '_')
+        .toLowerCase()
+        .trim()
+        .replace(/^_+|_+$/g, '')
 
       let url = ''
 
@@ -301,7 +306,12 @@ export const refinement_option = [
           }
           const nameEm = element.closest('ul')?.parentElement?.closest('ul')
             ?.parentElement?.firstElementChild
-          const name = nameEm?.innerText?.trim().replace(/[ ]/g, '_').toLowerCase().trim()
+          const name = nameEm?.innerText
+            ?.trim()
+            .replace(/[ ]/g, '_')
+            .toLowerCase()
+            .trim()
+            .replace(/^_+|_+$/g, '')
 
           let url = ''
 

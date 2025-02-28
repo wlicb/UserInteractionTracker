@@ -50,7 +50,7 @@ def get_purchased_items_by_uuid(uuid_value):
     order_doc = order_processed_collection.find_one({"uuid": uuid_value})
     if not order_doc or "items" not in order_doc:
         return []
-    return order_doc["items"] 
+    return order_doc["items"]
 
 def fuzzy_match(search_term, product_name):
     for item in search_term.split():
@@ -111,7 +111,7 @@ def sessionize_interactions(user_name):
 
         if last_interaction_time:
             time_diff = timestamp - last_interaction_time
-            if time_diff > timedelta(minutes=SESSION_TIMEOUT):    
+            if time_diff > timedelta(minutes=SESSION_TIMEOUT):
                 if current_session["start_time"] is not None:
                     current_session["end_time"] = last_interaction_time
                     session_name = f'{current_session["start_time"].isoformat()}_{current_session["end_time"].isoformat()}'
