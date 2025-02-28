@@ -285,16 +285,6 @@ export function getCustomQuestion(
           'You <span class="highlight-question">clicked</span> on the buy now button. What do you like about this particular product?'
         placeholder = 'I am buying this product because...'
       } else if (
-        data['data-semantic-id']?.startsWith('search_results.') ||
-        data['data-semantic-id']?.startsWith('product_list.') ||
-        (data['data-semantic-id']?.startsWith('active_item_list.') &&
-          data['data-semantic-id']?.endsWith('.product_detail')) ||
-        data.target.className?.includes('sc-product-link')
-      ) {
-        question =
-          'You <span class="highlight-question">clicked</span> on this product. What caught your attention compared to the other options you saw?'
-        placeholder = 'I like this product becauseß...'
-      } else if (
         data['data-semantic-id']?.endsWith('add_to_cart') ||
         data.target.id === 'add-to-cart-button' ||
         data.target.name === 'submit.addToCart' ||
@@ -317,14 +307,24 @@ export function getCustomQuestion(
       } else if (data['data-semantic-id']?.startsWith('product_options.')) {
         question =
           'You <span class="highlight-question">clicked</span> on this product option. What do you like about this product option?'
-        if (data['element-meta-name'] === 'product_options' && data['element-meta-data'] !== '') {
-          question = `You <span class="highlight-question">clicked</span> on ${data['element-meta-data']['value']}. What do you like about this product option?`
-        }
-        placeholder = 'I like this product option because...ß'
+        // if (data['element-meta-name'] === 'product_options' && data['element-meta-data'] !== '') {
+        //   question = `You <span class="highlight-question">clicked</span> on ${data['element-meta-data']['value']}. What do you like about this product option?`
+        // }
+        placeholder = 'I like this product option because...'
       } else if (data['data-semantic-id']?.endsWith('check_out')) {
         question =
           'You <span class="highlight-question">clicked</span> checkout button. What makes you choose to checkout?'
         placeholder = 'I choose to checkout because...'
+      } else if (
+        data['data-semantic-id']?.startsWith('search_results.') ||
+        data['data-semantic-id']?.startsWith('product_list.') ||
+        (data['data-semantic-id']?.startsWith('active_item_list.') &&
+          data['data-semantic-id']?.endsWith('.product_detail')) ||
+        data.target.className?.includes('sc-product-link')
+      ) {
+        question =
+          'You <span class="highlight-question">clicked</span> on this product. What caught your attention compared to the other options you saw?'
+        placeholder = 'I like this product because...'
       } else {
         question =
           'You <span class="highlight-question">clicked</span> on this element. Could you share what you were trying to do or find?'
