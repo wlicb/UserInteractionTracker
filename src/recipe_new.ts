@@ -1800,6 +1800,125 @@ export const recipes = [
                 ]
               },
               {
+                selector: 'div.sf-rib-v1-toolbar',
+                name: 'refinements_toolbar',
+                children: [
+                  {
+                    selector: 'span[data-csa-c-slot-id="nav-rib"]',
+                    add_text: true,
+                    clickable: true,
+                    name: 'from_text'
+                  },
+                  {
+                    selector: 'div.sf-rib-v1-dropdown-contents-container',
+                    name: 'dropdown_lists',
+                    children: [
+                      {
+                        selector: 'div.a-section.a-spacing-none',
+                        name: 'from_text',
+                        text_selector: 'div.sf-rib-v1-dropdown-popup-title-container',
+                        children: [
+                          {
+                            selector: 'div.sf-rib-v1-dropdown-popup-title-container',
+                            add_text: true
+                          },
+                          {
+                            selector: 'ul span[role="listitem"]',
+                            clickable: true,
+                            add_text: true,
+                            name: 'from_text',
+                            children: [
+                              {
+                                selector: 'input[type="checkbox"]'
+                              }
+                            ]
+                          },
+                          {
+                            selector: 'div.sf-rib-v1-range-slider-label-container',
+                            add_text: true
+                          },
+                          {
+                            selector: 'div.s-slider-container div.s-lower-bound input',
+                            name: 'price_min_value',
+                            add_text: true,
+                            clickable: true,
+                            keep_attr: ['min', 'max', 'step'],
+                            override_attr: {
+                              step_values: (em) => {
+                                const formEm = em.closest('form')
+                                if (formEm) {
+                                  const prop = formEm.getAttribute('data-slider-props')
+                                  if (prop) {
+                                    const steps = JSON.parse(prop).stepLabels
+                                    return steps
+                                  }
+                                }
+                                return ''
+                              },
+                              current_value: (em) => {
+                                const value = Number.parseInt(em.getAttribute('value'))
+                                if (value !== null) {
+                                  const formEm = em.closest('form')
+                                  if (formEm) {
+                                    const prop = formEm.getAttribute('data-slider-props')
+                                    if (prop) {
+                                      const steps = JSON.parse(prop).stepLabels
+                                      return steps[value]
+                                    }
+                                  }
+                                }
+                                return ''
+                              }
+                            }
+                          },
+                          {
+                            selector: 'div.s-slider-container div.s-upper-bound input',
+                            name: 'price_min_value',
+                            add_text: true,
+                            clickable: true,
+                            keep_attr: ['min', 'max', 'step'],
+                            override_attr: {
+                              step_values: (em) => {
+                                const formEm = em.closest('form')
+                                if (formEm) {
+                                  const prop = formEm.getAttribute('data-slider-props')
+                                  if (prop) {
+                                    const steps = JSON.parse(prop).stepLabels
+                                    return steps
+                                  }
+                                }
+                                return ''
+                              },
+                              current_value: (em) => {
+                                const value = Number.parseInt(em.getAttribute('value'))
+                                if (value !== null) {
+                                  const formEm = em.closest('form')
+                                  if (formEm) {
+                                    const prop = formEm.getAttribute('data-slider-props')
+                                    if (prop) {
+                                      const steps = JSON.parse(prop).stepLabels
+                                      return steps[value]
+                                    }
+                                  }
+                                }
+                                return ''
+                              }
+                            }
+                          },
+                          {
+                            selector:
+                              'div.sf-rib-v1-dropdown-buttons button, div.sf-rib-v1-dropdown-buttons input',
+                            name: 'from_text',
+                            add_text: true,
+                            clickable: true
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
                 selector:
                   'div.a-section.a-spacing-none:not(:has(#n-title)):has(span.a-size-base.a-color-base.puis-bold-weight-text):has(ul span.a-declarative > span > li):not(#reviewsRefinements):not(#departments):not(#priceRefinements):not(#filters)',
                 name: 'from_text',
@@ -1920,7 +2039,7 @@ export const recipes = [
                     selector: 'div.sf-range-slider-row:nth-of-type(1)',
                     add_text: true,
                     generate_metadata: (em) => {
-                      const range = em?.innerText?.replace(/\n/g, '')
+                      const range = em?.innerText?.replace(/\s+/g, '')
                       return { name: 'refinements.price', data: { title: 'price_range', range } }
                     }
                   },
