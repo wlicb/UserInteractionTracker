@@ -221,6 +221,7 @@ export const refinement_option = [
         .toLowerCase()
         .trim()
         .replace(/^_+|_+$/g, '')
+        .replace(/[_\d]+$/, '')
 
       let url = ''
 
@@ -312,6 +313,7 @@ export const refinement_option = [
             .toLowerCase()
             .trim()
             .replace(/^_+|_+$/g, '')
+            .replace(/[_\d]+$/, '')
 
           let url = ''
 
@@ -1757,6 +1759,133 @@ export const recipes = [
           nav,
           cart_side_bar,
           {
+            selector: 'div.sf-rib-v1-toolbar',
+            name: 'refinements_toolbar',
+            children: [
+              {
+                selector:
+                  'span[data-csa-c-slot-id="nav-rib"], div[data-csa-c-slot-id="nav-rib"], a.sf-clear-all',
+                add_text: true,
+                clickable: true,
+                name: 'from_text',
+                text_js: (em) => {
+                  if (em.getAttribute('data-csa-c-content-id') == 's-all-filters') {
+                    return 'Show All Filters'
+                  }
+                  return em.getAttribute('aria-label') || em.innerText || ''
+                }
+              },
+              {
+                selector: 'div.sf-rib-v1-dropdown-main-container',
+                name: 'dropdown_lists',
+                children: [
+                  {
+                    selector: 'div.a-section.a-spacing-none',
+                    name: 'from_text',
+                    text_selector: 'div.sf-rib-v1-dropdown-popup-title-container',
+                    direct_child: true,
+                    children: [
+                      {
+                        selector: 'div.sf-rib-v1-dropdown-popup-title-container',
+                        add_text: true
+                      },
+                      {
+                        selector: 'ul span[role="listitem"]',
+                        clickable: true,
+                        add_text: true,
+                        name: 'from_text',
+                        children: [
+                          {
+                            selector: 'input[type="checkbox"]'
+                          }
+                        ]
+                      },
+                      {
+                        selector: 'div.sf-rib-v1-range-slider-label-container',
+                        add_text: true
+                      },
+                      {
+                        selector: 'div.s-slider-container div.s-lower-bound input',
+                        name: 'price_min_value',
+                        add_text: true,
+                        clickable: true,
+                        keep_attr: ['min', 'max', 'step'],
+                        override_attr: {
+                          step_values: (em) => {
+                            const formEm = em.closest('form')
+                            if (formEm) {
+                              const prop = formEm.getAttribute('data-slider-props')
+                              if (prop) {
+                                const steps = JSON.parse(prop).stepLabels
+                                return steps
+                              }
+                            }
+                            return ''
+                          },
+                          current_value: (em) => {
+                            const value = Number.parseInt(em.getAttribute('value'))
+                            if (value !== null) {
+                              const formEm = em.closest('form')
+                              if (formEm) {
+                                const prop = formEm.getAttribute('data-slider-props')
+                                if (prop) {
+                                  const steps = JSON.parse(prop).stepLabels
+                                  return steps[value]
+                                }
+                              }
+                            }
+                            return ''
+                          }
+                        }
+                      },
+                      {
+                        selector: 'div.s-slider-container div.s-upper-bound input',
+                        name: 'price_min_value',
+                        add_text: true,
+                        clickable: true,
+                        keep_attr: ['min', 'max', 'step'],
+                        override_attr: {
+                          step_values: (em) => {
+                            const formEm = em.closest('form')
+                            if (formEm) {
+                              const prop = formEm.getAttribute('data-slider-props')
+                              if (prop) {
+                                const steps = JSON.parse(prop).stepLabels
+                                return steps
+                              }
+                            }
+                            return ''
+                          },
+                          current_value: (em) => {
+                            const value = Number.parseInt(em.getAttribute('value'))
+                            if (value !== null) {
+                              const formEm = em.closest('form')
+                              if (formEm) {
+                                const prop = formEm.getAttribute('data-slider-props')
+                                if (prop) {
+                                  const steps = JSON.parse(prop).stepLabels
+                                  return steps[value]
+                                }
+                              }
+                            }
+                            return ''
+                          }
+                        }
+                      },
+                      {
+                        selector:
+                          'div.sf-rib-v1-dropdown-buttons button, div.sf-rib-v1-dropdown-buttons input',
+                        name: 'from_text',
+                        add_text: true,
+                        clickable: true
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
             selector: '#s-refinements',
             name: 'refinements',
             children: [
@@ -1805,126 +1934,6 @@ export const recipes = [
                 ]
               },
               {
-                selector: 'div.sf-rib-v1-toolbar',
-                name: 'refinements_toolbar',
-                children: [
-                  {
-                    selector:
-                      'span[data-csa-c-slot-id="nav-rib"], div[data-csa-c-slot-id="nav-rib"], a.sf-clear-all',
-                    add_text: true,
-                    clickable: true,
-                    name: 'from_text'
-                  },
-                  {
-                    selector: 'div.sf-rib-v1-dropdown-contents-container',
-                    name: 'dropdown_lists',
-                    children: [
-                      {
-                        selector: 'div.a-section.a-spacing-none',
-                        name: 'from_text',
-                        text_selector: 'div.sf-rib-v1-dropdown-popup-title-container',
-                        children: [
-                          {
-                            selector: 'div.sf-rib-v1-dropdown-popup-title-container',
-                            add_text: true
-                          },
-                          {
-                            selector: 'ul span[role="listitem"]',
-                            clickable: true,
-                            add_text: true,
-                            name: 'from_text',
-                            children: [
-                              {
-                                selector: 'input[type="checkbox"]'
-                              }
-                            ]
-                          },
-                          {
-                            selector: 'div.sf-rib-v1-range-slider-label-container',
-                            add_text: true
-                          },
-                          {
-                            selector: 'div.s-slider-container div.s-lower-bound input',
-                            name: 'price_min_value',
-                            add_text: true,
-                            clickable: true,
-                            keep_attr: ['min', 'max', 'step'],
-                            override_attr: {
-                              step_values: (em) => {
-                                const formEm = em.closest('form')
-                                if (formEm) {
-                                  const prop = formEm.getAttribute('data-slider-props')
-                                  if (prop) {
-                                    const steps = JSON.parse(prop).stepLabels
-                                    return steps
-                                  }
-                                }
-                                return ''
-                              },
-                              current_value: (em) => {
-                                const value = Number.parseInt(em.getAttribute('value'))
-                                if (value !== null) {
-                                  const formEm = em.closest('form')
-                                  if (formEm) {
-                                    const prop = formEm.getAttribute('data-slider-props')
-                                    if (prop) {
-                                      const steps = JSON.parse(prop).stepLabels
-                                      return steps[value]
-                                    }
-                                  }
-                                }
-                                return ''
-                              }
-                            }
-                          },
-                          {
-                            selector: 'div.s-slider-container div.s-upper-bound input',
-                            name: 'price_min_value',
-                            add_text: true,
-                            clickable: true,
-                            keep_attr: ['min', 'max', 'step'],
-                            override_attr: {
-                              step_values: (em) => {
-                                const formEm = em.closest('form')
-                                if (formEm) {
-                                  const prop = formEm.getAttribute('data-slider-props')
-                                  if (prop) {
-                                    const steps = JSON.parse(prop).stepLabels
-                                    return steps
-                                  }
-                                }
-                                return ''
-                              },
-                              current_value: (em) => {
-                                const value = Number.parseInt(em.getAttribute('value'))
-                                if (value !== null) {
-                                  const formEm = em.closest('form')
-                                  if (formEm) {
-                                    const prop = formEm.getAttribute('data-slider-props')
-                                    if (prop) {
-                                      const steps = JSON.parse(prop).stepLabels
-                                      return steps[value]
-                                    }
-                                  }
-                                }
-                                return ''
-                              }
-                            }
-                          },
-                          {
-                            selector:
-                              'div.sf-rib-v1-dropdown-buttons button, div.sf-rib-v1-dropdown-buttons input',
-                            name: 'from_text',
-                            add_text: true,
-                            clickable: true
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
                 selector:
                   'div.a-section.a-spacing-none:not(:has(#n-title)):has(span.a-size-base.a-color-base.puis-bold-weight-text):has(ul span.a-declarative > span > li):not(#reviewsRefinements):not(#departments):not(#priceRefinements):not(#filters)',
                 name: 'from_text',
@@ -1944,7 +1953,7 @@ export const recipes = [
                     clickable: true,
                     generate_metadata: (em) => {
                       const selected = em?.getAttribute('aria-current')
-                      const title = em?.innerText
+                      const title = em?.innerText?.trim()
                       const url = em?.getAttribute('href')
                       if (selected && selected == 'true') {
                         return {
@@ -1980,7 +1989,7 @@ export const recipes = [
                     clickable: true,
                     // text_format: 'Clear Option {}',
                     generate_metadata: (em) => {
-                      const title = em?.innerText?.replace(/\n/g, ' ')
+                      const title = em?.innerText?.replace(/\n/g, ' ')?.trim()
                       const url = em?.getAttribute('href')
                       return { name: 'refinements.reviews', data: { title, selected: true, url } }
                     }
@@ -1991,7 +2000,7 @@ export const recipes = [
                     name: 'from_text',
                     clickable: true,
                     generate_metadata: (em) => {
-                      const title = em?.innerText?.replace(/\n/g, ' ')
+                      const title = em?.innerText?.replace(/\n/g, ' ')?.trim()
                       const url = em?.getAttribute('href')
                       return { name: 'refinements.reviews', data: { title, selected: false, url } }
                     }
@@ -2023,7 +2032,7 @@ export const recipes = [
                     clickable: true,
                     // text_format: 'Clear Option {}',
                     generate_metadata: (em) => {
-                      const title = em?.innerText
+                      const title = em?.innerText?.trim()
                       const url = em?.getAttribute('href')
                       return { name: 'refinements.price', data: { title, selected: true, url } }
                     }
@@ -2034,7 +2043,7 @@ export const recipes = [
                     name: 'from_text',
                     clickable: true,
                     generate_metadata: (em) => {
-                      const title = em?.innerText
+                      const title = em?.innerText?.trim()
                       const url = em?.getAttribute('href')
                       return { name: 'refinements.price', data: { title, selected: false, url } }
                     }
@@ -2166,7 +2175,7 @@ export const recipes = [
                     clickable: true,
                     // text_format: 'Clear Option {}',
                     generate_metadata: (em) => {
-                      const title = em?.innerText
+                      const title = em?.innerText?.trim()
                       const url = em?.getAttribute('href')
                       return { name: 'refinements.price', data: { title, selected: true, url } }
                     }
@@ -2177,7 +2186,7 @@ export const recipes = [
                     name: 'from_text',
                     clickable: true,
                     generate_metadata: (em) => {
-                      const title = em?.innerText
+                      const title = em?.innerText?.trim()
                       const url = em?.getAttribute('href')
                       return { name: 'refinements.price', data: { title, selected: false, url } }
                     }
