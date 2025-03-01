@@ -2529,7 +2529,7 @@ export const recipes = [
     ]
   },
   {
-    match: '#productTitle',
+    match: '#productTitle, #titleBlock',
     match_text: '',
     selector: 'html',
     children: [
@@ -3864,7 +3864,140 @@ export const recipes = [
       },
       {
         selector: 'body',
-        children: [nav]
+        children: [
+          nav,
+          {
+            selector: '#nav-subnav',
+            name: 'sub_stores',
+            children: [
+              {
+                selector: 'a',
+                direct_child: true,
+                clickable: true,
+                name: 'from_text',
+                add_text: true
+              },
+              {
+                selector: 'li.generic-subnav-flyout-item',
+                clickable: true,
+                use_root: true,
+                name: 'from_text',
+                add_text: true
+              }
+            ]
+          },
+          {
+            selector: 'div[class^="DesktopRefinements-module__root"]',
+            name: 'refinements',
+            children: [
+              {
+                selector: 'div',
+                direct_child: true,
+                name: 'from_text',
+                text_selector: 'span.a-size-base.a-color-base.a-text-bold',
+                children: [
+                  {
+                    selector: 'span.a-size-base.a-color-base.a-text-bold',
+                    add_text: true
+                  },
+                  {
+                    selector: 'ul[class^="Breadcrumbs-module"] li:has(a)',
+                    add_text: true,
+                    clickable: true,
+                    name: 'from_text'
+                  },
+                  {
+                    selector: 'ul[class^="Breadcrumbs-module"] li:not(:has(a))',
+                    add_text: true
+                  },
+                  {
+                    selector: 'div[role="radiogroup"] > span, div[role="group"] > span',
+                    clickable: true,
+                    add_text: true,
+                    name: 'from_text',
+                    text_js: (em) => {
+                      return (
+                        em.querySelector('div[aria-label]')?.getAttribute('aria-label') ||
+                        em.innerText
+                      )
+                    },
+                    generate_metadata: (em) => {
+                      const nameEm = em.parentElement?.parentElement?.firstElementChild
+                      const name = nameEm?.innerText
+                        ?.trim()
+                        .replace(/[ ]/g, '_')
+                        .toLowerCase()
+                        .trim()
+                        .replace(/^_+|_+$/g, '')
+
+                      const text =
+                        em.querySelector('div[aria-label]')?.getAttribute('aria-label') ||
+                        em.innerText
+
+                      const selectEm = em.querySelector(
+                        'input[type="radio"], input[type="checkbox"]'
+                      )
+                      const selected = selectEm?.getAttribute('data-processed-input-checked')
+                      return {
+                        name: 'refinements.' + name,
+                        data: { title: text?.trim() || '', selected: false }
+                      }
+                    }
+                  },
+                  {
+                    selector: 'button[class*="SeeMoreButton-module"]',
+                    clickable: true,
+                    add_text: true,
+                    name: 'from_text'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            selector: 'div[class^="ProductCard-module__card"]',
+            name: 'from_text',
+            text_selector: 'p[id^="title"] span.a-truncate-full',
+            children: [
+              {
+                selector: 'div[class*="imageWrapper"] a',
+                clickable: true,
+                text_format: 'Product Image',
+                add_text: true,
+                name: 'from_text'
+              },
+              {
+                selector: 'a[class*="cardContainingLink"]',
+                clickable: true,
+                add_text: true,
+                name: 'product_detail'
+              },
+              {
+                selector: 'div[data-testid="color-swatch"] ul',
+                name: 'colors',
+                children: [
+                  {
+                    selector: 'li',
+                    clickable: true,
+                    add_text: true,
+                    name: 'from_text',
+                    text_js: (em) => {
+                      return em.querySelector('a')?.getAttribute('aria-label') || ''
+                    }
+                  }
+                ]
+              }
+            ],
+            generate_metadata: (em) => {
+              const asin = em.getAttribute('data-asin')
+              const title = em.querySelector('p[id^="title"] span.a-truncate-full')?.innerText
+              return {
+                name: 'promotion_items',
+                data: { asin, title }
+              }
+            }
+          }
+        ]
       }
     ]
   },
