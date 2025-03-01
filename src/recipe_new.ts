@@ -1036,6 +1036,111 @@ export const fresh_cart = [
   }
 ]
 
+export const luxury_cart = [
+  nav,
+  {
+    selector: "div[data-name='Active Items']",
+    name: 'active_item_list',
+    children: [
+      {
+        selector: 'div.sc-list-item-content',
+        text_selector: 'ul > li > span.a-list-item > a.sc-product-title span.a-truncate-full',
+        name: 'from_text',
+        children: [
+          {
+            selector: 'div.sc-product-image-desktop a img',
+            clickable: true,
+            name: 'product_image',
+            add_text: true,
+            text_format: 'Product Image'
+          },
+          {
+            selector: 'ul > li > span.a-list-item > a.sc-product-title',
+            clickable: true,
+            text_selector: 'span.sc-product-title',
+            add_text: true,
+            name: 'product_detail'
+          },
+          {
+            selector: 'div.sc-badge-price-to-pay span.sc-price',
+            add_text: true
+          },
+          {
+            selector: 'div.sc-action-links',
+            children: [
+              {
+                selector: 'span.sc-quantity-stepper',
+                children: [
+                  {
+                    selector: 'button[data-action="a-stepper-decrement"]',
+                    add_text: true,
+                    text_js: function (element) {
+                      if (element.hasAttribute('aria-label')) {
+                        return element.getAttribute('aria-label')
+                      }
+                      return ''
+                    },
+
+                    clickable: true,
+                    name: 'decrease_quantity_by_one'
+                  },
+                  {
+                    selector: 'div[role="spinbutton"]',
+                    add_text: true,
+                    name: 'quantity_drop_down_list',
+                    text_format: 'Current Quantity: {}'
+                  },
+                  {
+                    selector: 'button[data-action="a-stepper-increment"]',
+                    add_text: true,
+                    text_js: function (element) {
+                      if (element.hasAttribute('aria-label')) {
+                        return element.getAttribute('aria-label')
+                      }
+                      return ''
+                    },
+                    clickable: true,
+                    name: 'increase_quantity_by_one'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            selector: "input[data-action='delete']",
+            add_text: true,
+            clickable: true,
+            name: 'delete'
+          }
+        ],
+        generate_metadata: (em) => {
+          const asin = em.parentElement?.getAttribute('data-asin')
+          const priceEm = em.querySelector('div.sc-badge-price-to-pay span.sc-price')
+          const price = priceEm?.innerText?.replace(/[\n]/g, '')
+          const titleEm = em.querySelector(
+            'ul > li > span.a-list-item > a.sc-product-title span.sc-product-title'
+          )
+          const title = titleEm?.innerText
+          const urlEm = em.querySelector('ul > li > span.a-list-item > a.sc-product-title')
+          const url = urlEm?.getAttribute('href')
+          const quantityEm = em.querySelector('span.sc-quantity-stepper div[role="spinbutton"]')
+          const quantity = quantityEm?.innerText
+          return {
+            name: 'active_items',
+            data: { title, asin, price, url, quantity }
+          }
+        }
+      }
+    ]
+  },
+  {
+    selector: 'div.sc-buy-box-inner-box input[name^="proceedToLuxuryCheckout"]',
+    clickable: true,
+    name: 'check_out',
+    add_text: true
+  }
+]
+
 export const buy_again = [
   nav,
   cart_side_bar,
@@ -1777,7 +1882,7 @@ export const recipes = [
               },
               {
                 selector: 'div.sf-rib-v1-dropdown-main-container',
-                name: 'dropdown_lists',
+                name: 'drop_down_lists',
                 children: [
                   {
                     selector: 'div.a-section.a-spacing-none',
@@ -2572,6 +2677,29 @@ export const recipes = [
                 }
               },
               {
+                selector: '#bondByLine_feature_div',
+                add_text: true,
+                clickable: true,
+                name: 'product_brand',
+                generate_metadata: (em) => {
+                  return {
+                    name: 'product_details',
+                    data: { brand: em?.innerText || '' }
+                  }
+                }
+              },
+              {
+                selector: '#bondByLine_feature_div',
+                add_text: true,
+                name: 'product_title',
+                generate_metadata: (em) => {
+                  return {
+                    name: 'product_details',
+                    data: { title: em?.innerText || '' }
+                  }
+                }
+              },
+              {
                 selector: '#averageCustomerReviews',
                 class: 'review',
                 children: [
@@ -2606,6 +2734,18 @@ export const recipes = [
                 },
                 text_js: (em) => {
                   return em?.innerText?.replace(/\n/g, '') || ''
+                }
+              },
+              {
+                selector: 'span.a-price span.a-offscreen',
+                add_text: true,
+                text_format: 'Price: {}',
+                class: 'product-price',
+                generate_metadata: (em) => {
+                  return {
+                    name: 'product_details',
+                    data: { price: em?.innerText?.replace(/\n/g, '') || '' }
+                  }
                 }
               },
               {
@@ -2756,7 +2896,7 @@ export const recipes = [
                         name: 'button_list',
                         children: [
                           {
-                            selector: 'li span:not(.aok-hidden) input',
+                            selector: 'li span.a-button:not(.aok-hidden) input',
                             add_text: true,
                             clickable: true,
                             name: 'from_text',
@@ -2812,7 +2952,7 @@ export const recipes = [
               },
               {
                 selector:
-                  '#productFactsDesktopExpander ul.a-unordered-list, #featurebullets_feature_div ul.a-unordered-list',
+                  '#productFactsDesktopExpander ul.a-unordered-list, #featurebullets_feature_div ul.a-unordered-list, #bond-feature-bullets-desktop ul.a-unordered-list',
                 add_text: true,
                 name: 'about_this_item',
                 text_format: 'About this item: ',
@@ -2834,7 +2974,8 @@ export const recipes = [
             ]
           },
           {
-            selector: '#buybox:has(div.a-tab-container):not(:has(#partialState_buybox_desktop))',
+            selector:
+              '#buybox:has(div.a-tab-container):not(:has(#partialState_buybox_desktop)):not(:has(#luxury_buybox_desktop))',
             name: 'buybox',
             children: [
               {
@@ -2874,7 +3015,7 @@ export const recipes = [
           },
           {
             selector:
-              '#buybox:not(:has(div.a-tab-container)):not(:has(#partialState_buybox_desktop))',
+              '#buybox:not(:has(div.a-tab-container)):not(:has(#partialState_buybox_desktop)):not(:has(#luxury_buybox_desktop))',
             name: 'buybox',
             children: [buy_box_with_accordion, buy_box_without_accordion_delivery],
             generate_metadata: (em) => {
@@ -2900,6 +3041,43 @@ export const recipes = [
                 data: { asin: asinEm?.value || '' }
               }
             }
+          },
+          {
+            selector: '#buybox:has(#luxury_buybox_desktop)',
+            name: 'buybox',
+            children: [
+              {
+                selector: '#bondApexPrice_feature_div',
+                add_text: true
+              },
+              {
+                selector: '#deliveryBlockMessage',
+                add_text: true
+              },
+              {
+                selector: 'span.a-dropdown-container select',
+                name: 'drop_down_list'
+              },
+              {
+                selector: '#bond-atc-button input',
+                name: 'from_text',
+                text_format: 'Add To Cart',
+                clickable: true,
+                add_text: true
+              }
+            ],
+            generate_metadata: (em) => {
+              const asinEm = em.querySelector('input#ASIN')
+              return {
+                name: 'product_details',
+                data: { asin: asinEm?.value || '' }
+              }
+            }
+          },
+          {
+            selector: '#outOfStock',
+            add_text: true,
+            text_format: 'Currently Unavailable'
           },
           {
             selector: '#product-comparison_feature_div',
@@ -3554,6 +3732,26 @@ export const recipes = [
       {
         selector: 'body',
         children: cart
+      }
+    ]
+  },
+  {
+    match: '/cart/luxury',
+    match_method: 'url',
+    selector: 'html',
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: luxury_cart
       }
     ]
   },
