@@ -496,10 +496,12 @@ export const buy_box_without_accordion_pick_up = {
 }
 
 export const carousel_card = {
-  selector: 'li.a-carousel-card:not(.a-carousel-card-empty)',
+  selector: 'li.a-carousel-card:not(.a-carousel-card-empty), #gridItemRoot',
   name: 'from_text',
   text_js: (em) => {
-    const titleEm = em.querySelector('a div[class*="sc-truncate-desktop"], a span.title')
+    const titleEm = em.querySelector(
+      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"]'
+    )
     const title = titleEm?.title || titleEm?.innerText || ''
     return title
   },
@@ -512,7 +514,8 @@ export const carousel_card = {
       clickable: true
     },
     {
-      selector: 'a div[class*="sc-truncate-desktop"], a span.title',
+      selector:
+        'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"]',
       add_text: true,
       name: 'product_title',
       clickable: true
@@ -581,14 +584,16 @@ export const carousel_card = {
     const asin = asinEm?.getAttribute('id')?.split('-').pop() || asinEm?.getAttribute('data-asin')
     const priceEm = em.querySelector('a span[class*="sc-price"], span.a-price span.a-offscreen')
     const price = priceEm?.innerText?.replace(/[\n]/g, '')
-    const titleEm = em.querySelector('a div[class*="sc-truncate-desktop"], a span.title')
+    const titleEm = em.querySelector(
+      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"]'
+    )
     const title = titleEm?.title || titleEm?.innerText || ''
     const urlEm = em.querySelector('a:has(div[class*="sc-truncate-desktop"]), a:has(span.title)')
     const url = urlEm?.getAttribute('href')
     const quantityEm = em.querySelector(
       'div[name="ax-qs"] div[role="spinbutton"], div[id^="atcStepperSection"] span.atcStepperQuantity'
     )
-    const quantity = quantityEm?.innerText || '0'
+    const quantity = quantityEm?.innerText || ''
     return {
       name: 'promotion_items',
       data: { title, asin, price, url, quantity }
@@ -1669,11 +1674,11 @@ export const popular_products = [
       },
       {
         selector: 'div[id^="CardInstance"]',
-        text_selector: 'h2.a-carousel-heading',
+        text_selector: 'h2.a-carousel-heading, h1',
         name: 'from_text',
         children: [
           {
-            selector: 'h2.a-carousel-heading',
+            selector: 'h2.a-carousel-heading, h1',
             add_text: true
           },
           {
@@ -1804,7 +1809,8 @@ export const recipes = [
                 name: 'refinements_toolbar',
                 children: [
                   {
-                    selector: 'span[data-csa-c-slot-id="nav-rib"]',
+                    selector:
+                      'span[data-csa-c-slot-id="nav-rib"], div[data-csa-c-slot-id="nav-rib"], a.sf-clear-all',
                     add_text: true,
                     clickable: true,
                     name: 'from_text'
@@ -3802,39 +3808,65 @@ export const recipes = [
     children: popular_products
   },
   {
-    match: '/gp/new-releases',
+    match: '/gp/new-releases/*',
     match_method: 'url',
     selector: 'html',
     match_with_ref: true,
+    match_with_wildcard: true,
     children: popular_products
   },
   {
-    match: '/gp/movers-and-shakers',
+    match: '/gp/movers-and-shakers/*',
     match_method: 'url',
     selector: 'html',
     match_with_ref: true,
+    match_with_wildcard: true,
     children: popular_products
   },
   {
-    match: '/gp/most-wished-for',
+    match: '/gp/most-wished-for/*',
     match_method: 'url',
     selector: 'html',
     match_with_ref: true,
+    match_with_wildcard: true,
     children: popular_products
   },
   {
-    match: '/gp/most-gifted',
+    match: '/gp/most-gifted/*',
     match_method: 'url',
     selector: 'html',
     match_with_ref: true,
+    match_with_wildcard: true,
     children: popular_products
   },
   {
-    match: '/Best-Sellers/zgbs',
+    match: '/Best-Sellers*/zgbs/*',
     match_method: 'url',
     selector: 'html',
     match_with_ref: true,
+    match_with_wildcard: true,
     children: popular_products
+  },
+  {
+    match: '/*/b',
+    match_method: 'url',
+    selector: 'html',
+    match_with_wildcard: true,
+    children: [
+      {
+        selector: 'head',
+        children: [
+          {
+            selector: 'title',
+            add_text: true
+          }
+        ]
+      },
+      {
+        selector: 'body',
+        children: [nav]
+      }
+    ]
   },
   {
     match: '/ap/signin',

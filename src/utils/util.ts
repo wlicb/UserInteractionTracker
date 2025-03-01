@@ -193,7 +193,7 @@ function selectRecipe(url = null, document = globalThis.document, window = globa
     parsedUrl = new URL(window.location.href)
   }
   let path = parsedUrl.pathname
-  path = path !== '/' ? path.replace(/\/+$/, '') : path
+  path = path !== '/' ? path.replace(/\/+/g, '/').replace(/\/$/, '') : path
 
   for (const recipe of recipes) {
     const matchMethod = recipe.match_method || 'text'
@@ -215,15 +215,28 @@ function selectRecipe(url = null, document = globalThis.document, window = globa
         console.error('Error checking text match:', error)
       }
     } else if (matchMethod === 'url') {
-      if (recipe.match === path) {
+      const match = recipe.match.replace(/\*/g, '').replace(/\/+/g, '/').replace(/\/$/, '')
+      const wildcard_match = '^' + recipe.match.replace(/\*/g, '[^/]*') + '$'
+      const wildcard_match_with_ref = '^' + recipe.match.replace(/\*/g, '[^/]+') + '(/ref=.+)$'
+      if (match === path) {
         console.log('matched with recipe ', recipe.match)
         return recipe
       } else if (
         recipe.match_with_ref &&
-        (path.startsWith(recipe.match + '/ref=') || path.startsWith(recipe.match + 'ref='))
+        (path.startsWith(match + '/ref=') || path.startsWith(match + 'ref='))
       ) {
         console.log('matched with recipe ', recipe.match)
         return recipe
+      } else if (recipe.match_with_wildcard) {
+        const regExp = new RegExp(wildcard_match)
+        const regExpWithRef = new RegExp(wildcard_match_with_ref)
+        if (regExp.test(path)) {
+          console.log('matched with recipe ', recipe.match)
+          return recipe
+        } else if (recipe.match_with_ref && regExpWithRef.test(path)) {
+          console.log('matched with recipe ', recipe.match)
+          return recipe
+        }
       }
     }
   }
