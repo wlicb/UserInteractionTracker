@@ -1846,6 +1846,7 @@ export const recipes = [
                 text_js: (em) => {
                   return (
                     em.getAttribute('aria-label') ||
+                    em.querySelector('img')?.alt ||
                     em.querySelector('span.a-truncate-full')?.innerText ||
                     em.innerText ||
                     ''
