@@ -539,12 +539,17 @@ export const carousel_card = {
       clickable: true
     },
     {
-      selector: 'span.a-price span.a-offscreen',
+      selector: 'div.a-section.aok-relative:has(span.a-price span.a-offscreen)',
       add_text: true,
+      clickable: true,
       name: 'product_price'
     },
     {
-      selector: 'pBooks-sf-points-component',
+      selector: 'span.a-price span.a-offscreen',
+      add_text: true
+    },
+    {
+      selector: 'a.pBooks-sf-points-component',
       add_text: true,
       clickable: true,
       name: 'product_points'
@@ -1819,7 +1824,69 @@ export const recipes = [
       },
       {
         selector: 'body',
-        children: [nav, cart_side_bar]
+        children: [
+          nav,
+          cart_side_bar,
+          {
+            selector: 'div.gw-col',
+            text_selector:
+              'h1 span.a-truncate-full, h2 span.a-truncate-full, h3 span.a-truncate-full, h1:not(:has(span.a-truncate-full)), h2:not(:has(span.a-truncate-full)), h3:not(:has(span.a-truncate-full))',
+            name: 'from_text',
+            children: [
+              {
+                selector:
+                  'h1 span.a-truncate-full, h2 span.a-truncate-full, h3 span.a-truncate-full, h1:not(:has(span.a-truncate-full)), h2:not(:has(span.a-truncate-full)), h3:not(:has(span.a-truncate-full))',
+                add_text: true
+              },
+              {
+                selector: 'a',
+                add_text: true,
+                clickable: true,
+                name: 'from_text',
+                text_js: (em) => {
+                  return (
+                    em.getAttribute('aria-label') ||
+                    em.querySelector('span.a-truncate-full')?.innerText ||
+                    em.innerText ||
+                    ''
+                  )
+                }
+              }
+            ]
+          },
+          {
+            selector: 'div[data-card-metrics-id*="rhf"]',
+            text_selector: 'h2.a-carousel-heading',
+            name: 'from_text',
+            children: [
+              {
+                selector: 'h2.a-carousel-heading',
+                add_text: true
+              },
+              carousel_card
+            ]
+          },
+          {
+            selector: 'div[data-card-metrics-id*="rvi"]',
+            text_selector: 'h2.a-carousel-heading',
+            name: 'from_text',
+            children: [
+              {
+                selector: 'h2.a-carousel-heading',
+                add_text: true
+              },
+              {
+                selector: 'a',
+                clickable: true,
+                add_text: true,
+                name: 'from_text',
+                text_js: (em) => {
+                  return em.querySelector('img')?.alt || em.innerText || ''
+                }
+              }
+            ]
+          }
+        ]
       }
     ]
   },

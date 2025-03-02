@@ -215,7 +215,10 @@ function selectRecipe(url = null, document = globalThis.document, window = globa
         console.error('Error checking text match:', error)
       }
     } else if (matchMethod === 'url') {
-      const match = recipe.match.replace(/\*/g, '').replace(/\/+/g, '/').replace(/\/$/, '')
+      const match =
+        recipe.match == '/'
+          ? recipe.match
+          : recipe.match.replace(/\*/g, '').replace(/\/+/g, '/').replace(/\/$/, '')
       const wildcard_match = '^' + recipe.match.replace(/\*/g, '[^/]*') + '$'
       const wildcard_match_with_ref = '^' + recipe.match.replace(/\*/g, '[^/]+') + '(/ref=.+)$'
       if (match === path) {
