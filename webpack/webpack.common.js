@@ -10,6 +10,7 @@ module.exports = {
     popup: path.join(srcDir, 'popup.ts'),
     background: path.join(srcDir, 'background.ts'),
     content_script: path.join(srcDir, 'content_script.ts'),
+    content_script_document_end: path.join(srcDir, 'content_script_document_end.ts'),
     injected: path.join(srcDir, 'injected.ts')
   },
   output: {
