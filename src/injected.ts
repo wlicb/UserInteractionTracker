@@ -152,6 +152,14 @@ const work = () => {
           return true
         }
       }
+      // inside a button inside form
+      if (element.closest('button') && element.closest('button').closest('form')) {
+        // if the button has a type and it's button, return false
+        if ((element.closest('button') as HTMLButtonElement).type === 'button') {
+          return false
+        }
+        return true
+      }
       return false
     }
     // Monkey patch addEventListener
