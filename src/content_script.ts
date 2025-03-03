@@ -433,9 +433,13 @@ const work = () => {
       if (message.action === 'showReminder') {
         console.log('showReminder')
         const data = message.data
-        alert(
-          `Thank you for participating!\nYou have contributed ${data.on_date} rationales this week\nYou have contributed ${data.all_time} rationales in total. `
-        )
+        // alert(
+        //   `Thank you for participating!\nYou have contributed ${data.on_date} rationales this week\nYou have contributed ${data.all_time} rationales in total. `
+        // )
+        window.$dialog?.info({
+          title: 'Thank you for participating!',
+          content: `You have contributed ${data.on_date} rationales this week\nYou have contributed ${data.all_time} rationales in total. `
+        })
       }
     }
   )

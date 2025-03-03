@@ -1,28 +1,26 @@
 <template>
-  <Teleport to="body">
-    <div v-if="visible" id="reason-modal" class="reason-modal-overlay">
-      <div class="reason-modal-content">
-        <h3>{{ question }}</h3>
-        <textarea
-          id="reason-input"
-          v-model="input"
-          :placeholder="placeholder"
-          class="reason-textarea"
-        ></textarea>
-        <div id="error-message" class="error-message" v-show="showError">
-          Please enter a valid reason.
-        </div>
-        <div class="button-container">
-          <button id="reason-skip" @click="skip">Skip</button>
-          <button id="reason-submit" @click="submit">Submit</button>
-        </div>
+  <div v-if="visible" id="reason-modal" class="reason-modal-overlay">
+    <div class="reason-modal-content">
+      <h3>{{ question }}</h3>
+      <textarea
+        id="reason-input"
+        v-model="input"
+        :placeholder="placeholder"
+        class="reason-textarea"
+      ></textarea>
+      <div id="error-message" class="error-message" v-show="showError">
+        Please enter a valid reason.
+      </div>
+      <div class="button-container">
+        <button id="reason-skip" @click="skip">Skip</button>
+        <button id="reason-submit" @click="submit">Submit</button>
       </div>
     </div>
-  </Teleport>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, defineEmits } from 'vue'
+import { ref } from 'vue'
 import { isValidReason } from '../utils/util'
 
 const props = defineProps({
