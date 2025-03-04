@@ -168,7 +168,14 @@ onMounted(async () => {
         <NButton @click="handleEditUserId" class="edit-button">Edit</NButton>
       </div>
 
-      <NButton v-if="showUserIdInput" @click="handleConfirmUserId" class="confirm-button">
+      <NButton
+        v-if="showUserIdInput"
+        @click="handleConfirmUserId"
+        strong
+        secondary
+        type="info"
+        class="confirm-button"
+      >
         Confirm
       </NButton>
     </div>
@@ -282,12 +289,7 @@ body {
   margin-top: 5px;
   padding: 8px;
   font-size: 12px;
-  cursor: pointer;
-  border: none;
   border-radius: 8px;
-  background-color: #76b1ef;
-  color: white;
-  transition: background-color 0.3s;
 }
 
 .edit-button {

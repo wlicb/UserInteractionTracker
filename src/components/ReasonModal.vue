@@ -1,0 +1,117 @@
+<template>
+  <div v-if="visible" id="reason-modal" class="reason-modal-overlay">
+    <div class="reason-modal-content">
+      <h3>{{ question }}</h3>
+      <textarea
+        id="reason-input"
+        v-model="input"
+        :placeholder="placeholder"
+        class="reason-textarea"
+      ></textarea>
+      <div id="error-message" class="error-message" v-show="showError">
+        Please enter a valid reason.
+      </div>
+      <div class="button-container">
+        <button id="reason-skip" @click="skip">Skip</button>
+        <button id="reason-submit" @click="submit">Submit</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { isValidReason } from '../utils/util'
+
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false
+  },
+  question: {
+    type: String,
+    default: ''
+  },
+  placeholder: {
+    type: String,
+    default: ''
+  }
+})
+
+const emit = defineEmits(['submit', 'skip'])
+
+const input = ref('')
+const showError = ref(false)
+
+function submit() {
+  if (!isValidReason(input.value)) {
+    showError.value = true
+    return
+  }
+
+  showError.value = false
+  emit('submit', { input: input.value, success: true })
+  reset()
+}
+
+function skip() {
+  emit('skip', { input: null, success: false })
+  reset()
+}
+
+function reset() {
+  input.value = ''
+  showError.value = false
+}
+</script>
+
+<style scoped lang="scss">
+.reason-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.reason-modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+}
+
+.highlight-question {
+  padding: 0px 6px;
+  border-radius: 3px;
+  display: inline-block;
+  color: rgb(24, 160, 88);
+  border: 1px solid rgba(24, 160, 88, 0.3);
+  background: rgba(24, 160, 88, 0.1);
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.reason-textarea {
+  width: 100%;
+  height: 100px;
+  margin: 10px 0;
+}
+
+.error-message {
+  color: red;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.button-container {
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+</style>
