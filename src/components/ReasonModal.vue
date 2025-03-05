@@ -101,8 +101,9 @@ function reset() {
 .reason-textarea {
   width: 100%;
   height: 100px;
-  border: none; /* Remove border */
-  outline: none; /* Remove outline */
+  :deep(textarea) {
+    box-shadow: none;
+  }
 }
 
 .error-message {
