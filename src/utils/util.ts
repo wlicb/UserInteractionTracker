@@ -2,7 +2,9 @@ import { startsWith } from 'lodash'
 import { filter_url, url_includes, check_user_id_url } from '../config'
 
 export function isFromPopup(element: HTMLElement): boolean {
-  return element.closest('#reason-modal') !== null
+  // return element.closest('#reason-modal') !== null
+  const selectors = ['#user-interaction-tracker-app', '.n-modal-container']
+  return selectors.some((selector) => element.closest(selector) !== null)
 }
 export async function update_icon(url) {
   console.log('update_icon', url)
@@ -193,7 +195,7 @@ function selectRecipe(url = null, document = globalThis.document, window = globa
     parsedUrl = new URL(window.location.href)
   }
   let path = parsedUrl.pathname
-  path = path !== '/' ? path.replace(/\/+$/, '') : path
+  path = path !== '/' ? path.replace(/\/+/g, '/').replace(/\/$/, '') : path
 
   for (const recipe of recipes) {
     const matchMethod = recipe.match_method || 'text'
@@ -215,15 +217,31 @@ function selectRecipe(url = null, document = globalThis.document, window = globa
         console.error('Error checking text match:', error)
       }
     } else if (matchMethod === 'url') {
-      if (recipe.match === path) {
+      const match =
+        recipe.match == '/'
+          ? recipe.match
+          : recipe.match.replace(/\*/g, '').replace(/\/+/g, '/').replace(/\/$/, '')
+      const wildcard_match = '^' + recipe.match.replace(/\*/g, '[^/]*') + '$'
+      const wildcard_match_with_ref = '^' + recipe.match.replace(/\*/g, '[^/]+') + '(/ref=.+)$'
+      if (match === path) {
         console.log('matched with recipe ', recipe.match)
         return recipe
       } else if (
         recipe.match_with_ref &&
-        (path.startsWith(recipe.match + '/ref=') || path.startsWith(recipe.match + 'ref='))
+        (path.startsWith(match + '/ref=') || path.startsWith(match + 'ref='))
       ) {
         console.log('matched with recipe ', recipe.match)
         return recipe
+      } else if (recipe.match_with_wildcard) {
+        const regExp = new RegExp(wildcard_match)
+        const regExpWithRef = new RegExp(wildcard_match_with_ref)
+        if (regExp.test(path)) {
+          console.log('matched with recipe ', recipe.match)
+          return recipe
+        } else if (recipe.match_with_ref && regExpWithRef.test(path)) {
+          console.log('matched with recipe ', recipe.match)
+          return recipe
+        }
       }
     }
   }
@@ -285,16 +303,6 @@ export function getCustomQuestion(
           'You <span class="highlight-question">clicked</span> on the buy now button. What do you like about this particular product?'
         placeholder = 'I am buying this product because...'
       } else if (
-        data['data-semantic-id']?.startsWith('search_results.') ||
-        data['data-semantic-id']?.startsWith('product_list.') ||
-        (data['data-semantic-id']?.startsWith('active_item_list.') &&
-          data['data-semantic-id']?.endsWith('.product_detail')) ||
-        data.target.className?.includes('sc-product-link')
-      ) {
-        question =
-          'You <span class="highlight-question">clicked</span> on this product. What caught your attention compared to the other options you saw?'
-        placeholder = 'I like this product becauseß...'
-      } else if (
         data['data-semantic-id']?.endsWith('add_to_cart') ||
         data.target.id === 'add-to-cart-button' ||
         data.target.name === 'submit.addToCart' ||
@@ -317,14 +325,24 @@ export function getCustomQuestion(
       } else if (data['data-semantic-id']?.startsWith('product_options.')) {
         question =
           'You <span class="highlight-question">clicked</span> on this product option. What do you like about this product option?'
-        if (data['element-meta-name'] === 'product_options' && data['element-meta-data'] !== '') {
-          question = `You <span class="highlight-question">clicked</span> on ${data['element-meta-data']['value']}. What do you like about this product option?`
-        }
-        placeholder = 'I like this product option because...ß'
+        // if (data['element-meta-name'] === 'product_options' && data['element-meta-data'] !== '') {
+        //   question = `You <span class="highlight-question">clicked</span> on ${data['element-meta-data']['value']}. What do you like about this product option?`
+        // }
+        placeholder = 'I like this product option because...'
       } else if (data['data-semantic-id']?.endsWith('check_out')) {
         question =
           'You <span class="highlight-question">clicked</span> checkout button. What makes you choose to checkout?'
         placeholder = 'I choose to checkout because...'
+      } else if (
+        data['data-semantic-id']?.startsWith('search_results.') ||
+        data['data-semantic-id']?.startsWith('product_list.') ||
+        (data['data-semantic-id']?.startsWith('active_item_list.') &&
+          data['data-semantic-id']?.endsWith('.product_detail')) ||
+        data.target.className?.includes('sc-product-link')
+      ) {
+        question =
+          'You <span class="highlight-question">clicked</span> on this product. What caught your attention compared to the other options you saw?'
+        placeholder = 'I like this product because...'
       } else {
         question =
           'You <span class="highlight-question">clicked</span> on this element. Could you share what you were trying to do or find?'

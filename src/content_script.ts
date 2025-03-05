@@ -416,114 +416,36 @@ const work = () => {
           sendResponse({ success: false, message: 'popup already exists' })
           return
         }
-        createModal(message.question, message.placeholder, sendResponse)
+
+        // Use the Vue app to show the modal
+        const event = new CustomEvent('show-modal', {
+          detail: {
+            question: message.question,
+            placeholder: message.placeholder,
+            callback: (response) => {
+              sendResponse(response)
+            }
+          }
+        })
+        document.dispatchEvent(event)
         return true // Will respond asynchronously
       }
       if (message.action === 'showReminder') {
         console.log('showReminder')
         const data = message.data
-        alert(
-          `Thank you for participating!\nYou have contributed ${data.on_date} rationales this week\nYou have contributed ${data.all_time} rationales in total. `
-        )
+        // alert(
+        //   `Thank you for participating!\nYou have contributed ${data.on_date} rationales this week\nYou have contributed ${data.all_time} rationales in total. `
+        // )
+        window.$dialog?.info({
+          title: 'Thank you for participating!',
+          content: `You have contributed ${data.on_date} rationales this week.
+          You have contributed ${data.all_time} rationales in total. `
+        })
       }
     }
   )
-  function createModal(
-    question: string,
-    placeholder: string,
-    sendResponse: (response?: any) => void
-  ) {
-    const modalHtml = `
-        <div id="reason-modal" style="
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-        ">
-            <div style="
-                background: white;
-                padding: 20px;
-                border-radius: 8px;
-                width: 400px;
-            ">
-                <style>
-                    .highlight-question {
-                        padding: 0px 6px;
-                        border-radius: 3px;
-                        display: inline-block;
-                        color: rgb(24, 160, 88);
-                        border: 1px solid rgba(24, 160, 88, 0.3);
-                        background: rgba(24, 160, 88, 0.1);
-                        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    }
-                </style>
-                <h3>${question}</h3>
-                <textarea id="reason-input" placeholder="${placeholder}" style="
-                    width: 100%;
-                    height: 100px;
-                    margin: 10px 0;
-                "></textarea>
-                <div id="error-message" style="
-                    color: red;
-                    display: none;
-                    font-size: 12px;
-                    margin-top: 5px;
-                ">
-                    Please enter a valid reason.
-                </div>
-                <div style="
-                    text-align: right;
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: 10px;
-                ">
-                    <button id="reason-skip">Skip</button>
-                    <button id="reason-submit">Submit</button>
-                </div>
-            </div>
-        </div>
-    `
-
-    const modalContainer = document.createElement('div')
-    modalContainer.innerHTML = modalHtml
-    // if attach-desktop-sideSheet exists
-    if (document.querySelector('.attach-desktop-sideSheet:not(.aok-hidden)')) {
-      document
-        .querySelector('.attach-desktop-sideSheet:not(.aok-hidden)')
-        .appendChild(modalContainer)
-    } else {
-      document.body.appendChild(modalContainer)
-    }
-
-    // Add event listeners
-    document.getElementById('reason-submit').addEventListener('click', () => {
-      const input = document.getElementById('reason-input') as HTMLTextAreaElement
-      const errorMessage = document.getElementById('error-message') as HTMLElement
-      const value = input.value
-
-      if (!isValidReason(value)) {
-        errorMessage.style.display = 'block' // Show the error message
-        return // Prevent submission if the reason is invalid
-      } else {
-        errorMessage.style.display = 'none' // Hide the error message
-      }
-
-      modalContainer.remove()
-      sendResponse({ input: value, success: true })
-    })
-    document.getElementById('reason-skip').addEventListener('click', () => {
-      const input = document.getElementById('reason-input') as HTMLTextAreaElement
-      modalContainer.remove()
-      sendResponse({ input: null, success: false })
-    })
-  }
 }
+
 shouldExclude(window.location.href).then((result) => {
   console.log('content script, shouldExclude', result)
   if (!result) {

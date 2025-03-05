@@ -12,4 +12,3 @@ src/_config.ts
 backend/*.json
 backend/__pycache__/
 backend/logs/
-

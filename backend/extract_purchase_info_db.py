@@ -25,7 +25,7 @@ def is_cart_page(url):
     Returns True if it is a cart page, otherwise False.
     """
     path = urlparse(url).path
-    return path in ["/gp/cart/view.html", "/cart"]
+    return path in ["/gp/cart/view.html", "/cart","/cart/luxury"]
 
 
 def is_add_to_cart_page(url):
@@ -34,7 +34,7 @@ def is_add_to_cart_page(url):
     Returns True if it is an add-to-cart page, otherwise False.
     """
     path = urlparse(url).path
-    return path in ["/cart/smart-wagon", "/cart/add-to-cart"]
+    return path in ["/cart/smart-wagon", "/cart/add-to-cart",]
 
 
 def is_fresh_substitution_page(url):

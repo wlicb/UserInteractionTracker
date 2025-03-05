@@ -155,7 +155,7 @@ onMounted(async () => {
     <div class="input-container">
       <div v-html="recordingStatus" class="recording-status"></div>
       <div v-if="showUserIdInput" class="user-id-label">User ID:</div>
-      <input
+      <NInput
         v-if="showUserIdInput"
         v-model="userId"
         type="text"
@@ -165,16 +165,29 @@ onMounted(async () => {
 
       <div v-else class="user-id-container">
         <span class="user-id-display">User ID: {{ userId }}</span>
-        <NButton @click="handleEditUserId" class="edit-button">Edit</NButton>
+        <NButton @click="handleEditUserId" strong secondary type="info" class="edit-button"
+          >Edit</NButton
+        >
       </div>
 
-      <NButton v-if="showUserIdInput" @click="handleConfirmUserId" class="confirm-button">
+      <NButton
+        v-if="showUserIdInput"
+        @click="handleConfirmUserId"
+        strong
+        secondary
+        type="info"
+        class="confirm-button"
+      >
         Confirm
       </NButton>
     </div>
     <div v-if="showDownloadButtons" class="button-container">
-      <NButton @click="handleDownloadData" class="action-button">Download</NButton>
-      <NButton @click="handleClearCache" class="action-button">Clear Data</NButton>
+      <NButton @click="handleDownloadData" strong secondary type="info" class="action-button"
+        >Download</NButton
+      >
+      <NButton @click="handleClearCache" strong secondary type="info" class="action-button"
+        >Clear Data</NButton
+      >
     </div>
     <NDivider class="divider" />
     <div class="info-text">{{ otherInfo }}</div>
@@ -281,40 +294,14 @@ body {
   width: 100%;
   margin-top: 5px;
   padding: 8px;
-  font-size: 12px;
-  cursor: pointer;
-  border: none;
-  border-radius: 8px;
-  background-color: #76b1ef;
-  color: white;
-  transition: background-color 0.3s;
 }
 
 .edit-button {
   margin-left: auto;
-  font-size: 14px;
-  cursor: pointer;
-  border: none;
-  background-color: transparent;
-  color: #97d3e7;
-
-  &:hover {
-    color: #78c2f4;
-  }
 }
 
 .action-button {
   padding: 12px 40px;
-  font-size: 12px;
-  cursor: pointer;
-  border: none;
-  background-color: transparent;
-  color: #97d3e7;
-  transition: background-color 0.3s;
-
-  &:hover {
-    background-color: #0056b3;
-  }
 }
 
 .divider {
