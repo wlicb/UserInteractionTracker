@@ -157,7 +157,7 @@ onMounted(async () => {
       <div v-if="showUserIdInput" class="user-id-label">User ID:</div>
       <NInput
         v-if="showUserIdInput"
-        v-model="userId"
+        v-model:value="userId"
         type="text"
         placeholder="Enter UserID"
         class="user-id-input"

@@ -103,9 +103,10 @@ function reset() {
   <div v-if="visible" id="reason-modal" class="reason-modal-overlay">
     <div class="reason-modal-content">
       <h3 v-html="question"></h3>
-      <textarea
+      <NInput
+        type="textarea"
         id="reason-input"
-        v-model="reason_text"
+        v-model:value="reason_text"
         :placeholder="placeholder"
         class="reason-textarea"
       />
