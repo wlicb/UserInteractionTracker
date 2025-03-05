@@ -92,7 +92,7 @@ def check_user(user_name, user_collection):
     return user_name, 200
 
 
-@app.route("/upload", methods=["POST"])
+@app.route("/api/upload", methods=["POST"])
 def upload_file():
     if "file" not in request.files:
         app.logger.info("No file part in the request")
@@ -139,7 +139,7 @@ def upload_file():
         return jsonify({"message": f"File {file.filename} uploaded successfully"}), 200
 
 
-@app.route("/interactions", methods=["POST"])
+@app.route("/api/interactions", methods=["POST"])
 def interactions():
     # json_data = request.form.get('interactions')
     interactions = request.json
@@ -190,7 +190,7 @@ def interactions():
     return jsonify({"error": f"Unknown error"}), 400
 
 
-@app.route("/generate_presigned_post", methods=["GET"])
+@app.route("/api/generate_presigned_post", methods=["GET"])
 def generate_presigned_post():
     user_name = request.args.get("user_id")
 
@@ -279,7 +279,7 @@ def get_interactions_by_date(user_name, date=None, return_data=None):
         return {"on_date": n_documents_date, "all_time": n_documents}
 
 
-@app.route("/interactions_record_status", methods=["GET"])
+@app.route("/api/interactions_record_status", methods=["GET"])
 def interactions_record_status():
     user_name = request.args.get("user_id")
     date_str = request.args.get("date")  # in 'YYYY-MM-DD' format
@@ -322,7 +322,7 @@ def get_rationale_by_date(user_name, date=None):
     )
     return {"on_date": n_documents_date, "all_time": n_documents}
 
-@app.route("/rationale_status", methods=["GET"])
+@app.route("/api/rationale_status", methods=["GET"])
 def rationale_status():
     user_name = request.args.get("user_id")
     date_str = request.args.get("date")  # in 'YYYY-MM-DD' format
@@ -364,7 +364,7 @@ def get_order_by_date(user_name, date=None):
     )
     return {"on_date": n_documents_date, "all_time": n_documents}
 
-@app.route("/order_status", methods=["GET"])
+@app.route("/api/order_status", methods=["GET"])
 def order_status():
     user_name = request.args.get("user_id")
     date_str = request.args.get("date")  # in 'YYYY-MM-DD' format
@@ -389,7 +389,7 @@ def order_status():
 
     return jsonify(interactions)
 
-@app.route("/check_user_id", methods=["GET"])
+@app.route("/api/check_user_id", methods=["GET"])
 def check_user_id():
     user_id = request.args.get("user_id")
 
