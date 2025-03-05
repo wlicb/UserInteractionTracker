@@ -1,25 +1,3 @@
-<template>
-  <div v-if="visible" id="reason-modal" class="reason-modal-overlay">
-    <div class="reason-modal-content">
-      <h3 v-html="question"></h3>
-      <NInput
-        type="textarea"
-        id="reason-input"
-        v-model="input"
-        :placeholder="placeholder"
-        class="reason-textarea"
-      />
-      <div id="error-message" class="error-message" v-show="showError">
-        Please enter a valid reason.
-      </div>
-      <div class="button-container">
-        <NButton strong secondary type="info" id="reason-skip" @click="skip">Skip</NButton>
-        <NButton strong secondary type="info" id="reason-submit" @click="submit">Submit</NButton>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref } from 'vue'
 import { isValidReason } from '../utils/util'
@@ -42,17 +20,17 @@ const props = defineProps({
 
 const emit = defineEmits(['submit', 'skip'])
 
-const input = ref('')
+const reason_text = ref('')
 const showError = ref(false)
 
 function submit() {
-  if (!isValidReason(input.value)) {
+  if (!isValidReason(reason_text.value)) {
     showError.value = true
     return
   }
 
   showError.value = false
-  emit('submit', { input: input.value, success: true })
+  emit('submit', { input: reason_text.value, success: true })
   reset()
 }
 
@@ -62,7 +40,7 @@ function skip() {
 }
 
 function reset() {
-  input.value = ''
+  reason_text.value = ''
   showError.value = false
 }
 </script>
@@ -120,3 +98,24 @@ function reset() {
   margin-top: 10px;
 }
 </style>
+
+<template>
+  <div v-if="visible" id="reason-modal" class="reason-modal-overlay">
+    <div class="reason-modal-content">
+      <h3 v-html="question"></h3>
+      <textarea
+        id="reason-input"
+        v-model="reason_text"
+        :placeholder="placeholder"
+        class="reason-textarea"
+      />
+      <div id="error-message" class="error-message" v-show="showError">
+        Please enter a valid reason.
+      </div>
+      <div class="button-container">
+        <NButton strong secondary type="info" id="reason-skip" @click="skip">Skip</NButton>
+        <NButton strong secondary type="info" id="reason-submit" @click="submit">Submit</NButton>
+      </div>
+    </div>
+  </div>
+</template>
