@@ -432,6 +432,10 @@ const work = () => {
       }
       if (message.action === 'showReminder') {
         console.log('showReminder')
+        if (document.getElementById('reason-modal')) {
+          sendResponse({ success: false, message: 'reminder:popup already exists' })
+          return
+        }
         const data = message.data
         // alert(
         //   `Thank you for participating!\nYou have contributed ${data.on_date} rationales this week\nYou have contributed ${data.all_time} rationales in total. `
