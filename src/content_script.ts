@@ -5,7 +5,8 @@ import {
   shouldExclude,
   generateHtmlSnapshotId,
   processRecipe,
-  isValidReason
+  isValidReason,
+  MarkViewableElements
 } from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
 import { scroll_threshold } from './config'
@@ -13,11 +14,11 @@ import { scroll_threshold } from './config'
 async function captureScreenshot(timestamp: string, uuid: string) {
   try {
     // const screenshotId = `screenshot_${timestamp}_${uuid}`
-    const response = await chrome.runtime.sendMessage({
+    const response = (await chrome.runtime.sendMessage({
       action: 'captureScreenshot',
       timestamp,
       uuid
-    })
+    })) as any
 
     if (!response.success) {
       throw new Error(response.message || 'Screenshot capture failed')
@@ -60,10 +61,10 @@ window.addEventListener('message', async (event) => {
     try {
       const dataForBackground = { ...event.data.data }
 
-      const response2 = await chrome.runtime.sendMessage({
+      const response2 = (await chrome.runtime.sendMessage({
         action: 'saveData',
         data: dataForBackground
-      })
+      })) as any
       if (!response2.success) {
         throw new Error(response2.message || 'interaction capture failed')
       }
@@ -120,6 +121,7 @@ const work = () => {
 
   document.addEventListener('DOMContentLoaded', () => {
     console.log('DOMContentLoaded event triggered')
+    MarkViewableElements()
     processRecipe()
   })
 
@@ -129,15 +131,20 @@ const work = () => {
     target: any,
     timestamp: string,
     uuid: string,
-    scrollDistance?: number
+    windowSize: { width: number; height: number },
+    scrollDistance?: number,
+    scrollCurrentTop?: number,
+    scrollCurrentLeft?: number,
+    scrollDistance_X?: number
   ) {
     try {
       // Generate new HTML snapshot ID
       const currentSnapshotId = generateHtmlSnapshotId(timestamp, uuid)
 
       const simplifiedHTML = processRecipe()
-      const markedDoc = getClickableElementsInViewport()
-
+      // console.log('start time:', new Date().toISOString())
+      MarkViewableElements()
+      // console.log('end time:', new Date().toISOString())
       const pageMeta = findPageMeta()
 
       let data = {
@@ -147,11 +154,15 @@ const work = () => {
 
         htmlSnapshotId: currentSnapshotId, // Use the new snapshot ID
         pageMeta: pageMeta || '',
-        htmlContent: markedDoc.documentElement.outerHTML,
+        htmlContent: document.documentElement.outerHTML,
         simplifiedHTML: simplifiedHTML
       }
       if (eventType === 'scroll') {
-        data['scrollDistance'] = scrollDistance
+        data['windowSize'] = windowSize
+        data['scrollDistance_Y'] = scrollDistance
+        data['scrollCurrentTop'] = scrollCurrentTop
+        data['scrollCurrentLeft'] = scrollCurrentLeft
+        data['scrollDistance_X'] = scrollDistance_X
         data['target'] = target
       }
       if (eventType === 'input') {
@@ -170,7 +181,8 @@ const work = () => {
   let scrollTimeout: number | undefined
   let scrollStartTop = window.scrollY || document.documentElement.scrollTop
   let accumulatedScrollDistance = 0
-
+  let scrollStartLeft = window.scrollX || document.documentElement.scrollLeft
+  let accumulatedScrollDistance_X = 0
   // Function to handle the first scroll event in a scroll sequence
   async function handleFirstScroll(scrollUuid: string, scrollTimestamp: string) {
     try {
@@ -189,18 +201,32 @@ const work = () => {
       const currentScrollTop = window.scrollY || document.documentElement.scrollTop
       accumulatedScrollDistance += currentScrollTop - scrollStartTop
 
-      if (accumulatedScrollDistance !== 0) {
+      const currentScrollLeft = window.scrollX || document.documentElement.scrollLeft
+      accumulatedScrollDistance_X += currentScrollLeft - scrollStartLeft
+
+      // INSERT_YOUR_CODE
+      const windowSize = {
+        width: window.innerWidth,
+        height: window.innerHeight
+      }
+      if (accumulatedScrollDistance !== 0 || accumulatedScrollDistance_X !== 0) {
         // Record the scroll interaction with the accumulated scroll distance
         await captureInteraction(
           'scroll',
           window.location.href,
           scrollTimestamp,
           scrollUuid,
-          accumulatedScrollDistance
+          windowSize,
+          accumulatedScrollDistance,
+          currentScrollTop,
+          accumulatedScrollDistance_X,
+          currentScrollLeft
         )
         // Reset accumulated scroll distance
         accumulatedScrollDistance = 0
+        accumulatedScrollDistance_X = 0
         scrollStartTop = currentScrollTop
+        scrollStartLeft = currentScrollLeft
       }
       isScrolling = false
     } catch (error) {
@@ -242,156 +268,146 @@ const work = () => {
     ) // Threshold of 300ms
   })
 
-  // document.addEventListener(
-  //   'blur',
-  //   async (event) => {
-  //     const target = event.target as HTMLElement
-  //     if (isFromPopup(target)) return
-  //     if (
-  //       target &&
-  //       ((target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text') ||
-  //         target.tagName === 'TEXTAREA')
-  //     ) {
-  //       const timestamp = new Date().toISOString()
-  //       const uuid = uuidv4()
-  //       await captureScreenshot(timestamp, uuid)
-  //       await captureInteraction('input', target, timestamp, uuid)
+  // document.addEventListener('DOMContentLoaded', () => {
+  //   // Handle all types of order buttons
+  //   const placeOrderButtons = document.querySelectorAll(
+  //     'input[id="placeOrder"], input[id="turbo-checkout-pyo-button"]'
+  //   )
+  //   const buyNowButton = document.querySelector('input[id="buy-now-button"]')
+  //   const setupNowButton = document.querySelector(
+  //     'button[id="rcx-subscribe-submit-button-announce"]'
+  //   )
+  //   const proceedToCheckoutButton = document.querySelector('input[name="proceedToRetailCheckout"]')
+
+  //   // Handle Buy Now and Set Up Now buttons if present
+  //   ;[buyNowButton, setupNowButton].forEach((button) => {
+  //     if (button) {
+  //       button.addEventListener('click', async () => {
+  //         try {
+  //           const productInfo = {
+  //             title: (document.querySelector('#title') as HTMLElement)?.innerText?.trim() || '',
+  //             price:
+  //               (
+  //                 document.querySelector(
+  //                   'span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay'
+  //                 ) as HTMLElement
+  //               )?.innerText?.trim() || '',
+  //             asin: (document.querySelector('input#ASIN') as HTMLInputElement)?.value || '',
+  //             options: {}
+  //           }
+
+  //           // Get all option selections
+  //           const optionRows = Array.from(
+  //             document.querySelectorAll(
+  //               '#twister div.a-row:has(label.a-form-label):has(span.selection)'
+  //             )
+  //           )
+  //           optionRows.forEach((row) => {
+  //             const label =
+  //               (row.querySelector('label.a-form-label') as HTMLElement)?.innerText?.replace(
+  //                 ': ',
+  //                 ''
+  //               ) || ''
+  //             const value = (row.querySelector('span.selection') as HTMLElement)?.innerText || ''
+  //             if (label && value) {
+  //               ;(productInfo.options as any)[label] = value
+  //             }
+  //           })
+
+  //           console.log(`${button.id} clicked - Product Info:`, productInfo)
+
+  //           await chrome.runtime.sendMessage({
+  //             action: 'saveOrder',
+  //             data: {
+  //               timestamp: new Date().toISOString(),
+  //               name: productInfo.title,
+  //               price: parseFloat(productInfo.price.replace(/[^0-9.]/g, '')),
+  //               asin: productInfo.asin,
+  //               options: productInfo.options
+  //             }
+  //           })
+  //         } catch (error) {
+  //           console.error(`Error capturing ${button.id} product info:`, error)
+  //         }
+  //       })
   //     }
-  //   },
-  //   true
-  // )
+  //   })
+  //   if (proceedToCheckoutButton) {
+  //     proceedToCheckoutButton.addEventListener('click', async (event) => {
+  //       try {
+  //         const selectedItems = []
+  //         const cartItems = Array.from(document.querySelectorAll('[id^="sc-active-"]')).filter(
+  //           (item) => item.id !== 'sc-active-cart'
+  //         )
+  //         for (const item of cartItems) {
+  //           const checkbox = item.querySelector('input[type="checkbox"]') as HTMLInputElement
+  //           if (checkbox && checkbox.checked) {
+  //             const productLink = item.querySelector('.sc-item-product-title-cont .sc-product-link')
+  //             if (productLink) {
+  //               const fullNameElement = productLink.querySelector('.a-truncate-full')
+  //               const name = fullNameElement?.textContent?.trim() || ''
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // Handle all types of order buttons
-    const placeOrderButtons = document.querySelectorAll(
-      'input[id="placeOrder"], input[id="turbo-checkout-pyo-button"]'
-    )
-    const buyNowButton = document.querySelector('input[id="buy-now-button"]')
-    const setupNowButton = document.querySelector(
-      'button[id="rcx-subscribe-submit-button-announce"]'
-    )
-    const proceedToCheckoutButton = document.querySelector('input[name="proceedToRetailCheckout"]')
+  //               const href = productLink.getAttribute('href') || ''
+  //               const asin = href.match(/product\/([A-Z0-9]{10})/)?.[1] || ''
 
-    // Handle Buy Now and Set Up Now buttons if present
-    ;[buyNowButton, setupNowButton].forEach((button) => {
-      if (button) {
-        button.addEventListener('click', async () => {
-          try {
-            const productInfo = {
-              title: (document.querySelector('#title') as HTMLElement)?.innerText?.trim() || '',
-              price:
-                (
-                  document.querySelector(
-                    'span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay'
-                  ) as HTMLElement
-                )?.innerText?.trim() || '',
-              asin: (document.querySelector('input#ASIN') as HTMLInputElement)?.value || '',
-              options: {}
-            }
+  //               const priceElement = item.querySelector('.sc-item-price-block .a-offscreen')
+  //               const price = priceElement
+  //                 ? parseFloat(priceElement.textContent?.replace(/[^0-9.]/g, '') || '0')
+  //                 : 0
 
-            // Get all option selections
-            const optionRows = Array.from(
-              document.querySelectorAll(
-                '#twister div.a-row:has(label.a-form-label):has(span.selection)'
-              )
-            )
-            optionRows.forEach((row) => {
-              const label =
-                (row.querySelector('label.a-form-label') as HTMLElement)?.innerText?.replace(
-                  ': ',
-                  ''
-                ) || ''
-              const value = (row.querySelector('span.selection') as HTMLElement)?.innerText || ''
-              if (label && value) {
-                ;(productInfo.options as any)[label] = value
-              }
-            })
+  //               const options: { [key: string]: string } = {}
+  //               const variationElements = item.querySelectorAll('.sc-product-variation')
+  //               variationElements.forEach((variation) => {
+  //                 const label =
+  //                   variation.querySelector('.a-text-bold')?.textContent?.trim().replace(':', '') ||
+  //                   ''
+  //                 const value =
+  //                   variation
+  //                     .querySelector('.a-size-small:not(.a-text-bold)')
+  //                     ?.textContent?.trim() || ''
+  //                 if (label && value) {
+  //                   options[label] = value
+  //                 }
+  //               })
 
-            console.log(`${button.id} clicked - Product Info:`, productInfo)
-
-            await chrome.runtime.sendMessage({
-              action: 'saveOrder',
-              data: {
-                timestamp: new Date().toISOString(),
-                name: productInfo.title,
-                price: parseFloat(productInfo.price.replace(/[^0-9.]/g, '')),
-                asin: productInfo.asin,
-                options: productInfo.options
-              }
-            })
-          } catch (error) {
-            console.error(`Error capturing ${button.id} product info:`, error)
-          }
-        })
-      }
-    })
-    if (proceedToCheckoutButton) {
-      proceedToCheckoutButton.addEventListener('click', async (event) => {
-        try {
-          const selectedItems = []
-          const cartItems = Array.from(document.querySelectorAll('[id^="sc-active-"]')).filter(
-            (item) => item.id !== 'sc-active-cart'
-          )
-          for (const item of cartItems) {
-            const checkbox = item.querySelector('input[type="checkbox"]') as HTMLInputElement
-            if (checkbox && checkbox.checked) {
-              const productLink = item.querySelector('.sc-item-product-title-cont .sc-product-link')
-              if (productLink) {
-                const fullNameElement = productLink.querySelector('.a-truncate-full')
-                const name = fullNameElement?.textContent?.trim() || ''
-
-                const href = productLink.getAttribute('href') || ''
-                const asin = href.match(/product\/([A-Z0-9]{10})/)?.[1] || ''
-
-                const priceElement = item.querySelector('.sc-item-price-block .a-offscreen')
-                const price = priceElement
-                  ? parseFloat(priceElement.textContent?.replace(/[^0-9.]/g, '') || '0')
-                  : 0
-
-                const options: { [key: string]: string } = {}
-                const variationElements = item.querySelectorAll('.sc-product-variation')
-                variationElements.forEach((variation) => {
-                  const label =
-                    variation.querySelector('.a-text-bold')?.textContent?.trim().replace(':', '') ||
-                    ''
-                  const value =
-                    variation
-                      .querySelector('.a-size-small:not(.a-text-bold)')
-                      ?.textContent?.trim() || ''
-                  if (label && value) {
-                    options[label] = value
-                  }
-                })
-
-                selectedItems.push({
-                  timestamp: new Date().toISOString(),
-                  name,
-                  asin,
-                  price,
-                  options
-                })
-              }
-            }
-          }
-          if (selectedItems.length > 0) {
-            await chrome.runtime.sendMessage({ action: 'saveOrder', data: selectedItems })
-          }
-        } catch (error) {
-          console.error('Error capturing selected cart items:', error)
-        }
-      })
-    }
-  })
+  //               selectedItems.push({
+  //                 timestamp: new Date().toISOString(),
+  //                 name,
+  //                 asin,
+  //                 price,
+  //                 options
+  //               })
+  //             }
+  //           }
+  //         }
+  //         if (selectedItems.length > 0) {
+  //           await chrome.runtime.sendMessage({ action: 'saveOrder', data: selectedItems })
+  //         }
+  //       } catch (error) {
+  //         console.error('Error capturing selected cart items:', error)
+  //       }
+  //     })
+  //   }
+  // })
 
   chrome.runtime.onMessage.addListener(
     (message, sender, sendResponse: (response?: any) => void) => {
       console.log('message', message)
       if (message.action === 'getHTML') {
         const simplifiedHTML = processRecipe()
-        const markedDoc = getClickableElementsInViewport()
-        const htmlContent = markedDoc.documentElement.outerHTML
+        MarkViewableElements()
+        const htmlContent = document.documentElement.outerHTML
         const pageMeta = findPageMeta()
-        sendResponse({ html: htmlContent, pageMeta: pageMeta, simplifiedHTML: simplifiedHTML })
+        const windowSize = {
+          width: window.innerWidth,
+          height: window.innerHeight
+        }
+        sendResponse({
+          html: htmlContent,
+          pageMeta: pageMeta,
+          simplifiedHTML: simplifiedHTML,
+          windowSize: windowSize
+        })
       }
       if (message.action === 'show_popup') {
         console.log('show_popup', message)
@@ -400,97 +416,36 @@ const work = () => {
           sendResponse({ success: false, message: 'popup already exists' })
           return
         }
-        createModal(message.question, message.placeholder, sendResponse)
+
+        // Use the Vue app to show the modal
+        const event = new CustomEvent('show-modal', {
+          detail: {
+            question: message.question,
+            placeholder: message.placeholder,
+            callback: (response) => {
+              sendResponse(response)
+            }
+          }
+        })
+        document.dispatchEvent(event)
         return true // Will respond asynchronously
+      }
+      if (message.action === 'showReminder') {
+        console.log('showReminder')
+        const data = message.data
+        // alert(
+        //   `Thank you for participating!\nYou have contributed ${data.on_date} rationales this week\nYou have contributed ${data.all_time} rationales in total. `
+        // )
+        window.$dialog?.info({
+          title: 'Thank you for participating!',
+          content: `You have contributed ${data.on_date} rationales this week.
+          You have contributed ${data.all_time} rationales in total. `
+        })
       }
     }
   )
-
-  function createModal(
-    question: string,
-    placeholder: string,
-    sendResponse: (response?: any) => void
-  ) {
-    const modalHtml = `
-        <div id="reason-modal" style="
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-        ">
-            <div style="
-                background: white;
-                padding: 20px;
-                border-radius: 8px;
-                width: 400px;
-            ">
-                <h3>${question}</h3>
-                <textarea id="reason-input" placeholder="${placeholder}" style="
-                    width: 100%;
-                    height: 100px;
-                    margin: 10px 0;
-                "></textarea>
-                <div id="error-message" style="
-                    color: red;
-                    display: none;
-                    font-size: 12px;
-                    margin-top: 5px;
-                ">
-                    Please enter a valid reason.
-                </div>
-                <div style="
-                    text-align: right;
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: 10px;
-                ">
-                    <button id="reason-skip">Skip</button>
-                    <button id="reason-submit">Submit</button>
-                </div>
-            </div>
-        </div>
-    `
-
-    const modalContainer = document.createElement('div')
-    modalContainer.innerHTML = modalHtml
-    // if attach-desktop-sideSheet exists
-    if (document.querySelector('.attach-desktop-sideSheet:not(.aok-hidden)')) {
-      document
-        .querySelector('.attach-desktop-sideSheet:not(.aok-hidden)')
-        .appendChild(modalContainer)
-    } else {
-      document.body.appendChild(modalContainer)
-    }
-
-    // Add event listeners
-    document.getElementById('reason-submit').addEventListener('click', () => {
-      const input = document.getElementById('reason-input') as HTMLTextAreaElement
-      const errorMessage = document.getElementById('error-message') as HTMLElement
-      const value = input.value
-
-      if (!isValidReason(value)) {
-        errorMessage.style.display = 'block' // Show the error message
-        return // Prevent submission if the reason is invalid
-      } else {
-        errorMessage.style.display = 'none' // Hide the error message
-      }
-
-      modalContainer.remove()
-      sendResponse({ input: value })
-    })
-    document.getElementById('reason-skip').addEventListener('click', () => {
-      const input = document.getElementById('reason-input') as HTMLTextAreaElement
-      modalContainer.remove()
-      sendResponse({ input: null })
-    })
-  }
 }
+
 shouldExclude(window.location.href).then((result) => {
   console.log('content script, shouldExclude', result)
   if (!result) {

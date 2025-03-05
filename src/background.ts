@@ -3,8 +3,15 @@
 import { v4 as uuidv4 } from 'uuid'
 import { nav, refinement_option, recipes } from './recipe_new'
 import JSZip from 'jszip'
-import { update_icon, shouldExclude, getCustomQuestion } from './utils/util'
+import {
+  update_icon,
+  shouldExclude,
+  getCustomQuestion,
+  processRecipe,
+  findPageMeta
+} from './utils/util'
 import axios from 'axios'
+import { DOMParser, parseHTML } from 'linkedom'
 
 let interactions: any[] = []
 let screenshots: [string, string][] = []
@@ -30,7 +37,8 @@ import {
   zip,
   base_url,
   data_collector_secret_id,
-  filter_url
+  filter_url,
+  rationale_status_url
 } from './config'
 
 const upload_url = `${base_url}/upload`
@@ -46,6 +54,44 @@ interface TabHistory {
 const tabNavigationHistory: {
   [tabId: number]: TabHistory
 } = {}
+
+async function fetchCartInfo(path) {
+  if (path === null || path === '') {
+    return ''
+  }
+  try {
+    const start = performance.now()
+
+    // get the html of cart page
+    const url = 'https://www.amazon.com' + path
+    const response = await fetch(url)
+    const htmlContent = await response.text()
+
+    // return htmlContent
+
+    // const mid = performance.now()
+    // console.log(`Execution Time of fetch: ${mid - start} ms`)
+
+    const document = new DOMParser().parseFromString(htmlContent)
+    const rootElement = document.querySelector('html')
+
+    const { defaultView: window } = document
+
+    const { Event, CustomEvent, HTMLElement, customElements } = window
+
+    // get metadata from the html
+    const simplifiedHTML = processRecipe(rootElement, url, document, window)
+    const pageMeta = findPageMeta(rootElement, document)
+
+    // const end = performance.now()
+    // console.log(`Execution Time of processing: ${end - mid} ms`)
+
+    return pageMeta
+  } catch (error) {
+    console.error('Error fetching cart information:' + error)
+    return ''
+  }
+}
 
 import { openDB } from 'idb'
 const db = await openDB('userInteractions', 1, {
@@ -174,16 +220,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           uuid: uuid
         }
 
+        const fetchUrl = message.data.fetchUrl || ''
+
         delete message.data.htmlContent
         delete message.data.simplifiedHTML
+        delete message.data.fetchUrl
 
         const saveData = async () => {
           console.log('saveData ', message.data.eventType)
+          console.log(fetchUrl)
+          if (fetchUrl !== '') {
+            fetchCartInfo(fetchUrl).then(async (cartInfo) => {
+              const cartdata = {
+                url: fetchUrl,
+                timestamp: message.data.timestamp,
+                uuid: message.data.uuid,
+                metadata: cartInfo
+              }
+              console.log('cartdata', cartdata)
+              await db.add('order', {
+                ...cartdata,
+                uploaded: 0
+              })
+            })
+          }
+          console.log('start save db', performance.now())
           await db.add('interactions', {
             ...message.data,
             uploaded: 0
           })
         }
+
         await Promise.all([
           saveData(),
           saveHTML(
@@ -239,7 +306,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log('get screenshot request')
         const start_time = new Date().getTime()
         const screenshotDataUrl = await captureScreenshot()
-        console.log('capture screenshot time: ', new Date().getTime() - start_time)
+        // console.log('capture screenshot time: ', new Date().getTime() - start_time)
         if (screenshotDataUrl) {
           const success = await saveScreenshot_idb(
             screenshotDataUrl,
@@ -247,7 +314,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             message.uuid
           )
           console.log('save screenshot success', success)
-          console.log('time: ', new Date().toISOString())
+          // console.log('time: ', new Date().toISOString())
           sendResponse({
             success,
             message: success ? undefined : 'Failed to capture screenshot'
@@ -354,7 +421,8 @@ const saveInteraction = async (
   htmlSnapshotId: string,
   uuid: string,
   navigationType: string | null = null,
-  pageMeta: string | null = null
+  pageMeta: string | null = null,
+  windowSize: { width: number; height: number } | null = null
 ) => {
   const data = {
     eventType,
@@ -362,7 +430,8 @@ const saveInteraction = async (
     target_url,
     htmlSnapshotId,
     uuid,
-    pageMeta
+    pageMeta,
+    windowSize
   }
 
   // Add navigationType only if it exists
@@ -377,13 +446,17 @@ const saveInteraction = async (
 }
 
 const saveScreenshot = async (windowId: number, timestamp: string, uuid: string) => {
-  const screenshotDataUrl = await chrome.tabs.captureVisibleTab(windowId, {
-    format: 'jpeg',
-    quality: 25
-  })
-
-  await saveScreenshot_idb(screenshotDataUrl, timestamp, uuid)
+  try {
+    const screenshotDataUrl = await chrome.tabs.captureVisibleTab(windowId, {
+      format: 'jpeg',
+      quality: 25
+    })
+    await saveScreenshot_idb(screenshotDataUrl, timestamp, uuid)
+  } catch (error) {
+    console.error('Error in saveScreenshot:', error)
+  }
 }
+
 const sendPopup = async (
   tabId: number,
   timestamp: string,
@@ -397,7 +470,7 @@ const sendPopup = async (
   ) {
     return
   }
-  console.log('data', data)
+  // console.log('data', data)
   const { question, placeholder } = getCustomQuestion(eventType, data)
   let probability = popup_probability
   switch (eventType) {
@@ -426,12 +499,12 @@ const sendPopup = async (
         placeholder: placeholder
       })
       console.log('reason', reason)
-      if (reason && reason.input !== null) {
+      if (reason && reason.input !== null && reason.success !== false) {
         const newitem = {
           uuid: uuid,
           timestamp: timestamp,
           eventType: eventType,
-          reason: reason
+          reason: reason.input
         }
         await db.add('reasonsAnnotation', {
           ...newitem,
@@ -459,12 +532,12 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
       const timestamp = new Date().toISOString()
       const uuid = uuidv4()
       const currentSnapshotId = `html_${hashCode(tab.url)}_${timestamp}_${uuid}`
-
+      await new Promise((resolve) => setTimeout(resolve, 100))
       chrome.tabs.sendMessage(tabId, { action: 'getHTML' }, async (response) => {
         const htmlContent = response?.html
         const simplifiedHTML = response?.simplifiedHTML
         const pageMeta = response?.pageMeta
-
+        const windowSize = response?.windowSize
         await Promise.all([
           saveHTML(htmlContent, simplifiedHTML, currentSnapshotId, timestamp, uuid),
           saveInteraction(
@@ -474,11 +547,12 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
             currentSnapshotId,
             uuid,
             null,
-            pageMeta
+            pageMeta,
+            windowSize
           ),
-          saveScreenshot(tab.windowId, timestamp, uuid),
-          sendPopup(tabId, timestamp, 'tabActivate', {}, uuid)
+          saveScreenshot(tab.windowId, timestamp, uuid)
         ])
+        await new Promise((resolve) => sendPopup(tabId, timestamp, 'tabActivate', {}, uuid))
       })
     }
   } catch (error) {
@@ -499,6 +573,7 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async (details) => {
       const htmlContent = response?.html
       const simplifiedHTML = response?.simplifiedHTML
       const pageMeta = response?.pageMeta
+      const windowSize = response?.windowSize
       const currentSnapshotId = `html_${hashCode(details.url)}_${timestamp}_${uuid}`
       await Promise.all([
         saveHTML(htmlContent, simplifiedHTML, currentSnapshotId, timestamp, uuid),
@@ -509,7 +584,8 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async (details) => {
           currentSnapshotId,
           uuid,
           navigationType,
-          pageMeta
+          pageMeta,
+          windowSize
         ),
         saveScreenshot((await chrome.tabs.get(details.tabId)).windowId, timestamp, uuid)
       ])
@@ -989,5 +1065,35 @@ chrome.storage.local.onChanged.addListener((changes) => {
       const url = tabs[0]?.url
       update_icon(url)
     })
+  }
+})
+
+let hasAmazonPage = false
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  console.log('onUpdated')
+  if (changeInfo.status === 'complete') {
+    if (!(await shouldExclude(tab.url)) && !hasAmazonPage) {
+      hasAmazonPage = true
+      console.log('send reminder')
+      //   chrome.notifications.create({
+      //     type: 'basic',
+      //     iconUrl: '../icon.png', // Path to your notification icon
+      //     title: 'Notice',
+      //     message: 'You are on an Amazon page',
+      //     priority: 2
+      //   })
+      //
+      const userIdResult = await chrome.storage.local.get({ userId: '' })
+      const currentUserId = userIdResult.userId
+      const response = await fetch(`${rationale_status_url}?user_id=${currentUserId}`, {
+        method: 'GET'
+      })
+      if (response.ok) {
+        const data = await response.json()
+        // console.log(data)
+        chrome.tabs.sendMessage(tabId, { action: 'showReminder', data: data })
+      }
+      console.log('send finished')
+    }
   }
 })

@@ -4,7 +4,8 @@ import {
   isFromPopup,
   shouldExclude,
   generateHtmlSnapshotId,
-  processRecipe
+  processRecipe,
+  MarkViewableElements
 } from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
 import { finder } from '@medv/finder'
@@ -13,6 +14,14 @@ declare global {
   interface Window {
     monkeyPatched: boolean
     shouldExclude: boolean
+  }
+}
+declare global {
+  interface MouseEvent {
+    just_for_default: boolean
+    block_signal: AbortController
+    finish_signals: AbortController[]
+    my_default_prevented: boolean
   }
 }
 
@@ -24,7 +33,7 @@ const work = () => {
     // Add this at the top of the file
     const TimeOut = 30000
 
-    function captureInteraction(
+    async function captureInteraction(
       eventType: string,
       target: any,
       timestamp: string,
@@ -53,6 +62,10 @@ const work = () => {
             element.getAttribute('data-element-meta-data') || ''
         }
 
+        if (element.hasAttribute('data-fetch-url')) {
+          allAttributes['data-fetch-url'] = element.getAttribute('data-fetch-url') || ''
+        }
+
         // Continue searching up the tree, passing along collected attributes
         return findClickableParent(element.parentElement, depth + 1, allAttributes)
       }
@@ -71,7 +84,13 @@ const work = () => {
         outerHTML: target.outerHTML
       }
 
-      const markedDoc = getClickableElementsInViewport()
+      let fetchUrl
+      if (allAttributes.hasOwnProperty('data-fetch-url')) {
+        // cartInfo = await fetchCartInfo(allAttributes['data-fetch-url'])
+        fetchUrl = allAttributes['data-fetch-url']
+      }
+
+      MarkViewableElements()
       const data = {
         eventType,
         timestamp: timestamp,
@@ -82,16 +101,23 @@ const work = () => {
         'data-semantic-id': allAttributes['data-clickable-id'] || '',
         'element-meta-name': allAttributes['data-element-meta-name'] || '',
         'element-meta-data': allAttributes['data-element-meta-data'] || '',
-        'page-meta': pageMeta || '',
+        pageMeta: pageMeta || '',
+        fetchUrl: fetchUrl || '',
         url: url || '',
-        htmlContent: markedDoc.documentElement.outerHTML,
+        windowSize: {
+          width: window.innerWidth,
+          height: window.innerHeight
+        },
+        htmlContent: document.documentElement.outerHTML,
         simplifiedHTML: simplifiedHTML
       }
       if (target.tagName === 'INPUT' && target.type === 'text') {
         data['input-terms'] = target.value
       }
       if (target.id === 'nav-search-submit-button' && target.type === 'submit') {
-        data['input-terms'] = document.querySelector('input[id="twotabsearchtextbox"]')?.value
+        data['input-terms'] = (
+          document.querySelector('input[id="twotabsearchtextbox"]') as HTMLInputElement
+        )?.value
       }
       return data
     }
@@ -122,15 +148,23 @@ const work = () => {
       // }
 
       if (element.tagName.toLowerCase() === 'input') {
-        if (element.type === 'submit') {
+        if ((element as HTMLInputElement).type === 'submit') {
           return true
         }
+      }
+      // inside a button inside form
+      if (element.closest('button') && element.closest('button').closest('form')) {
+        // if the button has a type and it's button, return false
+        if ((element.closest('button') as HTMLButtonElement).type === 'button') {
+          return false
+        }
+        return true
       }
       return false
     }
     // Monkey patch addEventListener
-    EventTarget.prototype.addEventListener = function (type, listener, options = {}) {
-      if (options && options.skip_monkey_patch) {
+    EventTarget.prototype.addEventListener = async function (type, listener, options: any = {}) {
+      if (options && (options as any).skip_monkey_patch) {
         return originalAddEventListener.call(this, type, listener, options)
       }
       const callOriginalListener = (event) => {
@@ -245,7 +279,7 @@ const work = () => {
               const selector = finder(event.target, {
                 maxNumberOfPathChecks: 0
               })
-              const data = captureInteraction(
+              const data = await captureInteraction(
                 'click_a',
                 event.target,
                 timestamp,
@@ -337,7 +371,7 @@ const work = () => {
                 reject(new Error('Screenshot timeout'))
               }, TimeOut)
             })
-            const data = captureInteraction(
+            const data = await captureInteraction(
               'click_b',
               event.target,
               timestamp,
@@ -426,7 +460,7 @@ const work = () => {
             console.log('should exclude')
             return
           }
-          if (isFromPopup(event.target)) {
+          if (isFromPopup(event.target as HTMLElement)) {
             return
           }
           if (event.just_for_default) {
@@ -488,7 +522,7 @@ const work = () => {
                 { type: 'CAPTURE_SCREENSHOT', timestamp: timestamp, uuid: uuid },
                 '*'
               )
-              const data = captureInteraction(
+              const data = await captureInteraction(
                 'click_c',
                 event.target,
                 timestamp,
@@ -565,10 +599,10 @@ const work = () => {
           }
         },
         {
-          useCapture: true,
+          capture: true,
           skip_monkey_patch: true,
           passive: false
-        }
+        } as any
       ) // Use capture phase to intercept the event earlier
     }
 
