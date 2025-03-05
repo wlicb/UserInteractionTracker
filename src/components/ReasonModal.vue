@@ -1,19 +1,20 @@
 <template>
   <div v-if="visible" id="reason-modal" class="reason-modal-overlay">
     <div class="reason-modal-content">
-      <h3>{{ question }}</h3>
-      <textarea
+      <h3 v-html="question"></h3>
+      <NInput
+        type="textarea"
         id="reason-input"
         v-model="input"
         :placeholder="placeholder"
         class="reason-textarea"
-      ></textarea>
+      />
       <div id="error-message" class="error-message" v-show="showError">
         Please enter a valid reason.
       </div>
       <div class="button-container">
-        <button id="reason-skip" @click="skip">Skip</button>
-        <button id="reason-submit" @click="submit">Submit</button>
+        <NButton strong secondary type="info" id="reason-skip" @click="skip">Skip</NButton>
+        <NButton strong secondary type="info" id="reason-submit" @click="submit">Submit</NButton>
       </div>
     </div>
   </div>
@@ -22,6 +23,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { isValidReason } from '../utils/util'
+import { NButton, NInput } from 'naive-ui'
 
 const props = defineProps({
   visible: {
@@ -86,7 +88,7 @@ function reset() {
   width: 400px;
 }
 
-.highlight-question {
+:deep(.highlight-question) {
   padding: 0px 6px;
   border-radius: 3px;
   display: inline-block;
@@ -99,7 +101,8 @@ function reset() {
 .reason-textarea {
   width: 100%;
   height: 100px;
-  margin: 10px 0;
+  border: none; /* Remove border */
+  outline: none; /* Remove outline */
 }
 
 .error-message {
@@ -113,5 +116,6 @@ function reset() {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  margin-top: 10px;
 }
 </style>

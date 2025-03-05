@@ -438,7 +438,8 @@ const work = () => {
         // )
         window.$dialog?.info({
           title: 'Thank you for participating!',
-          content: `You have contributed ${data.on_date} rationales this week\nYou have contributed ${data.all_time} rationales in total. `
+          content: `You have contributed ${data.on_date} rationales this week.
+          You have contributed ${data.all_time} rationales in total. `
         })
       }
     }
