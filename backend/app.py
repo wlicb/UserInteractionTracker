@@ -11,7 +11,7 @@ from pymongo import MongoClient
 import boto3
 from botocore.exceptions import NoCredentialsError
 from pymongo.errors import DuplicateKeyError
-
+from data_collection_monitor import analyze_user_data
 import config
 
 client = MongoClient(config.MONGO_URI)
@@ -403,6 +403,17 @@ def check_user_id():
         app.logger.info(f"Created new user with user_name: {user_id}")
         return jsonify({"valid": True}), 200
 
+@app.route("/api/monitor_user_data", methods=["GET"])
+def monitor_user_data():
+    user_name = request.args.get("user_id")
+    date = request.args.get("date")
+    result, status = check_user(user_name, user_collection=user_collection)
+
+    if status != 200:
+        return result, status
+    else:
+        user_name = result
+    return jsonify(analyze_user_data(user_name, date)), 200
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
