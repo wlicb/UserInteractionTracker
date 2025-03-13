@@ -58,8 +58,7 @@ export const nav = {
       name: 'stores',
       children: [
         {
-          selector: 'a',
-          direct_child: true,
+          selector: 'li',
           clickable: true,
           add_text: true,
           name: 'from_text'
@@ -502,14 +501,15 @@ export const carousel_card = {
   name: 'from_text',
   text_js: (em) => {
     const titleEm = em.querySelector(
-      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"]'
+      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"]'
     )
     const title = titleEm?.title || titleEm?.innerText || ''
     return title
   },
   children: [
     {
-      selector: 'a:has(img[class*="product-image"], img.a-dynamic-image)',
+      selector:
+        'a:has(img[class*="product-image"], img.a-dynamic-image, img[class*="carousel-image"])',
       name: 'product_image',
       add_text: true,
       text_format: 'Product Image',
@@ -517,7 +517,7 @@ export const carousel_card = {
     },
     {
       selector:
-        'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"]',
+        'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a:has(span[class*="titleR3"])',
       add_text: true,
       name: 'product_title',
       clickable: true
@@ -555,7 +555,7 @@ export const carousel_card = {
       name: 'product_points'
     },
     {
-      selector: 'input[name="submit.addToCart"]',
+      selector: 'input[name="submit.addToCart"], span[class*="actionButton"]:has(i.a-icon-cart)',
       name: 'add_to_cart',
       add_text: true,
       text_format: 'Add To Cart',
@@ -587,15 +587,20 @@ export const carousel_card = {
     }
   ],
   generate_metadata: (em) => {
-    const asinEm = em.querySelector('div[id*="sc-turbo-container"], div[data-asin]')
-    const asin = asinEm?.getAttribute('id')?.split('-').pop() || asinEm?.getAttribute('data-asin')
+    const asinEm = em.querySelector(
+      'div[id*="sc-turbo-container"], div[data-asin], input[data-asin]'
+    )
+    const asin =
+      asinEm?.getAttribute('data-asin') || asinEm?.getAttribute('id')?.split('-').pop() || ''
     const priceEm = em.querySelector('a span[class*="sc-price"], span.a-price span.a-offscreen')
     const price = priceEm?.innerText?.replace(/[\n]/g, '')
     const titleEm = em.querySelector(
-      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"]'
+      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"]'
     )
     const title = titleEm?.title || titleEm?.innerText || ''
-    const urlEm = em.querySelector('a:has(div[class*="sc-truncate-desktop"]), a:has(span.title)')
+    const urlEm = em.querySelector(
+      'a:has(div[class*="sc-truncate-desktop"]), a:has(span.title), a:has(span[class*="title"])'
+    )
     const url = urlEm?.getAttribute('href')
     const quantityEm = em.querySelector(
       'div[name="ax-qs"] div[role="spinbutton"], div[id^="atcStepperSection"] span.atcStepperQuantity'
@@ -3422,6 +3427,28 @@ export const recipes = [
         children: [
           nav,
           {
+            selector: 'div[data-intent="intent-feed-mission-switcher"]',
+            name: 'category_switcher',
+            children: [
+              {
+                selector: 'h4',
+                clickable: true,
+                name: 'from_text',
+                add_text: true
+              },
+              {
+                selector: 'li.a-carousel-card',
+                clickable: true,
+                name: 'from_text',
+                add_text: true,
+                text_js: (em) => {
+                  const imgEm = em.querySelector('img')
+                  return imgEm?.alt || ''
+                }
+              }
+            ]
+          },
+          {
             selector: 'div[class*="singleProductContainer"]',
             name: 'from_text',
             text_selector: 'span[class*="titleR2"]',
@@ -3485,6 +3512,118 @@ export const recipes = [
                       .replaceAll('-', '_') || ''
                   )
                 }
+              }
+            ]
+          },
+          {
+            selector: 'div[id^="CardInstance"]:has(div[class*="productContainer"])',
+            text_selector: 'h4',
+            name: 'from_text',
+            children: [
+              {
+                selector: 'h4',
+                add_text: true
+              },
+              carousel_card
+            ]
+          },
+          {
+            selector: 'div[id^="CardInstance"]:has(div[class*="twoAsinsProductDetails"])',
+            text_selector: 'h4',
+            name: 'from_text',
+            children: [
+              {
+                selector: 'h4',
+                add_text: true
+              },
+              carousel_card,
+              {
+                selector: 'div[class*="twoAsinsProductContainer"]',
+                text_js: (em) => {
+                  const aEm = em.querySelector('div[class*="twoAsinsProductDetails"] a[aria-label]')
+                  return aEm.getAttribute('aria-label') || ''
+                },
+                name: 'from_text',
+                children: [
+                  {
+                    selector: 'div[class*="imageBlockContainer"] a',
+                    clickable: true,
+                    add_text: true,
+                    text_format: 'Product Image',
+                    name: 'from_text'
+                  },
+                  {
+                    selector: 'div[class*="twoAsinsProductDetails"] a',
+                    clickable: true,
+                    add_text: true,
+                    text_format: 'Product Details',
+                    name: 'from_text'
+                  },
+                  {
+                    selector: 'span[class*="actionButton"]:has(i.a-icon-cart)',
+                    clickable: true,
+                    add_text: true,
+                    name: 'add_to_cart'
+                  }
+                ],
+                generate_metadata: (em) => {
+                  const asinEm = em.querySelector('input[data-asin]')
+                  const asin = asinEm?.getAttribute('data-asin') || ''
+                  const priceEm = em.querySelector('span.a-price span.a-offscreen')
+                  const price = priceEm?.innerText?.replace(/[\n]/g, '')
+                  const titleEm = em.querySelector('div[class*="twoAsinsProductDetails"] a')
+                  const title = titleEm?.getAttribute('aria-label') || ''
+                  const urlEm = em.querySelector('div[class*="twoAsinsProductDetails"] a')
+                  const url = urlEm?.getAttribute('href')
+                  return {
+                    name: 'promotion_items',
+                    data: { title, asin, price, url }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            selector: 'div[class*="intuition-sticky-container"]',
+            name: 'refinements',
+            children: [
+              {
+                selector: 'li[class*="intuition-attribute-bar"]',
+                name: 'from_text',
+                text_js: (em) => {
+                  const textEm = em.querySelector('span.a-truncate-full')
+                  const ariaEm = em.querySelector('button[aria-label]')
+                  return textEm?.innerText || ariaEm?.getAttribute('aria-label') || ''
+                },
+                children: [
+                  {
+                    selector: 'div[class*="intuition-attribute-bar__attributeWithChevron"]',
+                    clickable: true,
+                    name: 'open_filters',
+                    add_text: true,
+                    text_js: (em) => {
+                      const textEm = em.querySelector('span.a-truncate-full')
+                      const ariaEm = em.querySelector('button[aria-label]')
+                      return textEm?.innerText || ariaEm?.getAttribute('aria-label') || ''
+                    }
+                  },
+                  {
+                    selector: 'div.a-cardui-content > div > div',
+                    clickable: true,
+                    name: 'from_text',
+                    add_text: true,
+                    text_js: (em) => {
+                      const button = em.querySelector('button')
+                      return button?.getAttribute('aria-label') || button?.innerText || ''
+                    }
+                  },
+                  {
+                    selector: 'div[class*="actionContainer"]',
+                    clickable: true,
+                    name: 'from_text',
+                    add_text: true
+                  }
+                ]
               }
             ]
           },
