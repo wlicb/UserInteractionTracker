@@ -617,28 +617,46 @@ export const cart = [
   nav,
   {
     selector: '#sc-collapsed-carts-container',
-    name: 'cart',
+    name: 'carts',
     children: [
       {
-        selector: 'div.sc-localmarket-text-logo',
-        add_text: true
-      },
-      {
-        selector: 'div[data-name="collapsed_item_list"]',
-        clickable: true,
-        name: 'item_list'
-      },
-      {
-        selector: 'div.sc-buy-box-inner-box input[name^="proceedToALMCheckout"]',
-        clickable: true,
-        name: 'check_out',
-        add_text: true
-      },
-      {
-        selector: 'div.sc-buy-box-inner-box a',
-        clickable: true,
+        selector: 'div.sc-collapsed-cart-container',
         name: 'from_text',
-        add_text: true
+        text_js: (em) => {
+          const titleEm = em.querySelector('div.sc-cart-header')
+          const title =
+            titleEm?.querySelector('h2[aria-label]')?.getAttribute('aria-label') ||
+            titleEm?.innerText ||
+            'cart'
+          return title
+        },
+        children: [
+          {
+            selector: 'a h2 img',
+            clickable: true,
+            name: 'from_text',
+            text_js: (em) => {
+              return em.alt
+            }
+          },
+          {
+            selector: 'div[data-name="collapsed_item_list"]',
+            clickable: true,
+            name: 'item_list'
+          },
+          {
+            selector: 'div.sc-buy-box-inner-box input[name^="proceedToALMCheckout"]',
+            clickable: true,
+            name: 'check_out',
+            add_text: true
+          },
+          {
+            selector: 'div.sc-buy-box-inner-box a',
+            clickable: true,
+            name: 'from_text',
+            add_text: true
+          }
+        ]
       }
     ]
   },
@@ -682,6 +700,19 @@ export const cart = [
           {
             selector: 'li.sc-product-variation',
             add_text: true
+          },
+          {
+            selector: 'a.sns-opt-in-link-desktop',
+            add_text: true,
+            clickable: true,
+            name: 'from_text'
+          },
+          {
+            selector: 'a.sns-recurrence-period-selector',
+            add_text: true,
+            clickable: true,
+            name: 'from_text',
+            text_format: 'Delivery every: {}'
           },
           {
             selector: 'div.sc-item-content-group span.sc-quantity-stepper',
@@ -777,6 +808,50 @@ export const cart = [
     add_text: true,
     clickable: true,
     name: 'check_out'
+  },
+  {
+    selector: 'div.a-modal-scroller div.a-popover-wrapper',
+    use_root: true,
+    name: 'subscribe_n_save_popover',
+    children: [
+      {
+        selector: 'button.a-button-close',
+        clickable: true,
+        name: 'from_text',
+        text_format: 'Close',
+        add_Text: true
+      },
+      {
+        selector: 'select',
+        name: 'drop_down_list'
+      },
+      {
+        selector: 'li',
+        clickable: true,
+        name: 'from_text',
+        add_text: true
+      },
+      {
+        selector: 'div.a-popover-footer span.a-button-inner',
+        name: 'from_text',
+        clickable: true,
+        add_text: true,
+        text_selector: 'span.a-button-text'
+      }
+    ]
+  },
+  {
+    selector: '#sns-accordion',
+    use_root: true,
+    name: 'subscribe_n_save_frequency_selector_popover',
+    children: [
+      {
+        selector: 'div.a-box',
+        add_text: true,
+        name: 'from_text',
+        clickable: true
+      }
+    ]
   }
 ]
 
