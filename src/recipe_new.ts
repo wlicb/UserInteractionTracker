@@ -3787,21 +3787,37 @@ export const recipes = [
                 selector: 'li[class*="intuition-attribute-bar"]',
                 name: 'from_text',
                 text_js: (em) => {
-                  const textEm = em.querySelector('span.a-truncate-full')
+                  const textEm = em.querySelector('a-cardui-header')
                   const ariaEm = em.querySelector('button[aria-label]')
-                  return textEm?.innerText || ariaEm?.getAttribute('aria-label') || ''
+                  return ariaEm?.getAttribute('aria-label') || textEm?.innerText || ''
                 },
                 children: [
                   {
-                    selector: 'div[class*="intuition-attribute-bar__attributeWithChevron"]',
+                    selector:
+                      'div[class*="intuition-attribute-with-chevron__attributeWithChevronContainer"]',
                     clickable: true,
-                    name: 'open_filters',
+                    name: 'apply_filters',
                     add_text: true,
                     text_js: (em) => {
                       const textEm = em.querySelector('span.a-truncate-full')
                       const ariaEm = em.querySelector('button[aria-label]')
-                      return textEm?.innerText || ariaEm?.getAttribute('aria-label') || ''
+                      return ariaEm?.getAttribute('aria-label') || textEm?.innerText || ''
                     }
+                  },
+                  {
+                    selector:
+                      'div[class*="intuition-attribute-with-chevron__chevronOuterContainer"]',
+                    clickable: true,
+                    name: 'from_text',
+                    add_text: true,
+                    text_format: 'Open Filters'
+                  },
+                  {
+                    selector: 'div[class*="closeModalIconContainer"]',
+                    clickable: true,
+                    add_text: true,
+                    text_format: 'Close Filters',
+                    name: 'from_text'
                   },
                   {
                     selector: 'div.a-cardui-content > div > div',
