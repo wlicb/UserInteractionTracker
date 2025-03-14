@@ -3635,8 +3635,30 @@ export const recipes = [
                 clickable: true
               },
               {
+                selector: 'div[class*="singleSwatchesContainer"]',
+                name: 'options',
+                children: [
+                  {
+                    selector: 'li a',
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true,
+                    text_js: (em) => {
+                      return em.getAttribute('aria-label') || em.innerText || ''
+                    }
+                  },
+                  {
+                    selector: 'a[class*="_link_"]',
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true
+                  }
+                ]
+              },
+              {
                 selector: 'a:not(:has(img))',
                 add_text: true,
+                direct_child: true,
                 text_format: 'Product Detail',
                 name: 'from_text',
                 clickable: true
@@ -3833,11 +3855,11 @@ export const recipes = [
                         name: 'from_text',
                         clickable: true,
                         text_js: (em) => {
-                          return em.getAttribute('aria-label') || em.innerText
+                          return em.getAttribute('aria-label') || em.innerText || ''
                         }
                       },
                       {
-                        selector: 'a[class*="variationsLink"]',
+                        selector: 'a[class*="_link_"]',
                         add_text: true,
                         name: 'from_text',
                         clickable: true
@@ -3906,11 +3928,11 @@ export const recipes = [
                         name: 'from_text',
                         clickable: true,
                         text_js: (em) => {
-                          return em.getAttribute('aria-label')
+                          return em.getAttribute('aria-label') || em.innerText || ''
                         }
                       },
                       {
-                        selector: 'a[class*="variationsLink"]',
+                        selector: 'a[class*="_link_"]',
                         add_text: true,
                         name: 'from_text',
                         clickable: true
