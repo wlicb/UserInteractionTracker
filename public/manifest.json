@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ActionFlow: Research Tool for Online Shopping",
   "version": "2.4",
-  "description": "Tracks your clicks, scrolls, and navigation on Amazon shopping websites to support research aimed at improving shopping experiences.",
+  "description": "Records your clicks, scrolls, and navigation on Amazon shopping websites to support research aimed at improving shopping experiences.",
   "permissions": ["activeTab", "storage", "webNavigation", "downloads"],
   "host_permissions": ["<all_urls>"],
   "action": {
