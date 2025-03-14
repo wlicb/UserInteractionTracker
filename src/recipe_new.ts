@@ -46,7 +46,7 @@ export const nav = {
       name: 'suggested_terms',
       children: [
         {
-          selector: 'div.s-suggestion-ellipsis-direction',
+          selector: 'div.s-suggestion-container',
           name: 'from_text',
           add_text: true,
           clickable: true
@@ -501,7 +501,7 @@ export const carousel_card = {
   name: 'from_text',
   text_js: (em) => {
     const titleEm = em.querySelector(
-      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"]'
+      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"], a[id*="title"]'
     )
     const title = titleEm?.title || titleEm?.innerText || ''
     return title
@@ -509,7 +509,7 @@ export const carousel_card = {
   children: [
     {
       selector:
-        'a:has(img[class*="product-image"], img.a-dynamic-image, img[class*="carousel-image"]), img.s-image',
+        'a:has(img[class*="product-image"], img.a-dynamic-image, img[class*="carousel-image"]), img.s-image, a[target="_top"]:has(img):not(:has(div, span))',
       name: 'product_image',
       add_text: true,
       text_format: 'Product Image',
@@ -517,13 +517,13 @@ export const carousel_card = {
     },
     {
       selector:
-        'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a:has(span[class*="titleR3"]), div[data-cy="title-recipe"]',
+        'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a:has(span[class*="titleR3"]), div[data-cy="title-recipe"], a[id*="title"]',
       add_text: true,
       name: 'product_title',
       clickable: true
     },
     {
-      selector: 'a:has(i[class*="star"]), a:has(i[data-cy="reviews-ratings-slot"])',
+      selector: 'a:has(i[class*="star"]), a:has(i[data-cy="reviews-ratings-slot"]), a.adReviewLink',
       name: 'product_rating',
       clickable: true,
       add_text: true,
@@ -540,6 +540,13 @@ export const carousel_card = {
       clickable: true
     },
     {
+      selector:
+        'a[aria-describedby*="sp_detail_thematic-deals"]:not(:has(span.a-price)), a[aria-describedby*="sp_detail_thematic-recent_history"]:not(:has(span.a-price))',
+      add_text: true,
+      name: 'from_text',
+      clickable: true
+    },
+    {
       selector: 'div[class*="sc-price"]',
       add_text: true,
       text_selector: 'span[class*="sc-price"]',
@@ -548,7 +555,7 @@ export const carousel_card = {
     },
     {
       selector:
-        'div.a-section.aok-relative:has(span.a-price span.a-offscreen), a[aria-describedby="price-link"]:has(span.a-price span.a-offscreen)',
+        'div.a-section.aok-relative:has(span.a-price span.a-offscreen), div.a-color-price:has(span.a-price span.a-offscreen), a[aria-describedby="price-link"]:has(span.a-price span.a-offscreen)',
       add_text: true,
       clickable: true,
       text_selector: 'span.a-price span.a-offscreen',
@@ -605,7 +612,7 @@ export const carousel_card = {
     const priceEm = em.querySelector('a span[class*="sc-price"], span.a-price span.a-offscreen')
     const price = priceEm?.innerText?.replace(/[\n]/g, '')
     const titleEm = em.querySelector(
-      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"]'
+      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"], a[id*="title"]'
     )
     const title = titleEm?.title || titleEm?.innerText || ''
     const urlEm = em.querySelector(
@@ -3253,6 +3260,71 @@ export const recipes = [
             selector: '#outOfStock',
             add_text: true,
             text_format: 'Currently Unavailable'
+          },
+          {
+            selector: 'div.cardRoot.bucket',
+            name: 'from_text',
+            text_selector: 'h2#similarities-product-bundle-widget-title',
+            children: [
+              {
+                selector: 'h2#similarities-product-bundle-widget-title',
+                add_text: true
+              },
+              {
+                selector: 'div[class*="desktop-sims-fbt_fbt-desktop_new-detail-faceout-box"]',
+                name: 'from_text',
+                text_selector: 'div[id^="ProductTitle"]',
+                children: [
+                  {
+                    selector: 'input[id^="fbtCheck"]',
+                    clickable: true,
+                    add_text: true,
+                    text_format: 'Checkbox',
+                    name: 'from_text'
+                  },
+                  {
+                    selector: 'a[class*="desktop-sims-fbt_fbt-desktop_image-link"]',
+                    text_format: 'Product Image',
+                    clickable: true,
+                    add_text: true,
+                    name: 'from_text'
+                  },
+                  {
+                    selector: 'div[id^="ProductTitle"]:has(a)',
+                    clickable: true,
+                    add_text: true,
+                    name: 'product_title'
+                  },
+                  {
+                    selector: 'div[id^="ProductTitle"]:not(:has(a))',
+                    add_text: true
+                  },
+                  {
+                    selector:
+                      'div[class*="desktop-sims-fbt_price_p13n"] span.a-price span.a-offscreen',
+                    add_text: true
+                  }
+                ]
+              },
+              {
+                selector: 'span.add-to-cart-button',
+                clickable: true,
+                add_text: true,
+                name: 'from_text'
+              }
+            ]
+          },
+          {
+            selector: '#similarities_feature_div',
+            text_selector: 'h2.a-carousel-heading',
+            name: 'from_text',
+            children: [
+              {
+                selector: 'h2.a-carousel-heading',
+                add_text: true
+              },
+              carousel_card
+            ]
           },
           {
             selector: '#product-comparison_feature_div',
