@@ -2918,18 +2918,18 @@ export const recipes = [
                   return em?.innerText?.replace(/\n/g, '') || ''
                 }
               },
-              {
-                selector: 'span.a-price span.a-offscreen',
-                add_text: true,
-                text_format: 'Price: {}',
-                class: 'product-price',
-                generate_metadata: (em) => {
-                  return {
-                    name: 'product_details',
-                    data: { price: em?.innerText?.replace(/\n/g, '') || '' }
-                  }
-                }
-              },
+              // {
+              //   selector: 'span.a-price span.a-offscreen',
+              //   add_text: true,
+              //   text_format: 'Price: {}',
+              //   class: 'product-price',
+              //   generate_metadata: (em) => {
+              //     return {
+              //       name: 'product_details',
+              //       data: { price: em?.innerText?.replace(/\n/g, '') || '' }
+              //     }
+              //   }
+              // },
               {
                 selector: '#twister',
                 class: 'product-options',
