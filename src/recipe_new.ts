@@ -1138,6 +1138,35 @@ export const fresh_cart = [
   }
 ]
 
+export const luxury_carousel_card = {
+  selector: 'li.a-carousel-card, div[id^="gridElement"]',
+  name: 'from_text',
+  text_selector: 'span.a-truncate-full',
+  children: [
+    {
+      selector: 'a',
+      clickable: true,
+      add_text: true,
+      name: 'from_text',
+      text_selector: '#bondWalledCarouselElementDescription'
+    }
+  ],
+  generate_metadata: (em) => {
+    const asinEm = em.querySelector('a')
+    const asin = asinEm?.getAttribute('href')?.split('/').at(-2)
+    const priceEm = em.querySelector('span.a-price span.a-offscreen')
+    const price = priceEm?.innerText?.replace(/[\n]/g, '')
+    const titleEm = em.querySelector('a #bondWalledCarouselElementDescription')
+    const title = titleEm?.innerText
+    const urlEm = em.querySelector('a')
+    const url = urlEm?.getAttribute('href')
+    return {
+      name: 'promotion_items',
+      data: { title, asin, price, url }
+    }
+  }
+}
+
 export const luxury_cart = [
   nav,
   {
@@ -2918,18 +2947,18 @@ export const recipes = [
                   return em?.innerText?.replace(/\n/g, '') || ''
                 }
               },
-              // {
-              //   selector: 'span.a-price span.a-offscreen',
-              //   add_text: true,
-              //   text_format: 'Price: {}',
-              //   class: 'product-price',
-              //   generate_metadata: (em) => {
-              //     return {
-              //       name: 'product_details',
-              //       data: { price: em?.innerText?.replace(/\n/g, '') || '' }
-              //     }
-              //   }
-              // },
+              {
+                selector: 'span.bondApexPrice span.a-offscreen',
+                add_text: true,
+                text_format: 'Price: {}',
+                class: 'product-price',
+                generate_metadata: (em) => {
+                  return {
+                    name: 'product_details',
+                    data: { price: em?.innerText?.replace(/\n/g, '') || '' }
+                  }
+                }
+              },
               {
                 selector: '#twister',
                 class: 'product-options',
@@ -3315,15 +3344,39 @@ export const recipes = [
             ]
           },
           {
-            selector: '#similarities_feature_div',
-            text_selector: 'h2.a-carousel-heading',
+            selector: 'div#dp:not(.grocery):not(.luxury) #similarities_feature_div',
+            text_selector: 'h2.a-carousel-heading, h1[class*="carousel-heading"]',
             name: 'from_text',
             children: [
               {
-                selector: 'h2.a-carousel-heading',
+                selector: 'h2.a-carousel-heading, h1[class*="carousel-heading"]',
                 add_text: true
               },
               carousel_card
+            ]
+          },
+          {
+            selector: 'div.grocery #similarities_feature_div',
+            text_selector: 'h2.a-carousel-heading, h1[class*="carousel-heading"]',
+            name: 'from_text',
+            children: [
+              {
+                selector: 'h2.a-carousel-heading, h1[class*="carousel-heading"]',
+                add_text: true
+              },
+              fresh_carousel_card
+            ]
+          },
+          {
+            selector: 'div.luxury #similarities_feature_div',
+            text_selector: 'h2.a-carousel-heading, h1[class*="carousel-heading"]',
+            name: 'from_text',
+            children: [
+              {
+                selector: 'h2.a-carousel-heading, h1[class*="carousel-heading"]',
+                add_text: true
+              },
+              luxury_carousel_card
             ]
           },
           {
