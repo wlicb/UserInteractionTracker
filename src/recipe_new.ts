@@ -501,7 +501,7 @@ export const carousel_card = {
   name: 'from_text',
   text_js: (em) => {
     const titleEm = em.querySelector(
-      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"]'
+      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"]'
     )
     const title = titleEm?.title || titleEm?.innerText || ''
     return title
@@ -509,7 +509,7 @@ export const carousel_card = {
   children: [
     {
       selector:
-        'a:has(img[class*="product-image"], img.a-dynamic-image, img[class*="carousel-image"])',
+        'a:has(img[class*="product-image"], img.a-dynamic-image, img[class*="carousel-image"]), img.s-image',
       name: 'product_image',
       add_text: true,
       text_format: 'Product Image',
@@ -517,19 +517,27 @@ export const carousel_card = {
     },
     {
       selector:
-        'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a:has(span[class*="titleR3"])',
+        'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a:has(span[class*="titleR3"]), div[data-cy="title-recipe"]',
       add_text: true,
       name: 'product_title',
       clickable: true
     },
     {
-      selector: 'a:has(i[class*="star"])',
-      name: 'product_review',
+      selector: 'a:has(i[class*="star"]), a:has(i[data-cy="reviews-ratings-slot"])',
+      name: 'product_rating',
       clickable: true,
       add_text: true,
       text_js: (em) => {
-        return em.title
+        return em.title || em.getAttribute('aria-label') || ''
       }
+    },
+    {
+      selector: 'span.a-size-base.s-underline-text',
+      add_text: true,
+      text_format: '{} reviews',
+      class: 'product-rating-count',
+      name: 'product_rating_count',
+      clickable: true
     },
     {
       selector: 'div[class*="sc-price"]',
@@ -539,9 +547,11 @@ export const carousel_card = {
       clickable: true
     },
     {
-      selector: 'div.a-section.aok-relative:has(span.a-price span.a-offscreen)',
+      selector:
+        'div.a-section.aok-relative:has(span.a-price span.a-offscreen), a[aria-describedby="price-link"]:has(span.a-price span.a-offscreen)',
       add_text: true,
       clickable: true,
+      text_selector: 'span.a-price span.a-offscreen',
       name: 'product_price'
     },
     {
@@ -595,7 +605,7 @@ export const carousel_card = {
     const priceEm = em.querySelector('a span[class*="sc-price"], span.a-price span.a-offscreen')
     const price = priceEm?.innerText?.replace(/[\n]/g, '')
     const titleEm = em.querySelector(
-      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"]'
+      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"]'
     )
     const title = titleEm?.title || titleEm?.innerText || ''
     const urlEm = em.querySelector(
@@ -2449,6 +2459,18 @@ export const recipes = [
             ]
           },
           {
+            selector: 'div:has(> span[data-component-type="s-searchgrid-carousel"])',
+            name: 'from_text',
+            text_selector: 'div.sg-row h2',
+            children: [
+              {
+                selector: 'div.sg-row h2',
+                add_text: true
+              },
+              carousel_card
+            ]
+          },
+          {
             selector: 'div.s-main-slot.s-result-list.s-search-results',
             name: 'search_results',
             children: [
@@ -2544,6 +2566,11 @@ export const recipes = [
                         selector: 'span.a-icon-alt',
                         add_text: true,
                         class: 'product-rating'
+                      },
+                      {
+                        selector: 'a:has(i[data-cy="reviews-ratings-slot"])',
+                        clickable: true,
+                        name: 'product_rating'
                       },
                       {
                         selector: 'span.a-size-base.s-underline-text',
@@ -3419,7 +3446,7 @@ export const recipes = [
                     children: [
                       {
                         selector: 'div[class*="reviews-rating"]',
-                        name: 'product_reviews',
+                        name: 'product_rating',
                         add_text: true,
                         text_js: (em) => {
                           const icon = em.querySelector('i')
