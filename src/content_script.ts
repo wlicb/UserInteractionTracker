@@ -10,6 +10,7 @@ import {
 } from './utils/util'
 import { v4 as uuidv4 } from 'uuid'
 import { scroll_threshold } from './config'
+import { finder } from '@medv/finder'
 
 async function captureScreenshot(timestamp: string, uuid: string) {
   try {
@@ -135,41 +136,58 @@ const work = () => {
     scrollDistance?: number,
     scrollCurrentTop?: number,
     scrollCurrentLeft?: number,
-    scrollDistance_X?: number
+    scrollDistance_X?: number,
+    url?: string
   ) {
     try {
-      // Generate new HTML snapshot ID
-      const currentSnapshotId = generateHtmlSnapshotId(timestamp, uuid)
-
-      const simplifiedHTML = processRecipe()
-      // console.log('start time:', new Date().toISOString())
-      MarkViewableElements()
-      // console.log('end time:', new Date().toISOString())
-      const pageMeta = findPageMeta()
-
-      let data = {
-        uuid: uuid,
-        eventType,
-        timestamp: timestamp,
-
-        htmlSnapshotId: currentSnapshotId, // Use the new snapshot ID
-        pageMeta: pageMeta || '',
-        htmlContent: document.documentElement.outerHTML,
-        simplifiedHTML: simplifiedHTML
-      }
-      if (eventType === 'scroll') {
-        data['windowSize'] = windowSize
-        data['scrollDistance_Y'] = scrollDistance
-        data['scrollCurrentTop'] = scrollCurrentTop
-        data['scrollCurrentLeft'] = scrollCurrentLeft
-        data['scrollDistance_X'] = scrollDistance_X
-        data['target'] = target
-      }
+      let data = {}
       if (eventType === 'input') {
+        const selector = finder(target as HTMLElement, {
+          maxNumberOfPathChecks: 0
+        })
+        data = {
+          uuid: uuid,
+          eventType,
+          timestamp: timestamp,
+          url: url,
+          htmlSnapshotId: '',
+          pageMeta: '',
+          htmlContent: '',
+          simplifiedHTML: ''
+        }
+        data['selector'] = selector
         data['input-values'] = target?.value || ''
         data['input-id'] = target?.id || ''
         data['data-element-meta-name'] = target.getAttribute('data-element-meta-name') || ''
         data['data-element-meta-data'] = target.getAttribute('data-element-meta-data') || ''
+      } else {
+        // Generate new HTML snapshot ID
+        const currentSnapshotId = generateHtmlSnapshotId(timestamp, uuid)
+
+        const simplifiedHTML = processRecipe()
+        // console.log('start time:', new Date().toISOString())
+        MarkViewableElements()
+        // console.log('end time:', new Date().toISOString())
+        const pageMeta = findPageMeta()
+
+        data = {
+          uuid: uuid,
+          eventType,
+          timestamp: timestamp,
+
+          htmlSnapshotId: currentSnapshotId, // Use the new snapshot ID
+          pageMeta: pageMeta || '',
+          htmlContent: document.documentElement.outerHTML,
+          simplifiedHTML: simplifiedHTML
+        }
+        if (eventType === 'scroll') {
+          data['windowSize'] = windowSize
+          data['scrollDistance_Y'] = scrollDistance
+          data['scrollCurrentTop'] = scrollCurrentTop
+          data['scrollCurrentLeft'] = scrollCurrentLeft
+          data['scrollDistance_X'] = scrollDistance_X
+          data['target'] = target
+        }
       }
       await chrome.runtime.sendMessage({ action: 'saveData', data })
     } catch (error) {
@@ -268,127 +286,37 @@ const work = () => {
     ) // Threshold of 300ms
   })
 
-  // document.addEventListener('DOMContentLoaded', () => {
-  //   // Handle all types of order buttons
-  //   const placeOrderButtons = document.querySelectorAll(
-  //     'input[id="placeOrder"], input[id="turbo-checkout-pyo-button"]'
-  //   )
-  //   const buyNowButton = document.querySelector('input[id="buy-now-button"]')
-  //   const setupNowButton = document.querySelector(
-  //     'button[id="rcx-subscribe-submit-button-announce"]'
-  //   )
-  //   const proceedToCheckoutButton = document.querySelector('input[name="proceedToRetailCheckout"]')
-
-  //   // Handle Buy Now and Set Up Now buttons if present
-  //   ;[buyNowButton, setupNowButton].forEach((button) => {
-  //     if (button) {
-  //       button.addEventListener('click', async () => {
-  //         try {
-  //           const productInfo = {
-  //             title: (document.querySelector('#title') as HTMLElement)?.innerText?.trim() || '',
-  //             price:
-  //               (
-  //                 document.querySelector(
-  //                   'span.a-price.aok-align-center.reinventPricePriceToPayMargin.priceToPay'
-  //                 ) as HTMLElement
-  //               )?.innerText?.trim() || '',
-  //             asin: (document.querySelector('input#ASIN') as HTMLInputElement)?.value || '',
-  //             options: {}
-  //           }
-
-  //           // Get all option selections
-  //           const optionRows = Array.from(
-  //             document.querySelectorAll(
-  //               '#twister div.a-row:has(label.a-form-label):has(span.selection)'
-  //             )
-  //           )
-  //           optionRows.forEach((row) => {
-  //             const label =
-  //               (row.querySelector('label.a-form-label') as HTMLElement)?.innerText?.replace(
-  //                 ': ',
-  //                 ''
-  //               ) || ''
-  //             const value = (row.querySelector('span.selection') as HTMLElement)?.innerText || ''
-  //             if (label && value) {
-  //               ;(productInfo.options as any)[label] = value
-  //             }
-  //           })
-
-  //           console.log(`${button.id} clicked - Product Info:`, productInfo)
-
-  //           await chrome.runtime.sendMessage({
-  //             action: 'saveOrder',
-  //             data: {
-  //               timestamp: new Date().toISOString(),
-  //               name: productInfo.title,
-  //               price: parseFloat(productInfo.price.replace(/[^0-9.]/g, '')),
-  //               asin: productInfo.asin,
-  //               options: productInfo.options
-  //             }
-  //           })
-  //         } catch (error) {
-  //           console.error(`Error capturing ${button.id} product info:`, error)
-  //         }
-  //       })
-  //     }
-  //   })
-  //   if (proceedToCheckoutButton) {
-  //     proceedToCheckoutButton.addEventListener('click', async (event) => {
-  //       try {
-  //         const selectedItems = []
-  //         const cartItems = Array.from(document.querySelectorAll('[id^="sc-active-"]')).filter(
-  //           (item) => item.id !== 'sc-active-cart'
-  //         )
-  //         for (const item of cartItems) {
-  //           const checkbox = item.querySelector('input[type="checkbox"]') as HTMLInputElement
-  //           if (checkbox && checkbox.checked) {
-  //             const productLink = item.querySelector('.sc-item-product-title-cont .sc-product-link')
-  //             if (productLink) {
-  //               const fullNameElement = productLink.querySelector('.a-truncate-full')
-  //               const name = fullNameElement?.textContent?.trim() || ''
-
-  //               const href = productLink.getAttribute('href') || ''
-  //               const asin = href.match(/product\/([A-Z0-9]{10})/)?.[1] || ''
-
-  //               const priceElement = item.querySelector('.sc-item-price-block .a-offscreen')
-  //               const price = priceElement
-  //                 ? parseFloat(priceElement.textContent?.replace(/[^0-9.]/g, '') || '0')
-  //                 : 0
-
-  //               const options: { [key: string]: string } = {}
-  //               const variationElements = item.querySelectorAll('.sc-product-variation')
-  //               variationElements.forEach((variation) => {
-  //                 const label =
-  //                   variation.querySelector('.a-text-bold')?.textContent?.trim().replace(':', '') ||
-  //                   ''
-  //                 const value =
-  //                   variation
-  //                     .querySelector('.a-size-small:not(.a-text-bold)')
-  //                     ?.textContent?.trim() || ''
-  //                 if (label && value) {
-  //                   options[label] = value
-  //                 }
-  //               })
-
-  //               selectedItems.push({
-  //                 timestamp: new Date().toISOString(),
-  //                 name,
-  //                 asin,
-  //                 price,
-  //                 options
-  //               })
-  //             }
-  //           }
-  //         }
-  //         if (selectedItems.length > 0) {
-  //           await chrome.runtime.sendMessage({ action: 'saveOrder', data: selectedItems })
-  //         }
-  //       } catch (error) {
-  //         console.error('Error capturing selected cart items:', error)
-  //       }
-  //     })
-  //   }
-  // })
+  document.addEventListener(
+    'blur',
+    async (event) => {
+      const uuid = uuidv4()
+      const target = event.target as HTMLElement
+      if (isFromPopup(target)) return
+      if (
+        target &&
+        ((target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text') ||
+          target.tagName === 'TEXTAREA')
+      ) {
+        const timestamp = new Date().toISOString()
+        await captureInteraction(
+          'input',
+          target,
+          timestamp,
+          uuid,
+          {
+            width: window.innerWidth,
+            height: window.innerHeight
+          },
+          0,
+          0,
+          0,
+          0,
+          window.location.href
+        )
+      }
+    },
+    true
+  )
 
   chrome.runtime.onMessage.addListener(
     (message, sender, sendResponse: (response?: any) => void) => {

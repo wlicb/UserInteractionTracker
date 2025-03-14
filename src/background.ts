@@ -404,14 +404,16 @@ const saveHTML = async (
   timestamp: string,
   uuid: string
 ) => {
-  await db.add('htmlSnapshots', {
-    htmlSnapshotId: currentSnapshotId,
-    htmlContent: htmlContent,
-    simplifiedHTML: simplifiedHTML,
-    timestamp: timestamp,
-    uuid: uuid,
-    uploaded: 0
-  })
+  if (htmlContent) {
+    await db.add('htmlSnapshots', {
+      htmlSnapshotId: currentSnapshotId,
+      htmlContent: htmlContent,
+      simplifiedHTML: simplifiedHTML,
+      timestamp: timestamp,
+      uuid: uuid,
+      uploaded: 0
+    })
+  }
 }
 
 const saveInteraction = async (
@@ -466,7 +468,8 @@ const sendPopup = async (
 ) => {
   if (
     data.target?.id?.toLowerCase().includes('rufus') ||
-    data.target?.className?.toLowerCase().includes('rufus')
+    data.target?.className?.toLowerCase().includes('rufus') ||
+    eventType === 'input'
   ) {
     return
   }
