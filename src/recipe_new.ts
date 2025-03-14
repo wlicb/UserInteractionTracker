@@ -3,6 +3,13 @@ export const nav = {
   name: 'nav_bar',
   children: [
     {
+      selector: '#nav-logo',
+      add_text: true,
+      text_format: 'Homepage',
+      clickable: true,
+      name: 'from_text'
+    },
+    {
       selector: '#nav-search-bar-form',
       children: [
         {
