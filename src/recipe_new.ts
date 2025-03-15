@@ -558,7 +558,7 @@ export const carousel_card = {
     },
     {
       selector:
-        'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a:has(span[class*="titleR3"]), div[data-cy="title-recipe"], a[id*="title"]',
+        'a div[class*="sc-truncate-desktop"], a div:has(> span.title), a div[class*="sc-css-line-clamp"], a:has(span[class*="titleR3"]), div[data-cy="title-recipe"], a[id*="title"]',
       add_text: true,
       name: 'product_title',
       clickable: true
