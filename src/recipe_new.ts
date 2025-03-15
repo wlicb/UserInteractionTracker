@@ -2742,7 +2742,8 @@ export const recipes = [
                     class: 'product-delivery'
                   },
                   {
-                    selector: "div[data-cy='add-to-cart'] button, span[id*='add-to-cart'] input",
+                    selector:
+                      "div[data-cy='add-to-cart'] span.a-button:has(button), span[id*='add-to-cart'] input",
                     add_text: true,
                     clickable: true,
                     name: 'add_to_cart'
