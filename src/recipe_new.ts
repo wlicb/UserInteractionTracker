@@ -1021,10 +1021,11 @@ export const fresh_carousel_card = {
       ]
     },
     {
-      selector: 'a > span > span > span.a-truncate-full',
+      selector: 'a > span > span.a-truncate',
       add_text: true,
       name: 'product_detail',
-      clickable: true
+      clickable: true,
+      text_selector: 'span.a-truncate-full'
     },
     {
       selector: 'div > span > span > span.a-truncate-full',
