@@ -606,7 +606,11 @@ export const carousel_card = {
       'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"], a[id*="title"], a.sw-product-title'
     )
     const title = titleEm?.title || titleEm?.innerText || ''
-    return title
+    const imgEm = em.querySelector(
+      'img[class*="product-image"], img.a-dynamic-image, img[class*="carousel-image"] img.s-image'
+    )
+    const imgAlt = imgEm?.alt
+    return title || imgAlt || ''
   },
   children: [
     {
@@ -760,6 +764,10 @@ export const carousel_card = {
       'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"], a[id*="title"], a.sw-product-title'
     )
     const title = titleEm?.title || titleEm?.innerText || ''
+    const imgEm = em.querySelector(
+      'img[class*="product-image"], img.a-dynamic-image, img[class*="carousel-image"] img.s-image'
+    )
+    const imgAlt = imgEm?.alt
     const urlEm = em.querySelector(
       'a:has(div[class*="sc-truncate-desktop"]), a:has(span.title), a:has(span[class*="title"])'
     )
@@ -770,7 +778,7 @@ export const carousel_card = {
     const quantity = quantityEm?.innerText || ''
     return {
       name: 'promotion_items',
-      data: { title, asin, price, url, quantity }
+      data: { title: title || imgAlt || '', asin, price, url, quantity }
     }
   }
 }
@@ -4617,7 +4625,8 @@ export const recipes = [
             name: 'sub_stores',
             children: [
               {
-                selector: 'a[class*="store-subnav-desktop_style"]',
+                selector:
+                  'a[class*="store-subnav-desktop_style"], a[class*="store-subnav-desktop-flyout_style"]',
                 add_text: true,
                 clickable: true,
                 name: 'from_text',
@@ -4752,6 +4761,14 @@ export const recipes = [
   },
   {
     match: '/Best-Sellers*/zgbs/*',
+    match_method: 'url',
+    selector: 'html',
+    match_with_ref: true,
+    match_with_wildcard: true,
+    children: popular_products
+  },
+  {
+    match: '/Best-Sellers*/zgbs/*/*',
     match_method: 'url',
     selector: 'html',
     match_with_ref: true,
