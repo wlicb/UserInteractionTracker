@@ -512,7 +512,7 @@ export const set_up_now_button = {
 
 export const add_to_cart_button = {
   selector:
-    "input[name='submit.add-to-cart'], input[name='submit.add-to-cart-ubb'], #freshAddToCartButton input",
+    "input[name='submit.add-to-cart'], input[name='submit.add-to-cart-ubb'], #freshAddToCartButton input, #dealsx_atc_btn",
   add_text: true,
   clickable: true,
   name: 'add_to_cart',
@@ -525,6 +525,13 @@ export const buy_now_button = {
   clickable: true,
   name: 'buy_now',
   class: 'product-buy-now'
+}
+
+export const go_to_cart_button_for_flash_sales = {
+  selector: '#dealsx_incart span.a-button',
+  add_text: true,
+  clickable: true,
+  name: 'from_text'
 }
 
 export const buy_box_with_accordion = {
@@ -550,6 +557,7 @@ export const buy_box_with_accordion = {
         delivery_frequency_selector,
         set_up_now_button,
         add_to_cart_button,
+        go_to_cart_button_for_flash_sales,
         buy_now_button
       ]
     }
@@ -1579,6 +1587,13 @@ export const buy_again = [
                 text_selector: 'span.a-truncate-full'
               },
               {
+                selector: 'div[class*="asinDetailReviewsRow"] a',
+                clickable: true,
+                add_text: true,
+                text_selector: 'i.a-icon-star-mini',
+                name: 'product_rating'
+              },
+              {
                 selector: "div[class*='multiOfferPillContainer'] a",
                 clickable: true,
                 name: 'from_text',
@@ -1699,7 +1714,8 @@ export const buy_again = [
                     name: 'delivery'
                   },
                   {
-                    selector: 'div[class*="actionButtonsRow"]',
+                    selector:
+                      'div[class*="actionButtonsRow"], div[class*="asinDetailPurchaseColumn"]',
                     name: 'buttons',
                     children: [
                       {
@@ -1774,6 +1790,13 @@ export const buy_again = [
                     name: 'product_title',
                     add_text: true,
                     text_selector: 'span.a-truncate-full'
+                  },
+                  {
+                    selector: 'div[class*="reviewsRow"] a',
+                    clickable: true,
+                    add_text: true,
+                    text_selector: 'i.a-icon-star-mini',
+                    name: 'product_rating'
                   },
                   {
                     selector:
