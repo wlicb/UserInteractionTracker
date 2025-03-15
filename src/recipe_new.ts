@@ -3399,40 +3399,50 @@ export const recipes = [
           {
             selector: 'div.cardRoot.bucket',
             name: 'from_text',
-            text_selector: 'h2#similarities-product-bundle-widget-title',
+            text_selector: 'h2#similarities-product-bundle-widget-title, h2.a-carousel-heading',
             children: [
               {
-                selector: 'h2#similarities-product-bundle-widget-title',
+                selector: 'h2#similarities-product-bundle-widget-title, h2.a-carousel-heading',
                 add_text: true
               },
               {
-                selector: 'div[class*="desktop-sims-fbt_fbt-desktop_new-detail-faceout-box"]',
+                selector: 'div[class*="new-detail-faceout-box"]',
                 name: 'from_text',
-                text_selector: 'div[id^="ProductTitle"]',
+                text_selector: 'div[id^="ProductTitle"], div[class*="title-component"]',
                 children: [
                   {
-                    selector: 'input[id^="fbtCheck"]',
+                    selector: 'input[id^="fbtCheck"], div[class*="thematicBundle-checkbox"]',
                     clickable: true,
                     add_text: true,
                     text_format: 'Checkbox',
                     name: 'from_text'
                   },
                   {
-                    selector: 'a[class*="desktop-sims-fbt_fbt-desktop_image-link"]',
+                    selector:
+                      'a[class*="desktop-sims-fbt_fbt-desktop_image-link"], div[class*="image-background"] a',
                     text_format: 'Product Image',
                     clickable: true,
                     add_text: true,
                     name: 'from_text'
                   },
                   {
-                    selector: 'div[id^="ProductTitle"]:has(a)',
+                    selector:
+                      'div[id^="ProductTitle"]:has(a), a:has(div[class*="title-component"])',
                     clickable: true,
                     add_text: true,
                     name: 'product_title'
                   },
                   {
-                    selector: 'div[id^="ProductTitle"]:not(:has(a))',
+                    selector:
+                      'div[id^="ProductTitle"]:not(:has(a)) div > div[class*="title-component"]',
                     add_text: true
+                  },
+                  {
+                    selector: 'div[class*="reviews-section"] a',
+                    clickable: true,
+                    add_text: true,
+                    text_format: 'Reviewed by {}',
+                    name: 'product_rating_count'
                   },
                   {
                     selector:
