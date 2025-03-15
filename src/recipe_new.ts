@@ -53,12 +53,26 @@ export const nav = {
       name: 'suggested_terms',
       children: [
         {
+          selector: 'div.cards_carousel_widget-sug-column',
+          name: 'from_text',
+          clickable: true,
+          add_text: true,
+          text_selector: 'div.cards_carousel_text_left_widget-sug-text'
+        },
+        {
           selector: 'div.s-suggestion-container',
           name: 'from_text',
           add_text: true,
           clickable: true
         }
       ]
+    },
+    {
+      selector: '#nav-hamburger-menu',
+      name: 'from_text',
+      add_text: true,
+      clickable: true,
+      text_format: 'Menu'
     },
     {
       selector: '#nav-xshop',
@@ -80,8 +94,26 @@ export const cart_side_bar = {
   name: 'cart_side_bar',
   children: [
     {
-      selector: 'div.ewc-cart-header',
-      add_text: true
+      selector: 'div.ewc-multi-cart-dropdown',
+      name: 'cart_selector',
+      children: [
+        {
+          selector: 'div.ewc-cart-header',
+          add_text: true,
+          clickable: true,
+          name: 'from_text',
+          text_js: (em) => {
+            return em.querySelector('img')?.alt || ''
+          }
+        }
+      ]
+    },
+    {
+      selector: 'div.ewc-compact-view-cart-header div.ewc-cart-header-logo',
+      name: 'open_cart_selector',
+      clickable: true,
+      add_text: true,
+      text_format: 'Open Cart Selector'
     },
     {
       selector: 'div.ewc-compact-actions a',
@@ -124,6 +156,27 @@ export const cart_side_bar = {
               name: 'drop_down_list',
               clickable: true,
               add_text: true
+            },
+            {
+              selector: 'div[id^="qs-widget-button-container-"]',
+              name: 'drop_down_list',
+              clickable: true,
+              add_text: true,
+              children: [
+                {
+                  selector: 'div[id^="qs-widget-dropdown-container-"]',
+                  match_id_with_parent: true,
+                  use_root: true,
+                  children: [
+                    {
+                      selector: 'li',
+                      add_text: true,
+                      name: 'from_text',
+                      clickable: true
+                    }
+                  ]
+                }
+              ]
             },
             {
               selector: 'div.ewc-delete-icon-container button',
