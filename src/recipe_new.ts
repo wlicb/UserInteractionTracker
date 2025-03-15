@@ -131,6 +131,40 @@ export const cart_side_bar = {
               add_text: true,
               text_format: 'delete',
               clickable: true
+            },
+            {
+              selector: 'span.sc-quantity-stepper',
+              children: [
+                {
+                  selector: 'button[data-a-selector="decrement"]',
+                  add_text: true,
+                  text_js: function (element) {
+                    if (element.hasAttribute('aria-label')) {
+                      return element.getAttribute('aria-label')
+                    }
+                    return ''
+                  },
+                  clickable: true,
+                  name: 'decrease_quantity_by_one'
+                },
+                {
+                  selector: "div[role='spinbutton']",
+                  add_text: true,
+                  text_format: 'Current Quantity: {}'
+                },
+                {
+                  selector: 'button[data-a-selector="increment"]',
+                  add_text: true,
+                  text_js: function (element) {
+                    if (element.hasAttribute('aria-label')) {
+                      return element.getAttribute('aria-label')
+                    }
+                    return ''
+                  },
+                  clickable: true,
+                  name: 'increase_quantity_by_one'
+                }
+              ]
             }
           ],
           generate_metadata: (em) => {
@@ -144,7 +178,7 @@ export const cart_side_bar = {
             const urlEm = titleEm?.parentElement
             const url = urlEm?.getAttribute('href')
             const quantityEm = em.querySelector(
-              'div[data-action="a-dropdown-button"], span[data-action="a-dropdown-button"]'
+              'div[data-action="a-dropdown-button"], span[data-action="a-dropdown-button"], span.sc-quantity-stepper div[role="spinbutton"]'
             )
             const quantity = quantityEm?.innerText
             return {
