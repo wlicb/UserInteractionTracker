@@ -617,6 +617,33 @@ export const carousel_card = {
       clickable: true
     },
     {
+      selector: 'div[class*="singleSwatchesContainer"]',
+      name: 'options',
+      children: [
+        {
+          selector: 'li a',
+          add_text: true,
+          name: 'from_text',
+          clickable: true,
+          text_js: (em) => {
+            return em.getAttribute('aria-label') || em.innerText || ''
+          }
+        },
+        {
+          selector: 'a[class*="_link_"]',
+          add_text: true,
+          name: 'from_text',
+          clickable: true
+        }
+      ]
+    },
+    {
+      selector: 'div[class*="variationLink"] a',
+      clickable: true,
+      add_text: true,
+      name: 'from_text'
+    },
+    {
       selector: 'a:has(i[class*="star"]), a:has(i[data-cy="reviews-ratings-slot"]), a.adReviewLink',
       name: 'product_rating',
       clickable: true,
@@ -695,6 +722,12 @@ export const carousel_card = {
           name: 'from_text'
         }
       ]
+    },
+    {
+      selector: 'span.a-button a, div[data-component-id="seeAllBuyingOptionsButton"] span.a-button',
+      add_text: true,
+      clickable: true,
+      name: 'from_text'
     }
   ],
   generate_metadata: (em) => {
@@ -1981,6 +2014,7 @@ export const popular_products = [
     selector: 'body',
     children: [
       nav,
+      cart_side_bar,
       {
         selector: '#zg_header',
         name: 'categories',
@@ -3770,6 +3804,7 @@ export const recipes = [
         selector: 'body',
         children: [
           nav,
+          cart_side_bar,
           {
             selector: 'div[data-intent="intent-feed-mission-switcher"]',
             name: 'category_switcher',
@@ -3826,6 +3861,12 @@ export const recipes = [
                 ]
               },
               {
+                selector: 'div[class*="variationLink"] a',
+                clickable: true,
+                add_text: true,
+                name: 'from_text'
+              },
+              {
                 selector: 'a:not(:has(img))',
                 add_text: true,
                 direct_child: true,
@@ -3834,15 +3875,24 @@ export const recipes = [
                 clickable: true
               },
               {
-                selector: 'input',
+                selector: 'div[class*="singleProductDetails"] a',
                 add_text: true,
+                direct_child: true,
+                text_format: 'Product Detail',
+                name: 'from_text',
+                clickable: true
+              },
+              {
+                selector: 'span.a-button:has(input)',
                 clickable: true,
+                add_text: true,
                 name: 'add_to_cart'
               },
               {
-                selector: 'a.a-button-text',
-                clickable: true,
+                selector:
+                  'span.a-button a, div[data-component-id="seeAllBuyingOptionsButton"] span.a-button',
                 add_text: true,
+                clickable: true,
                 name: 'from_text'
               }
             ],
@@ -4022,7 +4072,7 @@ export const recipes = [
               {
                 selector: 'li[class*="productContainer"]',
                 name: 'from_text',
-                text_selector: 'span[class*="titleR3"]',
+                text_selector: 'span[class*="titleR3"], span[class*="titleR4"]',
                 children: [
                   {
                     selector: 'a:has(img)',
@@ -4053,21 +4103,28 @@ export const recipes = [
                     ]
                   },
                   {
+                    selector: 'div[class*="variationLink"] a',
+                    clickable: true,
+                    add_text: true,
+                    name: 'from_text'
+                  },
+                  {
                     selector: 'a[class*="productLink"]',
                     clickable: true,
                     add_text: true,
                     name: 'product_title'
                   },
                   {
-                    selector: 'input',
+                    selector: 'span.a-button:has(input)',
                     clickable: true,
                     add_text: true,
                     name: 'add_to_cart'
                   },
                   {
-                    selector: 'a.a-button-text',
-                    clickable: true,
+                    selector:
+                      'span.a-button a, div[data-component-id="seeAllBuyingOptionsButton"] span.a-button',
                     add_text: true,
+                    clickable: true,
                     name: 'from_text'
                   }
                 ],
@@ -4095,7 +4152,7 @@ export const recipes = [
               {
                 selector: 'li[class*="intuition-product-grid__faceout"]',
                 name: 'from_text',
-                text_selector: 'span[class*="titleR3"]',
+                text_selector: 'span[class*="titleR3"], span[class*="titleR4"]',
                 children: [
                   {
                     selector: 'a:has(img)',
@@ -4126,6 +4183,12 @@ export const recipes = [
                     ]
                   },
                   {
+                    selector: 'div[class*="variationLink"] a',
+                    clickable: true,
+                    add_text: true,
+                    name: 'from_text'
+                  },
+                  {
                     selector: 'a[class*="productLink"]',
                     clickable: true,
                     name: 'from_text',
@@ -4133,16 +4196,17 @@ export const recipes = [
                     text_format: 'Product Detail'
                   },
                   {
-                    selector: 'input',
+                    selector: 'span.a-button:has(input)',
                     clickable: true,
                     add_text: true,
                     name: 'add_to_cart'
                   },
                   {
-                    selector: 'input',
-                    clickable: true,
+                    selector:
+                      'span.a-button a, div[data-component-id="seeAllBuyingOptionsButton"] span.a-button',
                     add_text: true,
-                    name: 'add_to_cart'
+                    clickable: true,
+                    name: 'from_text'
                   }
                 ],
                 generate_metadata: (em) => {
@@ -4524,6 +4588,7 @@ export const recipes = [
         selector: 'body',
         children: [
           nav,
+          cart_side_bar,
           {
             selector: 'div[class*="store-subnav-desktop_style_subnav-content-container"]',
             name: 'sub_stores',
@@ -4574,6 +4639,7 @@ export const recipes = [
         selector: 'body',
         children: [
           nav,
+          cart_side_bar,
           {
             selector: 'div[class*="store-subnav-desktop_style_subnav-content-container"]',
             name: 'sub_stores',
@@ -4688,6 +4754,7 @@ export const recipes = [
         selector: 'body',
         children: [
           nav,
+          cart_side_bar,
           {
             selector: '#nav-subnav',
             name: 'sub_stores',
