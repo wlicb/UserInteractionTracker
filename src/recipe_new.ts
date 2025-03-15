@@ -3114,12 +3114,12 @@ export const recipes = [
                         name: 'button_list',
                         children: [
                           {
-                            selector: 'li span.a-button:not(.aok-hidden) input',
+                            selector: 'li:has(span.a-button:not(.aok-hidden) input)',
                             add_text: true,
                             clickable: true,
                             name: 'from_text',
                             text_js: function (element) {
-                              const textEm = element.nextElementSibling
+                              const textEm = element.querySelector('span.a-button-text')
                               let text = ''
                               if (textEm.innerText.trim()) {
                                 text += textEm.innerText.trim()

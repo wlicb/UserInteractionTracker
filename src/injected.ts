@@ -47,7 +47,7 @@ const work = () => {
         allAttributes: Record<string, string> = {}
       ): Record<string, string> {
         // Base case: if element is null or we've reached max depth
-        if (!element || depth >= 15) return allAttributes
+        if (!element || depth >= 20) return allAttributes
 
         // Check and collect all relevant attributes at current level
         if (element.hasAttribute('data-clickable-id')) {
