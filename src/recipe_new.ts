@@ -1286,7 +1286,7 @@ export const fresh_cart = [
     add_text: true
   },
   {
-    selector: '#sc-cart-above-actions button, #sc-cart-above-actions a',
+    selector: '#sc-cart-above-actions span.a-button, #sc-cart-above-actions a',
     clickable: true,
     name: 'from_text',
     add_text: true
