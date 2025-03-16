@@ -218,29 +218,41 @@ export function processElement(
         // console.log('use root for ', childElements)
       } else childElements = element.querySelectorAll(selector)
       childElements.forEach((childElement: any, index: number) => {
-        const childNode = processElement(
-          childElement,
-          childRecipe,
-          parentName,
-          index,
-          document,
-          window
-        )
-        newElement.appendChild(childNode)
-        if (childRecipe.insert_split_marker) {
-          const every = childRecipe.insert_split_marker_every || 1
-          if (index % every == 0) {
-            const splitMarker = document.createElement('split-marker')
-            newElement.appendChild(splitMarker)
-            // console.log("inserting split marker 1");
+        let matched = true
+        if (childRecipe.match_id_with_parent) {
+          const regex = /([a-f0-9-]+-\d+)$/
+
+          const match1 = element.getAttribute('id')?.match(regex)
+          const match2 = childElement.getAttribute('id')?.match(regex)
+          if (!match1 || !match2 || match1[1] !== match2[1]) {
+            matched = false
           }
         }
-        if (childRecipe.insert_split_marker) {
-          // console.log("inserting split marker 2");
-          const splitMarker = document.createElement('split-marker')
-          newElement.appendChild(splitMarker)
-        } else {
-          // console.log('no split marker')
+        if (matched) {
+          const childNode = processElement(
+            childElement,
+            childRecipe,
+            parentName,
+            index,
+            document,
+            window
+          )
+          newElement.appendChild(childNode)
+          if (childRecipe.insert_split_marker) {
+            const every = childRecipe.insert_split_marker_every || 1
+            if (index % every == 0) {
+              const splitMarker = document.createElement('split-marker')
+              newElement.appendChild(splitMarker)
+              // console.log("inserting split marker 1");
+            }
+          }
+          if (childRecipe.insert_split_marker) {
+            // console.log("inserting split marker 2");
+            const splitMarker = document.createElement('split-marker')
+            newElement.appendChild(splitMarker)
+          } else {
+            // console.log('no split marker')
+          }
         }
       })
     }
