@@ -53,12 +53,26 @@ export const nav = {
       name: 'suggested_terms',
       children: [
         {
+          selector: 'div.cards_carousel_widget-sug-column',
+          name: 'from_text',
+          clickable: true,
+          add_text: true,
+          text_selector: 'div.cards_carousel_text_left_widget-sug-text'
+        },
+        {
           selector: 'div.s-suggestion-container',
           name: 'from_text',
           add_text: true,
           clickable: true
         }
       ]
+    },
+    {
+      selector: '#nav-hamburger-menu',
+      name: 'from_text',
+      add_text: true,
+      clickable: true,
+      text_format: 'Menu'
     },
     {
       selector: '#nav-xshop',
@@ -80,8 +94,26 @@ export const cart_side_bar = {
   name: 'cart_side_bar',
   children: [
     {
-      selector: 'div.ewc-cart-header',
-      add_text: true
+      selector: 'div.ewc-multi-cart-dropdown',
+      name: 'cart_selector',
+      children: [
+        {
+          selector: 'div.ewc-cart-header',
+          add_text: true,
+          clickable: true,
+          name: 'from_text',
+          text_js: (em) => {
+            return em.querySelector('img')?.alt || ''
+          }
+        }
+      ]
+    },
+    {
+      selector: 'div.ewc-compact-view-cart-header div.ewc-cart-header-logo',
+      name: 'open_cart_selector',
+      clickable: true,
+      add_text: true,
+      text_format: 'Open Cart Selector'
     },
     {
       selector: 'div.ewc-compact-actions a',
@@ -124,6 +156,27 @@ export const cart_side_bar = {
               name: 'drop_down_list',
               clickable: true,
               add_text: true
+            },
+            {
+              selector: 'div[id^="qs-widget-button-container-"]',
+              name: 'drop_down_list',
+              clickable: true,
+              add_text: true,
+              children: [
+                {
+                  selector: 'div[id^="qs-widget-dropdown-container-"]',
+                  match_id_with_parent: true,
+                  use_root: true,
+                  children: [
+                    {
+                      selector: 'li',
+                      add_text: true,
+                      name: 'from_text',
+                      clickable: true
+                    }
+                  ]
+                }
+              ]
             },
             {
               selector: 'div.ewc-delete-icon-container button',
@@ -459,7 +512,7 @@ export const set_up_now_button = {
 
 export const add_to_cart_button = {
   selector:
-    "input[name='submit.add-to-cart'], input[name='submit.add-to-cart-ubb'], #freshAddToCartButton input",
+    "input[name='submit.add-to-cart'], input[name='submit.add-to-cart-ubb'], #freshAddToCartButton input, #dealsx_atc_btn",
   add_text: true,
   clickable: true,
   name: 'add_to_cart',
@@ -472,6 +525,13 @@ export const buy_now_button = {
   clickable: true,
   name: 'buy_now',
   class: 'product-buy-now'
+}
+
+export const go_to_cart_button_for_flash_sales = {
+  selector: '#dealsx_incart span.a-button',
+  add_text: true,
+  clickable: true,
+  name: 'from_text'
 }
 
 export const buy_box_with_accordion = {
@@ -497,6 +557,7 @@ export const buy_box_with_accordion = {
         delivery_frequency_selector,
         set_up_now_button,
         add_to_cart_button,
+        go_to_cart_button_for_flash_sales,
         buy_now_button
       ]
     }
@@ -542,15 +603,19 @@ export const carousel_card = {
   name: 'from_text',
   text_js: (em) => {
     const titleEm = em.querySelector(
-      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"], a[id*="title"]'
+      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"], a[id*="title"], a.sw-product-title'
     )
     const title = titleEm?.title || titleEm?.innerText || ''
-    return title
+    const imgEm = em.querySelector(
+      'img[class*="product-image"], img.a-dynamic-image, img[class*="carousel-image"] img.s-image'
+    )
+    const imgAlt = imgEm?.alt
+    return title || imgAlt || ''
   },
   children: [
     {
       selector:
-        'a:has(img[class*="product-image"], img.a-dynamic-image, img[class*="carousel-image"]), img.s-image, a[target="_top"]:has(img):not(:has(div, span))',
+        'a:has(img[class*="product-image"], img.a-dynamic-image, img[class*="carousel-image"]), img.s-image, a[target="_top"]:has(img):not(:has(div, span)), a.sw-product-image-link',
       name: 'product_image',
       add_text: true,
       text_format: 'Product Image',
@@ -558,10 +623,37 @@ export const carousel_card = {
     },
     {
       selector:
-        'a div[class*="sc-truncate-desktop"], a div:has(> span.title), a div[class*="sc-css-line-clamp"], a:has(span[class*="titleR3"]), div[data-cy="title-recipe"], a[id*="title"]',
+        'a div[class*="sc-truncate-desktop"], a div:has(> span.title), a div[class*="sc-css-line-clamp"], a:has(span[class*="titleR3"]), div[data-cy="title-recipe"], a[id*="title"], a.sw-product-title',
       add_text: true,
       name: 'product_title',
       clickable: true
+    },
+    {
+      selector: 'div[class*="singleSwatchesContainer"]',
+      name: 'options',
+      children: [
+        {
+          selector: 'li a',
+          add_text: true,
+          name: 'from_text',
+          clickable: true,
+          text_js: (em) => {
+            return em.getAttribute('aria-label') || em.innerText || ''
+          }
+        },
+        {
+          selector: 'a[class*="_link_"]',
+          add_text: true,
+          name: 'from_text',
+          clickable: true
+        }
+      ]
+    },
+    {
+      selector: 'div[class*="variationLink"] a',
+      clickable: true,
+      add_text: true,
+      name: 'from_text'
     },
     {
       selector: 'a:has(i[class*="star"]), a:has(i[data-cy="reviews-ratings-slot"]), a.adReviewLink',
@@ -642,20 +734,40 @@ export const carousel_card = {
           name: 'from_text'
         }
       ]
+    },
+    {
+      selector: 'span.a-button a, div[data-component-id="seeAllBuyingOptionsButton"] span.a-button',
+      add_text: true,
+      clickable: true,
+      name: 'from_text'
     }
   ],
   generate_metadata: (em) => {
+    const asinJSONString = em
+      .querySelector('div[data-adfeedbackdetails]')
+      ?.getAttribute('data-adfeedbackdetails')
+    let asinJSON
+    if (asinJSONString !== undefined) {
+      asinJSON = JSON.parse(asinJSONString)
+    }
     const asinEm = em.querySelector(
       'div[id*="sc-turbo-container"], div[data-asin], input[data-asin]'
     )
     const asin =
-      asinEm?.getAttribute('data-asin') || asinEm?.getAttribute('id')?.split('-').pop() || ''
+      asinEm?.getAttribute('data-asin') ||
+      asinEm?.getAttribute('id')?.split('-').pop() ||
+      asinJSON?.asinId ||
+      ''
     const priceEm = em.querySelector('a span[class*="sc-price"], span.a-price span.a-offscreen')
     const price = priceEm?.innerText?.replace(/[\n]/g, '')
     const titleEm = em.querySelector(
-      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"], a[id*="title"]'
+      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"], a[id*="title"], a.sw-product-title'
     )
     const title = titleEm?.title || titleEm?.innerText || ''
+    const imgEm = em.querySelector(
+      'img[class*="product-image"], img.a-dynamic-image, img[class*="carousel-image"] img.s-image'
+    )
+    const imgAlt = imgEm?.alt
     const urlEm = em.querySelector(
       'a:has(div[class*="sc-truncate-desktop"]), a:has(span.title), a:has(span[class*="title"])'
     )
@@ -666,7 +778,7 @@ export const carousel_card = {
     const quantity = quantityEm?.innerText || ''
     return {
       name: 'promotion_items',
-      data: { title, asin, price, url, quantity }
+      data: { title: title || imgAlt || '', asin, price, url, quantity }
     }
   }
 }
@@ -690,11 +802,11 @@ export const cart = [
         },
         children: [
           {
-            selector: 'a h2 img',
+            selector: 'div.sc-cart-header:has(a h2 img)',
             clickable: true,
             name: 'from_text',
             text_js: (em) => {
-              return em.alt
+              return em.querySelector('a h2 img')?.alt || ''
             }
           },
           {
@@ -776,7 +888,8 @@ export const cart = [
             selector: 'div.sc-item-content-group span.sc-quantity-stepper',
             children: [
               {
-                selector: "button[aria-label='Decrease quantity by one']",
+                selector:
+                  "button[aria-label='Decrease quantity by one'], button[data-action='a-stepper-decrement']",
                 add_text: true,
                 text_js: function (element) {
                   if (element.hasAttribute('aria-label')) {
@@ -957,10 +1070,11 @@ export const fresh_carousel_card = {
       ]
     },
     {
-      selector: 'a > span > span > span.a-truncate-full',
+      selector: 'a > span > span.a-truncate',
       add_text: true,
       name: 'product_detail',
-      clickable: true
+      clickable: true,
+      text_selector: 'span.a-truncate-full'
     },
     {
       selector: 'div > span > span > span.a-truncate-full',
@@ -1058,7 +1172,7 @@ export const fresh_cart = [
                 selector: 'div.qs-widget-container',
                 children: [
                   {
-                    selector: "input[aria-label='Remove']",
+                    selector: "input[aria-label^='Remove']",
                     add_text: true,
                     text_js: function (element) {
                       if (element.hasAttribute('aria-label')) {
@@ -1103,7 +1217,7 @@ export const fresh_cart = [
                     name: 'from_text'
                   },
                   {
-                    selector: "input[aria-label='Add']",
+                    selector: "input[aria-label^='Add']",
                     add_text: true,
                     text_js: function (element) {
                       if (element.hasAttribute('aria-label')) {
@@ -1172,7 +1286,7 @@ export const fresh_cart = [
     add_text: true
   },
   {
-    selector: '#sc-cart-above-actions button, #sc-cart-above-actions a',
+    selector: '#sc-cart-above-actions span.a-button, #sc-cart-above-actions a',
     clickable: true,
     name: 'from_text',
     add_text: true
@@ -1481,6 +1595,13 @@ export const buy_again = [
                 text_selector: 'span.a-truncate-full'
               },
               {
+                selector: 'div[class*="asinDetailReviewsRow"] a',
+                clickable: true,
+                add_text: true,
+                text_selector: 'i.a-icon-star-mini',
+                name: 'product_rating'
+              },
+              {
                 selector: "div[class*='multiOfferPillContainer'] a",
                 clickable: true,
                 name: 'from_text',
@@ -1601,7 +1722,8 @@ export const buy_again = [
                     name: 'delivery'
                   },
                   {
-                    selector: 'div[class*="actionButtonsRow"]',
+                    selector:
+                      'div[class*="actionButtonsRow"], div[class*="asinDetailPurchaseColumn"]',
                     name: 'buttons',
                     children: [
                       {
@@ -1676,6 +1798,13 @@ export const buy_again = [
                     name: 'product_title',
                     add_text: true,
                     text_selector: 'span.a-truncate-full'
+                  },
+                  {
+                    selector: 'div[class*="reviewsRow"] a',
+                    clickable: true,
+                    add_text: true,
+                    text_selector: 'i.a-icon-star-mini',
+                    name: 'product_rating'
                   },
                   {
                     selector:
@@ -1916,6 +2045,7 @@ export const popular_products = [
     selector: 'body',
     children: [
       nav,
+      cart_side_bar,
       {
         selector: '#zg_header',
         name: 'categories',
@@ -2678,7 +2808,8 @@ export const recipes = [
                     class: 'product-delivery'
                   },
                   {
-                    selector: "div[data-cy='add-to-cart'] button, span[id*='add-to-cart'] input",
+                    selector:
+                      "div[data-cy='add-to-cart'] span.a-button:has(button), span[id*='add-to-cart'] input",
                     add_text: true,
                     clickable: true,
                     name: 'add_to_cart'
@@ -3334,40 +3465,50 @@ export const recipes = [
           {
             selector: 'div.cardRoot.bucket',
             name: 'from_text',
-            text_selector: 'h2#similarities-product-bundle-widget-title',
+            text_selector: 'h2#similarities-product-bundle-widget-title, h2.a-carousel-heading',
             children: [
               {
-                selector: 'h2#similarities-product-bundle-widget-title',
+                selector: 'h2#similarities-product-bundle-widget-title, h2.a-carousel-heading',
                 add_text: true
               },
               {
-                selector: 'div[class*="desktop-sims-fbt_fbt-desktop_new-detail-faceout-box"]',
+                selector: 'div[class*="new-detail-faceout-box"]',
                 name: 'from_text',
-                text_selector: 'div[id^="ProductTitle"]',
+                text_selector: 'div[id^="ProductTitle"], div[class*="title-component"]',
                 children: [
                   {
-                    selector: 'input[id^="fbtCheck"]',
+                    selector: 'input[id^="fbtCheck"], div[class*="thematicBundle-checkbox"]',
                     clickable: true,
                     add_text: true,
                     text_format: 'Checkbox',
                     name: 'from_text'
                   },
                   {
-                    selector: 'a[class*="desktop-sims-fbt_fbt-desktop_image-link"]',
+                    selector:
+                      'a[class*="desktop-sims-fbt_fbt-desktop_image-link"], div[class*="image-background"] a',
                     text_format: 'Product Image',
                     clickable: true,
                     add_text: true,
                     name: 'from_text'
                   },
                   {
-                    selector: 'div[id^="ProductTitle"]:has(a)',
+                    selector:
+                      'div[id^="ProductTitle"]:has(a), a:has(div[class*="title-component"])',
                     clickable: true,
                     add_text: true,
                     name: 'product_title'
                   },
                   {
-                    selector: 'div[id^="ProductTitle"]:not(:has(a))',
+                    selector:
+                      'div[id^="ProductTitle"]:not(:has(a)) div > div[class*="title-component"]',
                     add_text: true
+                  },
+                  {
+                    selector: 'div[class*="reviews-section"] a',
+                    clickable: true,
+                    add_text: true,
+                    text_format: 'Reviewed by {}',
+                    name: 'product_rating_count'
                   },
                   {
                     selector:
@@ -3694,6 +3835,7 @@ export const recipes = [
         selector: 'body',
         children: [
           nav,
+          cart_side_bar,
           {
             selector: 'div[data-intent="intent-feed-mission-switcher"]',
             name: 'category_switcher',
@@ -3750,6 +3892,12 @@ export const recipes = [
                 ]
               },
               {
+                selector: 'div[class*="variationLink"] a',
+                clickable: true,
+                add_text: true,
+                name: 'from_text'
+              },
+              {
                 selector: 'a:not(:has(img))',
                 add_text: true,
                 direct_child: true,
@@ -3758,15 +3906,24 @@ export const recipes = [
                 clickable: true
               },
               {
-                selector: 'input',
+                selector: 'div[class*="singleProductDetails"] a',
                 add_text: true,
+                direct_child: true,
+                text_format: 'Product Detail',
+                name: 'from_text',
+                clickable: true
+              },
+              {
+                selector: 'span.a-button:has(input)',
                 clickable: true,
+                add_text: true,
                 name: 'add_to_cart'
               },
               {
-                selector: 'a.a-button-text',
-                clickable: true,
+                selector:
+                  'span.a-button a, div[data-component-id="seeAllBuyingOptionsButton"] span.a-button',
                 add_text: true,
+                clickable: true,
                 name: 'from_text'
               }
             ],
@@ -3946,7 +4103,7 @@ export const recipes = [
               {
                 selector: 'li[class*="productContainer"]',
                 name: 'from_text',
-                text_selector: 'span[class*="titleR3"]',
+                text_selector: 'span[class*="titleR3"], span[class*="titleR4"]',
                 children: [
                   {
                     selector: 'a:has(img)',
@@ -3977,21 +4134,28 @@ export const recipes = [
                     ]
                   },
                   {
+                    selector: 'div[class*="variationLink"] a',
+                    clickable: true,
+                    add_text: true,
+                    name: 'from_text'
+                  },
+                  {
                     selector: 'a[class*="productLink"]',
                     clickable: true,
                     add_text: true,
                     name: 'product_title'
                   },
                   {
-                    selector: 'input',
+                    selector: 'span.a-button:has(input)',
                     clickable: true,
                     add_text: true,
                     name: 'add_to_cart'
                   },
                   {
-                    selector: 'a.a-button-text',
-                    clickable: true,
+                    selector:
+                      'span.a-button a, div[data-component-id="seeAllBuyingOptionsButton"] span.a-button',
                     add_text: true,
+                    clickable: true,
                     name: 'from_text'
                   }
                 ],
@@ -4019,7 +4183,7 @@ export const recipes = [
               {
                 selector: 'li[class*="intuition-product-grid__faceout"]',
                 name: 'from_text',
-                text_selector: 'span[class*="titleR3"]',
+                text_selector: 'span[class*="titleR3"], span[class*="titleR4"]',
                 children: [
                   {
                     selector: 'a:has(img)',
@@ -4050,6 +4214,12 @@ export const recipes = [
                     ]
                   },
                   {
+                    selector: 'div[class*="variationLink"] a',
+                    clickable: true,
+                    add_text: true,
+                    name: 'from_text'
+                  },
+                  {
                     selector: 'a[class*="productLink"]',
                     clickable: true,
                     name: 'from_text',
@@ -4057,16 +4227,17 @@ export const recipes = [
                     text_format: 'Product Detail'
                   },
                   {
-                    selector: 'input',
+                    selector: 'span.a-button:has(input)',
                     clickable: true,
                     add_text: true,
                     name: 'add_to_cart'
                   },
                   {
-                    selector: 'input',
-                    clickable: true,
+                    selector:
+                      'span.a-button a, div[data-component-id="seeAllBuyingOptionsButton"] span.a-button',
                     add_text: true,
-                    name: 'add_to_cart'
+                    clickable: true,
+                    name: 'from_text'
                   }
                 ],
                 generate_metadata: (em) => {
@@ -4145,6 +4316,19 @@ export const recipes = [
                 add_text: true,
                 clickable: true,
                 name: 'go_to_cart'
+              },
+              {
+                selector:
+                  'div.sw-atf-recommendations-container div[id^="CardInstance"], div#smart-wagon-recommendations-btf div[id^="CardInstance"]',
+                text_selector: 'h1.a-carousel-heading',
+                name: 'from_text',
+                children: [
+                  {
+                    selector: 'h1.a-carousel-heading',
+                    add_text: true
+                  },
+                  carousel_card
+                ]
               }
             ]
           }
@@ -4201,6 +4385,19 @@ export const recipes = [
                 clickable: true,
                 name: 'go_to_cart'
               }
+            ]
+          },
+          {
+            selector:
+              'div.sw-atf-recommendations-container div[id^="CardInstance"], div#smart-wagon-recommendations-btf div[id^="CardInstance"]',
+            text_selector: 'h1.a-carousel-heading',
+            name: 'from_text',
+            children: [
+              {
+                selector: 'h1.a-carousel-heading',
+                add_text: true
+              },
+              carousel_card
             ]
           }
         ]
@@ -4422,12 +4619,14 @@ export const recipes = [
         selector: 'body',
         children: [
           nav,
+          cart_side_bar,
           {
             selector: 'div[class*="store-subnav-desktop_style_subnav-content-container"]',
             name: 'sub_stores',
             children: [
               {
-                selector: 'a[class*="store-subnav-desktop_style"]',
+                selector:
+                  'a[class*="store-subnav-desktop_style"], a[class*="store-subnav-desktop-flyout_style"]',
                 add_text: true,
                 clickable: true,
                 name: 'from_text',
@@ -4472,6 +4671,7 @@ export const recipes = [
         selector: 'body',
         children: [
           nav,
+          cart_side_bar,
           {
             selector: 'div[class*="store-subnav-desktop_style_subnav-content-container"]',
             name: 'sub_stores',
@@ -4568,6 +4768,14 @@ export const recipes = [
     children: popular_products
   },
   {
+    match: '/Best-Sellers*/zgbs/*/*',
+    match_method: 'url',
+    selector: 'html',
+    match_with_ref: true,
+    match_with_wildcard: true,
+    children: popular_products
+  },
+  {
     match: '/*/b',
     match_method: 'url',
     selector: 'html',
@@ -4586,6 +4794,7 @@ export const recipes = [
         selector: 'body',
         children: [
           nav,
+          cart_side_bar,
           {
             selector: '#nav-subnav',
             name: 'sub_stores',
