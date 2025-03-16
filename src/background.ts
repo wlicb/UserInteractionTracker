@@ -469,7 +469,8 @@ const sendPopup = async (
   if (
     data.target?.id?.toLowerCase().includes('rufus') ||
     data.target?.className?.toLowerCase().includes('rufus') ||
-    eventType === 'input'
+    eventType === 'input' ||
+    (data.target?.tagName === 'INPUT' && (data.target as HTMLInputElement).type === 'text')
   ) {
     return
   }
