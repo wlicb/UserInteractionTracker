@@ -294,11 +294,12 @@ export function getCustomQuestion(
         question =
           'You <span class="highlight-question">clicked</span> on the set up now button. What made you decide to subscribe to this product?'
         placeholder =
-          'I subscribed to this product because (e.g. product feature/advantage over one-time purchase)...'
+          'I subscribed to this product because (e.g. product feature / advantage over one-time purchase)...'
       } else if (
         data['data-semantic-id'] === 'buybox.delivery.one_time_purchase_.purchase_form.buy_now' ||
         data['data-semantic-id'] === 'buybox.delivery.purchase_form.buy' ||
-        data.target.id === 'buy-now-button'
+        data['data-semantic-id']?.endsWith('buy_now') ||
+        data?.target?.id === 'buy-now-button'
       ) {
         question =
           'You <span class="highlight-question">clicked</span> on the buy now button. What do you like about this particular product?'
@@ -312,10 +313,10 @@ export function getCustomQuestion(
         question =
           'You <span class="highlight-question">clicked</span> on the add to cart button. What made you decide to add this item to your cart?'
         placeholder =
-          'I added this item to my cart because (e.g. want to buy/compare/save for future)...'
+          'I added this item to my cart because (e.g. want to buy / compare / save for future)...'
       } else if (data['data-semantic-id'] === 'nav_bar.search_button') {
         question =
-          'You <span class="highlight-question">clicked</span> on the search button. Why/how did you decide to make this search?'
+          'You <span class="highlight-question">clicked</span> on the search button. Why / how did you decide to make this search?'
         placeholder =
           'I decided to search this because (e.g. adjusting previous search/looking for something)'
       } else if (
@@ -343,7 +344,7 @@ export function getCustomQuestion(
         question =
           'You <span class="highlight-question">clicked</span> on this product. Why did you click on this product?'
         placeholder =
-          'I clicked on this product because (e.g. caught my attention/comparing with other options)...'
+          'I clicked on this product because (e.g. caught my attention / comparing with other options)...'
       } else {
         question =
           'You <span class="highlight-question">clicked</span> on this element. Could you share what you were trying to do or find?'
@@ -353,7 +354,7 @@ export function getCustomQuestion(
     case 'scroll':
       question =
         'You <span class="highlight-question">scrolled</span> on this page. What are you looking for?'
-      placeholder = 'I am looking for (e.g. specific products/reviews/information)...'
+      placeholder = 'I am looking for (e.g. specific products / reviews / information)...'
 
       break
     case 'input':
