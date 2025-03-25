@@ -18,6 +18,7 @@ let screenshots: [string, string][] = []
 let reasonsAnnotation: any[] = []
 let uploadTimer: NodeJS.Timer | null | false = null
 let userId: string = ''
+let lastScrollPopupTime: number = 0
 
 let lastTimestamp: string | null = null
 let lastuploadTimestamp: string | null = null
@@ -38,7 +39,8 @@ import {
   base_url,
   data_collector_secret_id,
   filter_url,
-  rationale_status_url
+  rationale_status_url,
+  scroll_popup_interval
 } from './config'
 
 const upload_url = `${base_url}/upload`
@@ -470,10 +472,19 @@ const sendPopup = async (
     data.target?.id?.toLowerCase().includes('rufus') ||
     data.target?.className?.toLowerCase().includes('rufus') ||
     eventType === 'input' ||
-    (data.target?.tagName === 'INPUT' && (data.target as HTMLInputElement).type === 'text')
+    (data.target?.tagName === 'INPUT' && data.target?.outerHTML?.includes('type="text"'))
   ) {
     return
   }
+
+  if (eventType === 'scroll') {
+    const currentTime = Date.now()
+    if (currentTime - lastScrollPopupTime < scroll_popup_interval) {
+      console.log('Skipping scroll popup due to debounce')
+      return
+    }
+  }
+
   // console.log('data', data)
   const { question, placeholder } = getCustomQuestion(eventType, data)
   let probability = popup_probability
@@ -497,6 +508,10 @@ const sendPopup = async (
   if (Math.random() < probability && tabId) {
     console.log('send popup')
     try {
+      if (eventType === 'scroll') {
+        lastScrollPopupTime = Date.now()
+      }
+
       const reason = await chrome.tabs.sendMessage(tabId, {
         action: 'show_popup',
         question: question,
@@ -1089,15 +1104,23 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       //
       const userIdResult = await chrome.storage.local.get({ userId: '' })
       const currentUserId = userIdResult.userId
-      const response = await fetch(`${rationale_status_url}?user_id=${currentUserId}`, {
-        method: 'GET'
-      })
-      if (response.ok) {
-        const data = await response.json()
-        // console.log(data)
-        chrome.tabs.sendMessage(tabId, { action: 'showReminder', data: data })
+      if (currentUserId) {
+        const response = await fetch(`${rationale_status_url}?user_id=${currentUserId}`, {
+          method: 'GET'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          // console.log(data)
+          chrome.tabs.sendMessage(tabId, {
+            action: 'showReminder',
+            data: data,
+            user_id: currentUserId
+          })
+        }
+        console.log('send finished')
+      } else {
+        chrome.tabs.sendMessage(tabId, { action: 'showReminder', data: 'no user id', user_id: '' })
       }
-      console.log('send finished')
     }
   }
 })

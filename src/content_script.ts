@@ -368,11 +368,20 @@ const work = () => {
         // alert(
         //   `Thank you for participating!\nYou have contributed ${data.on_date} rationales this week\nYou have contributed ${data.all_time} rationales in total. `
         // )
-        window.$dialog?.info({
-          title: 'Thank you for participating!',
-          content: `You have contributed ${data.on_date} rationales this week.
+        const user_id = message.user_id
+        if (user_id) {
+          window.$dialog?.info({
+            title: 'Thank you for participating!',
+            content: `You have contributed ${data.on_date} rationales this week.
           You have contributed ${data.all_time} rationales in total. `
-        })
+          })
+        } else {
+          window.$dialog?.info({
+            title: 'Thank you for participating!',
+            content: `Please enter your user id to continue.
+            If you don't have one, please contact us at hai-user-study-2@khoury.northeastern.edu`
+          })
+        }
       }
     }
   )

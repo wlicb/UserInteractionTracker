@@ -159,7 +159,7 @@ onMounted(async () => {
         v-if="showUserIdInput"
         v-model:value="userId"
         type="text"
-        placeholder="Enter UserID"
+        placeholder="If you don't have one, contact us"
         class="user-id-input"
       />
 
@@ -202,7 +202,7 @@ onMounted(async () => {
     </div>
     <div class="output-container">
       <div class="output-item">
-        Total purchase recorded: <b>{{ purchaseStats.total }}</b>
+        Total purchase uploads: <b>{{ purchaseStats.total }}</b>
       </div>
       <div class="output-item">
         This week's purchase: <b>{{ purchaseStats.week }}</b>

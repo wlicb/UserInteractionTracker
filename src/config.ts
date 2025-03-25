@@ -28,3 +28,4 @@ export const filter_url = [
   'https://www.amazon.com/gp/primecentral/editPaymentPreference'
 ]
 export const scroll_threshold = 300
+export const scroll_popup_interval = 20000 // 20 seconds
