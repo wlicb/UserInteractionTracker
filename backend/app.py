@@ -10,7 +10,7 @@ import json
 from pymongo import MongoClient
 import boto3
 from botocore.exceptions import NoCredentialsError
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import BulkWriteError, DuplicateKeyError
 from data_collection_monitor import analyze_user_data
 import config
 
@@ -172,16 +172,22 @@ def interactions():
         if updated_interactions:
             try:
                 interaction_collection.insert_many(updated_interactions, ordered=False)
+            except BulkWriteError as bwe:
+                app.logger.info(f"BulkWriteError: {bwe}")
             except DuplicateKeyError as e:
                 app.logger.info("Duplicate uuids found in interactions, skipping duplicates.")
         if updated_rationale:
             try:
                 rationale_collection.insert_many(updated_rationale, ordered=False)
+            except BulkWriteError as bwe:
+                app.logger.info(f"BulkWriteError: {bwe}")
             except DuplicateKeyError as e:
                 app.logger.info("Duplicate uuids found in rationales, skipping duplicates.")
         if updated_orders:
             try:
                 order_collection.insert_many(updated_orders, ordered=False)
+            except BulkWriteError as bwe:
+                app.logger.info(f"BulkWriteError: {bwe}")
             except DuplicateKeyError as e:
                 app.logger.info("Duplicate uuids found in orders, skipping duplicates.")
 
@@ -414,6 +420,11 @@ def monitor_user_data():
     else:
         user_name = result
     return jsonify(analyze_user_data(user_name, date)), 200
+
+@app.route("/api/all_user_list", methods=["GET"])
+def all_user_list():
+    user_list = user_collection.find({}, {"_id": 0, "user_name": 1})
+    return jsonify(list(user_list)), 200
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
