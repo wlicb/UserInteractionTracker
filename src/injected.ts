@@ -417,7 +417,7 @@ const work = () => {
             console.log('screenshot and interaction complete')
             // Execute original listener after screenshot is captured
           } catch (error) {
-            console.error('Error capturing screenshot:', error)
+            console.log('Error capturing screenshot:', error)
             // Execute original listener even if screenshot fails
           } finally {
             console.log('running original listener')

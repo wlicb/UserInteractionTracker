@@ -629,6 +629,9 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async (details) => {
           console.log('Starting new session due to time interval:', timeDiff)
           newSession = true
         }
+      } else {
+        console.log('no lastNewNavTime')
+        newSession = true
       }
     }
 
