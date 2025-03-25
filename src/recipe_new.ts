@@ -599,11 +599,11 @@ export const buy_box_without_accordion_pick_up = {
 }
 
 export const carousel_card = {
-  selector: 'li.a-carousel-card:not(.a-carousel-card-empty), #gridItemRoot',
+  selector: 'li.a-carousel-card:not(.a-carousel-card-empty), #gridItemRoot, li > span.a-list-item',
   name: 'from_text',
   text_js: (em) => {
     const titleEm = em.querySelector(
-      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"], a[id*="title"], a.sw-product-title'
+      'a div[class*="sc-truncate-desktop"], a span.title, a div[class*="sc-css-line-clamp"], a span[class*="titleR3"], div[data-cy="title-recipe"], a[id*="title"], a.sw-product-title, div[id^="sp_rhf_cart"] span.a-truncate-full'
     )
     const title = titleEm?.title || titleEm?.innerText || ''
     const imgEm = em.querySelector(
@@ -625,7 +625,15 @@ export const carousel_card = {
       selector:
         'a div[class*="sc-truncate-desktop"], a div:has(> span.title), a div[class*="sc-css-line-clamp"], a:has(span[class*="titleR3"]), div[data-cy="title-recipe"], a[id*="title"], a.sw-product-title',
       add_text: true,
-      name: 'product_title',
+      name: 'from_text',
+      clickable: true,
+      text_format: 'Product Title'
+    },
+    {
+      selector: '#adfeedbackdetails > a',
+      add_text: true,
+      text_format: 'Product Details',
+      name: 'from_text',
       clickable: true
     },
     {
@@ -751,11 +759,12 @@ export const carousel_card = {
       asinJSON = JSON.parse(asinJSONString)
     }
     const asinEm = em.querySelector(
-      'div[id*="sc-turbo-container"], div[data-asin], input[data-asin]'
+      'div[id*="sc-turbo-container"], div[data-asin], input[data-asin], span[data-csa-c-item-id]'
     )
     const asin =
       asinEm?.getAttribute('data-asin') ||
       asinEm?.getAttribute('id')?.split('-').pop() ||
+      asinEm?.getAttribute('data-csa-c-item-id').split('.').pop() ||
       asinJSON?.asinId ||
       ''
     const priceEm = em.querySelector('a span[class*="sc-price"], span.a-price span.a-offscreen')
@@ -1022,6 +1031,174 @@ export const cart = [
         name: 'from_text',
         clickable: true
       }
+    ]
+  },
+  {
+    selector: '#sc-secondary-list',
+    name: 'secondary-list',
+    children: [
+      {
+        selector: '#sc-secondary-list-tab',
+        name: 'tabs',
+        children: [
+          {
+            selector: 'li',
+            name: 'from_text',
+            add_text: true,
+            clickable: true
+          }
+        ]
+      },
+      {
+        selector: 'div[data-a-name="savedCart"]',
+        name: 'saved_for_later',
+        children: [
+          {
+            selector: 'div.mission-categories',
+            name: 'categories',
+            children: [
+              {
+                selector: 'span.mission-category:not(.sc-hidden)',
+                clickable: true,
+                add_text: true,
+                name: 'from_text'
+              }
+            ]
+          },
+          {
+            selector: 'div.mission-expander a',
+            clickable: true,
+            add_text: true,
+            name: 'from_text'
+          },
+          {
+            selector: '#sc-saved-cart-items',
+            name: 'saved_items',
+            children: [
+              {
+                selector: 'div[data-asin]',
+                name: 'from_text',
+                text_selector: 'li.sc-item-product-title-cont span.a-truncate-full',
+                children: [
+                  {
+                    selector: 'div.sc-image-wrapper',
+                    add_text: true,
+                    text_format: 'Product Image',
+                    name: 'from_text',
+                    clickable: true
+                  },
+                  {
+                    selector: 'a.sc-grid-item-product-title',
+                    add_text: true,
+                    text_format: 'Product Title',
+                    name: 'from_text',
+                    clickable: true
+                  },
+                  {
+                    selector:
+                      'div.sc-action-move-to-cart, span.sc-action-delete input, span.add-to-list-text input, span[data-action="compare"] input',
+                    add_text: true,
+                    name: 'from_text',
+                    clickable: true,
+                    text_js: (em) => {
+                      return em.value || em.innerText || ''
+                    }
+                  }
+                ],
+                generate_metadata: (em) => {
+                  const asin = em.getAttribute('data-asin')
+                  const priceEm = em.querySelector(
+                    'div.sc-badge-price-to-pay span.sc-product-price span.a-offscreen, div.sc-badge-price-to-pay span.sc-product-price:not(:has(span))'
+                  )
+                  const price = priceEm?.innerText?.replace(/[\n]/g, '')
+                  const titleEm = em.querySelector(
+                    'li.sc-item-product-title-cont span.a-truncate-full'
+                  )
+                  const title = titleEm?.innerText?.trim()
+                  const urlEm = em.querySelector('a.sc-grid-item-product-title')
+                  const url = urlEm?.getAttribute('href')
+                  const optionsEm = em.querySelectorAll('li.sc-product-variation > span')
+                  const options = []
+                  for (const optionEm of optionsEm) {
+                    const optionKeyEm = optionEm?.querySelector('span.a-text-bold')
+                    const optionValueEm = optionEm?.querySelector('span:not(.a-text-bold)')
+                    const optionKey = optionKeyEm?.innerText.replace(/[:\n]/g, '').trim()
+                    const optionValue = optionValueEm?.innerText.replace(/[:\n]/g, '').trim()
+                    const option = { [optionKey]: optionValue }
+                    options.push(option)
+                  }
+
+                  return {
+                    name: 'saved_items',
+                    data: { title, asin, price, url, options }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        selector: 'div[data-a-name="buyItAgain"]',
+        name: 'buy_it_again',
+        children: [
+          {
+            selector: 'div.sc-list-item',
+            name: 'from_text',
+            text_selector: 'a.sc-product-link',
+            children: [
+              {
+                selector: 'div.sc-product-image-desktop',
+                add_text: true,
+                text_format: 'Product Image',
+                name: 'from_text',
+                clickable: true
+              },
+              {
+                selector: 'a.sc-product-link',
+                add_text: true,
+                text_format: 'Product Title',
+                name: 'from_text',
+                clickable: true
+              },
+              {
+                selector: 'span.sc-atc-add-to-cart-button',
+                add_text: true,
+                name: 'from_text',
+                clickable: true
+              }
+            ],
+            generate_metadata: (em) => {
+              const asin = em.getAttribute('id')?.split('-').at(-1)
+              const priceEm = em.querySelector('span.sc-price')
+              const price = priceEm?.innerText?.replace(/[\n]/g, '')
+              const titleEm = em.querySelector('a.sc-product-link')
+              const title = titleEm?.innerText
+              const urlEm = em.querySelector('a.sc-product-link')
+              const url = urlEm?.getAttribute('href')
+
+              return {
+                name: 'buy_it_again',
+                data: { title, asin, price, url }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    selector: 'div[id^="CardInstance"]',
+    name: 'from_text',
+    text_selector: '.a-carousel-heading, h3',
+    children: [
+      {
+        selector: '.a-carousel-heading, h3',
+        add_text: true,
+        clickable: true,
+        name: 'from_text'
+      },
+      carousel_card
     ]
   }
 ]
