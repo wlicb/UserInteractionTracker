@@ -159,7 +159,7 @@ onMounted(async () => {
         v-if="showUserIdInput"
         v-model:value="userId"
         type="text"
-        placeholder="If you don't have one, contact us"
+        placeholder="Contact us if you don't have one"
         class="user-id-input"
       />
 

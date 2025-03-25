@@ -347,15 +347,15 @@ export function getCustomQuestion(
           'I clicked on this product because (e.g. caught my attention / comparing with other options)...'
       } else {
         question =
-          'You <span class="highlight-question">clicked</span> on this element. Could you share what you were trying to do or find?'
-        placeholder = 'Enter your reason here...'
+          'We noticed that you just had a <span class="highlight-question">click</span> action. Why did you do that?'
+        placeholder =
+          'Enter your reason here (e.g. I want to read reviews / I want to compare with other options)...'
       }
       break
     case 'scroll':
-      question =
-        'You <span class="highlight-question">scrolled</span> on this page. What are you looking for?'
+      const scrollDirection = data.scrollDistance_Y < 0 ? 'up' : 'down'
+      question = `We saw that you <span class="highlight-question">scrolled ${scrollDirection}</span> the page. What are you looking for?`
       placeholder = 'I am looking for (e.g. specific products / reviews / information)...'
-
       break
     case 'input':
       question =

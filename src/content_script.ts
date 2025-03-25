@@ -358,6 +358,27 @@ const work = () => {
         document.dispatchEvent(event)
         return true // Will respond asynchronously
       }
+      if (message.action === 'show_popup_session') {
+        console.log('show_popup_session', message)
+        // assert there isn't already a popup
+        if (document.getElementById('reason-modal')) {
+          sendResponse({ success: false, message: 'popup already exists' })
+          return
+        }
+
+        // Use the Vue app to show the modal
+        const event = new CustomEvent('show-modal-session', {
+          detail: {
+            question: message.question,
+            placeholder: message.placeholder,
+            callback: (response) => {
+              sendResponse(response)
+            }
+          }
+        })
+        document.dispatchEvent(event)
+        return true // Will respond asynchronously
+      }
       if (message.action === 'showReminder') {
         console.log('showReminder')
         if (document.getElementById('reason-modal')) {
@@ -365,14 +386,11 @@ const work = () => {
           return
         }
         const data = message.data
-        // alert(
-        //   `Thank you for participating!\nYou have contributed ${data.on_date} rationales this week\nYou have contributed ${data.all_time} rationales in total. `
-        // )
         const user_id = message.user_id
         if (user_id) {
           window.$dialog?.info({
             title: 'Thank you for participating!',
-            content: `You have contributed ${data.on_date} rationales this week.
+            content: `You have contributed ${data.on_date} rationales in the last 7 days.
           You have contributed ${data.all_time} rationales in total. `
           })
         } else {

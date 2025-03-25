@@ -40,7 +40,8 @@ import {
   data_collector_secret_id,
   filter_url,
   rationale_status_url,
-  scroll_popup_interval
+  scroll_popup_interval,
+  new_session_interval
 } from './config'
 
 const upload_url = `${base_url}/upload`
@@ -536,6 +537,33 @@ const sendPopup = async (
   }
 }
 
+const sendNewSessionPopup = async (tabId: number, timestamp: string, uuid: string) => {
+  try {
+    const reason = await chrome.tabs.sendMessage(tabId, {
+      action: 'show_popup_session',
+      question:
+        'We noticed that you opened a new page. Can you share what you are trying to do in this shopping journey?',
+      placeholder:
+        'e.g. I am buying equipment for the lab / I want to find a gift for my friend / I am looking for a new laptop ...'
+    })
+    console.log('reason', reason)
+    if (reason && reason.input !== null && reason.success !== false) {
+      const newitem = {
+        uuid: uuid,
+        timestamp: timestamp,
+        eventType: 'new_session',
+        reason: reason.input
+      }
+      await db.add('reasonsAnnotation', {
+        ...newitem,
+        uploaded: 0
+      })
+    }
+  } catch (error) {
+    console.error('Error popup:', error)
+  }
+}
+
 // listen to switches between activated tabs
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   try {
@@ -583,11 +611,27 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async (details) => {
   if (details.frameId !== 0) return
   console.log('webNavigation onDOMContentLoaded event triggered:', details)
   update_icon(details.url)
+
   if (!(await shouldExclude(details.url))) {
     const navigationType = analyzeNavigation(details.tabId, details.url)
     console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`)
+
     const timestamp = new Date().toISOString()
     const uuid = uuidv4()
+    let newSession = false
+    if (navigationType === 'new') {
+      const result = await chrome.storage.local.get({ lastNewNavigationTimestamp: '' })
+      await chrome.storage.local.set({ lastNewNavigationTimestamp: timestamp })
+      const lastNewNavTime = result.lastNewNavigationTimestamp
+      if (lastNewNavTime) {
+        const timeDiff = new Date(timestamp).getTime() - new Date(lastNewNavTime).getTime()
+        if (timeDiff > new_session_interval) {
+          console.log('Starting new session due to time interval:', timeDiff)
+          newSession = true
+        }
+      }
+    }
+
     chrome.tabs.sendMessage(details.tabId, { action: 'getHTML' }, async (response) => {
       const htmlContent = response?.html
       const simplifiedHTML = response?.simplifiedHTML
@@ -608,7 +652,10 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async (details) => {
         ),
         saveScreenshot((await chrome.tabs.get(details.tabId)).windowId, timestamp, uuid)
       ])
-      if (navigationType !== 'new' && navigationType !== 'reload') {
+      if (newSession) {
+        console.log('send message to popup new session')
+        await sendNewSessionPopup(details.tabId, timestamp, uuid)
+      } else if (navigationType !== 'new' && navigationType !== 'reload') {
         console.log('send message to popup navigation')
         await sendPopup(
           details.tabId,
@@ -1087,40 +1134,40 @@ chrome.storage.local.onChanged.addListener((changes) => {
   }
 })
 
-let hasAmazonPage = false
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  console.log('onUpdated')
-  if (changeInfo.status === 'complete') {
-    if (!(await shouldExclude(tab.url)) && !hasAmazonPage) {
-      hasAmazonPage = true
-      console.log('send reminder')
-      //   chrome.notifications.create({
-      //     type: 'basic',
-      //     iconUrl: '../icon.png', // Path to your notification icon
-      //     title: 'Notice',
-      //     message: 'You are on an Amazon page',
-      //     priority: 2
-      //   })
-      //
-      const userIdResult = await chrome.storage.local.get({ userId: '' })
-      const currentUserId = userIdResult.userId
-      if (currentUserId) {
-        const response = await fetch(`${rationale_status_url}?user_id=${currentUserId}`, {
-          method: 'GET'
-        })
-        if (response.ok) {
-          const data = await response.json()
-          // console.log(data)
-          chrome.tabs.sendMessage(tabId, {
-            action: 'showReminder',
-            data: data,
-            user_id: currentUserId
-          })
-        }
-        console.log('send finished')
-      } else {
-        chrome.tabs.sendMessage(tabId, { action: 'showReminder', data: 'no user id', user_id: '' })
-      }
-    }
-  }
-})
+// let hasAmazonPage = false
+// chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+//   console.log('onUpdated')
+//   if (changeInfo.status === 'complete') {
+//     if (!(await shouldExclude(tab.url)) && !hasAmazonPage) {
+//       hasAmazonPage = true
+//       console.log('send reminder')
+//       //   chrome.notifications.create({
+//       //     type: 'basic',
+//       //     iconUrl: '../icon.png', // Path to your notification icon
+//       //     title: 'Notice',
+//       //     message: 'You are on an Amazon page',
+//       //     priority: 2
+//       //   })
+//       //
+//       const userIdResult = await chrome.storage.local.get({ userId: '' })
+//       const currentUserId = userIdResult.userId
+//       if (currentUserId) {
+//         const response = await fetch(`${rationale_status_url}?user_id=${currentUserId}`, {
+//           method: 'GET'
+//         })
+//         if (response.ok) {
+//           const data = await response.json()
+//           // console.log(data)
+//           chrome.tabs.sendMessage(tabId, {
+//             action: 'showReminder',
+//             data: data,
+//             user_id: currentUserId
+//           })
+//         }
+//         console.log('send finished')
+//       } else {
+//         chrome.tabs.sendMessage(tabId, { action: 'showReminder', data: 'no user id', user_id: '' })
+//       }
+//     }
+//   }
+// })

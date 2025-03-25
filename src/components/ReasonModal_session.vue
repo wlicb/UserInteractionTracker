@@ -18,7 +18,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['submit', 'skip'])
+const emit = defineEmits(['submit'])
 
 const reason_text = ref('')
 const showError = ref(false)
@@ -31,11 +31,6 @@ function submit() {
 
   showError.value = false
   emit('submit', { input: reason_text.value, success: true })
-  reset()
-}
-
-function skip() {
-  emit('skip', { input: null, success: false })
   reset()
 }
 
@@ -115,7 +110,6 @@ function reset() {
         Please enter a valid reason.
       </div>
       <div class="button-container">
-        <NButton strong secondary type="info" id="reason-skip" @click="skip">Skip</NButton>
         <NButton strong secondary type="info" id="reason-submit" @click="submit">Submit</NButton>
       </div>
     </div>

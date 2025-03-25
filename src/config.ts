@@ -29,3 +29,4 @@ export const filter_url = [
 ]
 export const scroll_threshold = 300
 export const scroll_popup_interval = 20000 // 20 seconds
+export const new_session_interval = 1000 * 60 * 60 * 4 // 4 hours
