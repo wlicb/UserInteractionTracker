@@ -1035,7 +1035,7 @@ export const cart = [
   },
   {
     selector: '#sc-secondary-list',
-    name: 'secondary-list',
+    name: 'secondary_list',
     children: [
       {
         selector: '#sc-secondary-list-tab',
@@ -1088,7 +1088,7 @@ export const cart = [
                     clickable: true
                   },
                   {
-                    selector: 'a.sc-grid-item-product-title',
+                    selector: 'a.sc-grid-item-product-title, a.sc-product-title',
                     add_text: true,
                     text_format: 'Product Title',
                     name: 'from_text',
@@ -1096,7 +1096,7 @@ export const cart = [
                   },
                   {
                     selector:
-                      'div.sc-action-move-to-cart, span.sc-action-delete input, span.add-to-list-text input, span[data-action="compare"] input',
+                      'div.sc-action-move-to-cart, span.sc-action-delete input, span.add-to-list-text input, span[data-action="compare"] input, span.sc-see-substitutes-available-desktop',
                     add_text: true,
                     name: 'from_text',
                     clickable: true,
@@ -1193,10 +1193,19 @@ export const cart = [
     text_selector: '.a-carousel-heading, h3',
     children: [
       {
-        selector: '.a-carousel-heading, h3',
-        add_text: true,
-        clickable: true,
-        name: 'from_text'
+        selector: 'div.a-carousel-header-row',
+        children: [
+          {
+            selector: '.a-carousel-heading, h3',
+            add_text: true
+          },
+          {
+            selector: 'a.a-link-normal',
+            clickable: true,
+            add_text: true,
+            name: 'from_text'
+          }
+        ]
       },
       carousel_card
     ]

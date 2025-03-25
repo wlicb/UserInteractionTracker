@@ -29,7 +29,7 @@ def analyze_user_data(user_name, date):
     # Fetch purchase data from the database
     purchases = list(order_processed_collection.find({"user_name": user_name, "timestamp": {"$gte": start_of_day, "$lt": end_of_day}}))
     purchase_count = len(purchases)
-    
+
     # Fetch rationnale data from the database
     rationnales = list(rationale_collection.find({"user_name": user_name, "timestamp": {"$gte": start_of_day, "$lt": end_of_day}}))
     rationnale_count = len(rationnales)
