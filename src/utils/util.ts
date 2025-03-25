@@ -3,7 +3,11 @@ import { filter_url, url_includes, check_user_id_url } from '../config'
 
 export function isFromPopup(element: HTMLElement): boolean {
   // return element.closest('#reason-modal') !== null
-  const selectors = ['#user-interaction-tracker-app', '.n-modal-container']
+  const selectors = [
+    '#user-interaction-tracker-app',
+    '.n-modal-container',
+    '#user-interaction-tracker-app-session'
+  ]
   return selectors.some((selector) => element.closest(selector) !== null)
 }
 export async function update_icon(url) {
