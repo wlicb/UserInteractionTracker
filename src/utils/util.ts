@@ -339,6 +339,14 @@ export function getCustomQuestion(
         question =
           'You <span class="highlight-question">clicked</span> on the <span class="highlight-question-blue">checkout button</span>. What made you decide to checkout?'
         placeholder = 'I decided to checkout because...'
+      } else if (data['data-semantic-id']?.endsWith('decrease_quantity_by_one')) {
+        question =
+          'You <span class="highlight-question">clicked</span> on the <span class="highlight-question-blue">decrease quantity</span> button. Why did you click this button?'
+        placeholder = 'I decreased quantity because...'
+      } else if (data['data-semantic-id']?.endsWith('increase_quantity_by_one')) {
+        question =
+          'You <span class="highlight-question">clicked</span> on the <span class="highlight-question-blue">increase quantity</span> button. Why did you click this button?'
+        placeholder = 'I increased quantity because...'
       } else if (
         data['data-semantic-id']?.startsWith('search_results.') ||
         data['data-semantic-id']?.startsWith('product_list.') ||

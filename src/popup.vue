@@ -191,7 +191,7 @@ onMounted(async () => {
         v-if="showUserIdInput"
         v-model:value="userId"
         type="text"
-        placeholder="Use assigned ID or create one yourself"
+        placeholder="Use assigned ID or create one"
         class="user-id-input"
       />
 
