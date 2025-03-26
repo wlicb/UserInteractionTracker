@@ -183,7 +183,8 @@ const work = () => {
             return
           }
           const target = event.target as HTMLElement
-          if (isFromPopup(target)) {
+          if (isFromPopup(target) || event.is_from_popup) {
+            event.is_from_popup = true
             callOriginalListener(event)
             return
           }
