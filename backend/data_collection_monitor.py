@@ -91,7 +91,7 @@ def analyze_user_data(user_name, date):
         "interaction_count": interaction_count,
         "session_count": session_count,
         "purchase_count": purchase_count,
-        "purchase_list": purchases,
+        # "purchase_list": purchases,
         "rationnale_count": rationnale_count,
         "abnormal_behavior_count": abnormal_behavior_count,
         "abnormal_behaviors": abnormal_behaviors,

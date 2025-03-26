@@ -315,11 +315,11 @@ def get_rationale_by_date(user_name, date=None):
     # If no date is specified, use today's date
     if date is None:
         date = datetime.now()
-    start_of_week = (date - timedelta(days=date.weekday())).strftime("%Y-%m-%dT00:00:00.000Z")
-    end_of_week = (date + timedelta(days=(6 - date.weekday()))).strftime("%Y-%m-%dT23:59:59.999Z")
+    end_of_period = date.strftime("%Y-%m-%dT23:59:59.999Z")
+    start_of_period = (date - timedelta(days=6)).strftime("%Y-%m-%dT00:00:00.000Z")
 
     n_documents_date = rationale_collection.count_documents(
-        {"user_name": user_name, "timestamp": {"$gte": start_of_week, "$lt": end_of_week}}
+        {"user_name": user_name, "timestamp": {"$gte": start_of_period, "$lt": end_of_period}}
     )
     n_documents = rationale_collection.count_documents(
         {
@@ -357,11 +357,11 @@ def get_order_by_date(user_name, date=None):
     # If no date is specified, use today's date
     if date is None:
         date = datetime.now()
-    start_of_week = (date - timedelta(days=date.weekday())).strftime("%Y-%m-%dT00:00:00.000Z")
-    end_of_week = (date + timedelta(days=(6 - date.weekday()))).strftime("%Y-%m-%dT23:59:59.999Z")
+    end_of_period = date.strftime("%Y-%m-%dT23:59:59.999Z")
+    start_of_period = (date - timedelta(days=6)).strftime("%Y-%m-%dT00:00:00.000Z")
 
     n_documents_date = order_processed_collection.count_documents(
-        {"user_name": user_name, "timestamp": {"$gte": start_of_week, "$lt": end_of_week}}
+        {"user_name": user_name, "timestamp": {"$gte": start_of_period, "$lt": end_of_period}}
     )
     n_documents = order_processed_collection.count_documents(
         {
@@ -423,8 +423,62 @@ def monitor_user_data():
 
 @app.route("/api/all_user_list", methods=["GET"])
 def all_user_list():
-    user_list = user_collection.find({}, {"_id": 0, "user_name": 1})
+    user_list = user_collection.find({"user_name": {"$ne": ""}}, {"_id": 0, "user_name": 1})
     return jsonify(list(user_list)), 200
+
+@app.route("/api/current_week_info", methods=["GET"])
+def current_week_info():
+    user_name = request.args.get("user_id")
+    result, status = check_user(user_name, user_collection=user_collection)
+    if status != 200:
+        return result, status
+    else:
+        user_name = result
+    
+    earliest_interaction = interaction_collection.find(
+        {"user_name": user_name}
+    ).sort("timestamp", 1).limit(1)
+    
+    earliest_interaction_list = list(earliest_interaction)
+    
+    if not earliest_interaction_list:
+        earliest_date = datetime.now()
+        current_week = 1  
+    else:
+        earliest_timestamp_str = earliest_interaction_list[0]["timestamp"]
+        earliest_date = datetime.strptime(earliest_timestamp_str[:10], "%Y-%m-%d")
+        
+        current_date = datetime.now()
+        days_difference = (current_date - earliest_date).days
+        current_week = (days_difference // 7) + 1
+    
+    week_start = earliest_date + timedelta(days=((current_week-1) * 7))
+    week_end = earliest_date + timedelta(days=(current_week * 7) - 1)
+    
+    week_start_str = week_start.strftime("%b %d")
+    week_end_str = week_end.strftime("%b %d")
+    
+    week_start_timestamp = week_start.strftime("%Y-%m-%dT00:00:00.000Z")
+    week_end_timestamp = (week_end + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00.000Z")
+    
+    rationale_count = rationale_collection.count_documents({
+        "user_name": user_name,
+        "timestamp": {"$gte": week_start_timestamp, "$lt": week_end_timestamp}
+    })
+    
+    order_count = order_processed_collection.count_documents({
+        "user_name": user_name,
+        "timestamp": {"$gte": week_start_timestamp, "$lt": week_end_timestamp}
+    })
+    
+    
+    return jsonify({
+        "weekNumber": current_week,
+        "startDate": week_start_str,
+        "endDate": week_end_str,
+        "reasonProgress": rationale_count,
+        "purchaseProgress": order_count
+    }), 200
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
