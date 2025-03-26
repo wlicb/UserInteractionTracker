@@ -1035,7 +1035,7 @@ export const cart = [
   },
   {
     selector: '#sc-secondary-list',
-    name: 'secondary-list',
+    name: 'secondary_list',
     children: [
       {
         selector: '#sc-secondary-list-tab',
@@ -1088,7 +1088,7 @@ export const cart = [
                     clickable: true
                   },
                   {
-                    selector: 'a.sc-grid-item-product-title',
+                    selector: 'a.sc-grid-item-product-title, a.sc-product-title',
                     add_text: true,
                     text_format: 'Product Title',
                     name: 'from_text',
@@ -1096,7 +1096,7 @@ export const cart = [
                   },
                   {
                     selector:
-                      'div.sc-action-move-to-cart, span.sc-action-delete input, span.add-to-list-text input, span[data-action="compare"] input',
+                      'div.sc-action-move-to-cart, span.sc-action-delete input, span.add-to-list-text input, span[data-action="compare"] input, span.sc-see-substitutes-available-desktop',
                     add_text: true,
                     name: 'from_text',
                     clickable: true,
@@ -1193,10 +1193,19 @@ export const cart = [
     text_selector: '.a-carousel-heading, h3',
     children: [
       {
-        selector: '.a-carousel-heading, h3',
-        add_text: true,
-        clickable: true,
-        name: 'from_text'
+        selector: 'div.a-carousel-header-row',
+        children: [
+          {
+            selector: '.a-carousel-heading, h3',
+            add_text: true
+          },
+          {
+            selector: 'a.a-link-normal',
+            clickable: true,
+            add_text: true,
+            name: 'from_text'
+          }
+        ]
       },
       carousel_card
     ]
@@ -1682,6 +1691,12 @@ export const buy_again = [
                     name: 'see_buying_options',
                     clickable: true,
                     add_text: true
+                  },
+                  {
+                    selector: 'span[id^="seeDetailsButton"] a',
+                    name: 'see_product_details',
+                    clickable: true,
+                    add_text: true
                   }
                 ]
               },
@@ -1805,7 +1820,7 @@ export const buy_again = [
                     name: 'buttons',
                     children: [
                       {
-                        selector: 'input[name="submit.addToCart"]',
+                        selector: 'input[name="submit.addToCart"], span.add-to-cart-button input',
                         add_text: true,
                         name: 'add_to_cart',
                         clickable: true
@@ -1814,6 +1829,12 @@ export const buy_again = [
                         selector: 'input[id^="buy-now"]',
                         add_text: true,
                         name: 'buy_now',
+                        clickable: true
+                      },
+                      {
+                        selector: 'span[class*="seeAllOffers"]',
+                        add_text: true,
+                        name: 'from_text',
                         clickable: true
                       },
                       {

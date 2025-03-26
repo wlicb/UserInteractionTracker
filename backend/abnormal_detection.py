@@ -56,7 +56,7 @@ def abnormal_detection(user_name, date=None):
     # Check for rapid interactions
     rapid_interaction_abnormal_uuids=[]
     rapid_interaction_window=timedelta(seconds=config.RAPID_INTERACTION_WINDOW_SEC)
-    rapid_interaction_rate= config.RAPID_INTERACTION_RATE 
+    rapid_interaction_rate= config.RAPID_INTERACTION_RATE
     interaction_window=[]
 
     # Check for repeated interactions
@@ -122,7 +122,7 @@ def abnormal_detection(user_name, date=None):
             "interaction": repeated_interaction_abnormal_uuids
         })
 
-    
+
 
     return abnormal_interactions
 
