@@ -1691,6 +1691,12 @@ export const buy_again = [
                     name: 'see_buying_options',
                     clickable: true,
                     add_text: true
+                  },
+                  {
+                    selector: 'span[id^="seeDetailsButton"] a',
+                    name: 'see_product_details',
+                    clickable: true,
+                    add_text: true
                   }
                 ]
               },
@@ -1814,7 +1820,7 @@ export const buy_again = [
                     name: 'buttons',
                     children: [
                       {
-                        selector: 'input[name="submit.addToCart"]',
+                        selector: 'input[name="submit.addToCart"], span.add-to-cart-button input',
                         add_text: true,
                         name: 'add_to_cart',
                         clickable: true
@@ -1823,6 +1829,12 @@ export const buy_again = [
                         selector: 'input[id^="buy-now"]',
                         add_text: true,
                         name: 'buy_now',
+                        clickable: true
+                      },
+                      {
+                        selector: 'span[class*="seeAllOffers"]',
+                        add_text: true,
+                        name: 'from_text',
                         clickable: true
                       },
                       {
