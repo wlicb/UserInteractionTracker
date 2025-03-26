@@ -50,19 +50,25 @@ const work = () => {
         if (!element || depth >= 20) return allAttributes
 
         // Check and collect all relevant attributes at current level
-        if (element.hasAttribute('data-clickable-id')) {
+        // Only set if not already present
+        if (!allAttributes['data-clickable-id'] && element.hasAttribute('data-clickable-id')) {
           allAttributes['data-clickable-id'] = element.getAttribute('data-clickable-id') || ''
         }
-        if (element.hasAttribute('data-element-meta-name')) {
+        if (
+          !allAttributes['data-element-meta-name'] &&
+          element.hasAttribute('data-element-meta-name')
+        ) {
           allAttributes['data-element-meta-name'] =
             element.getAttribute('data-element-meta-name') || ''
         }
-        if (element.hasAttribute('data-element-meta-data')) {
+        if (
+          !allAttributes['data-element-meta-data'] &&
+          element.hasAttribute('data-element-meta-data')
+        ) {
           allAttributes['data-element-meta-data'] =
             element.getAttribute('data-element-meta-data') || ''
         }
-
-        if (element.hasAttribute('data-fetch-url')) {
+        if (!allAttributes['data-fetch-url'] && element.hasAttribute('data-fetch-url')) {
           allAttributes['data-fetch-url'] = element.getAttribute('data-fetch-url') || ''
         }
 
