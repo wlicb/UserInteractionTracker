@@ -379,28 +379,28 @@ const work = () => {
         document.dispatchEvent(event)
         return true // Will respond asynchronously
       }
-      if (message.action === 'showReminder') {
-        console.log('showReminder')
-        if (document.getElementById('reason-modal')) {
-          sendResponse({ success: false, message: 'reminder:popup already exists' })
-          return
-        }
-        const data = message.data
-        const user_id = message.user_id
-        if (user_id) {
-          window.$dialog?.info({
-            title: 'Thank you for participating!',
-            content: `You have contributed ${data.on_date} rationales in the last 7 days.
-          You have contributed ${data.all_time} rationales in total. `
-          })
-        } else {
-          window.$dialog?.info({
-            title: 'Thank you for participating!',
-            content: `Please enter your user id to continue.
-            If you don't have one, please contact us at hai-user-study-2@khoury.northeastern.edu`
-          })
-        }
-      }
+      // if (message.action === 'showReminder') {
+      //   console.log('showReminder')
+      //   if (document.getElementById('reason-modal')) {
+      //     sendResponse({ success: false, message: 'reminder:popup already exists' })
+      //     return
+      //   }
+      //   const data = message.data
+      //   const user_id = message.user_id
+      //   if (user_id) {
+      //     window.$dialog?.info({
+      //       title: 'Thank you for participating!',
+      //       content: `You have contributed ${data.on_date} rationales in the last 7 days.
+      //     You have contributed ${data.all_time} rationales in total. `
+      //     })
+      //   } else {
+      //     window.$dialog?.info({
+      //       title: 'Thank you for participating!',
+      //       content: `Please enter your user id to continue.
+      //       If you don't have one, please contact us at hai-user-study-2@khoury.northeastern.edu`
+      //     })
+      //   }
+      // }
     }
   )
 }

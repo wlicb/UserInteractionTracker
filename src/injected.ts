@@ -31,7 +31,7 @@ const work = () => {
     const originalAddEventListener = EventTarget.prototype.addEventListener
 
     // Add this at the top of the file
-    const TimeOut = 30000
+    const TimeOut = 60000
 
     async function captureInteraction(
       eventType: string,
@@ -183,7 +183,8 @@ const work = () => {
             return
           }
           const target = event.target as HTMLElement
-          if (isFromPopup(target)) {
+          if (isFromPopup(target) || event.is_from_popup) {
+            event.is_from_popup = true
             callOriginalListener(event)
             return
           }
@@ -417,7 +418,7 @@ const work = () => {
             console.log('screenshot and interaction complete')
             // Execute original listener after screenshot is captured
           } catch (error) {
-            console.log('Error capturing screenshot:', error)
+            console.error('Error capturing screenshot:', error)
             // Execute original listener even if screenshot fails
           } finally {
             console.log('running original listener')

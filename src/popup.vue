@@ -4,10 +4,11 @@ import {
   data_collector_secret_id,
   interaction_status_url,
   rationale_status_url,
-  purchase_status_url
+  purchase_status_url,
+  current_week_info_url
 } from './config'
 import { shouldExclude } from './utils/util'
-import { NButton, NInput, NDivider } from 'naive-ui'
+import { NButton, NInput, NDivider, NProgress } from 'naive-ui'
 // State management with refs
 const count = ref(0)
 const userId = ref('')
@@ -19,6 +20,13 @@ const stats = ref({ total: 0, today: 0 })
 const reasonStats = ref({ total: 0, week: 0 })
 const purchaseStats = ref({ total: 0, week: 0 })
 const showDownloadButtons = ref(false)
+const weekInfo = ref({
+  weekNumber: 1,
+  startDate: 'Mar 25',
+  endDate: 'Mar 31',
+  reasonProgress: 0,
+  purchaseProgress: 0
+})
 
 // Methods
 const handleClick = () => {
@@ -42,38 +50,38 @@ const displayInteractionStats = async (userId: string) => {
   } catch (error) {
     otherInfo.value = `Error: ${(error as Error).message}`
   }
-  try {
-    const response = await fetch(`${rationale_status_url}?user_id=${userId}`, {
-      method: 'GET'
-    })
-    const data = await response.json()
-    if (response.ok) {
-      reasonStats.value = {
-        total: data.all_time,
-        week: data.on_date
-      }
-    } else {
-      otherInfo.value = `Failed to fetch stats: ${data.error || 'Unknown error'}`
-    }
-  } catch (error) {
-    otherInfo.value = `Error: ${(error as Error).message}`
-  }
-  try {
-    const response = await fetch(`${purchase_status_url}?user_id=${userId}`, {
-      method: 'GET'
-    })
-    const data = await response.json()
-    if (response.ok) {
-      purchaseStats.value = {
-        total: data.all_time,
-        week: data.on_date
-      }
-    } else {
-      otherInfo.value = `Failed to fetch stats: ${data.error || 'Unknown error'}`
-    }
-  } catch (error) {
-    otherInfo.value = `Error: ${(error as Error).message}`
-  }
+  // try {
+  //   const response = await fetch(`${rationale_status_url}?user_id=${userId}`, {
+  //     method: 'GET'
+  //   })
+  //   const data = await response.json()
+  //   if (response.ok) {
+  //     reasonStats.value = {
+  //       total: data.all_time,
+  //       week: data.on_date
+  //     }
+  //   } else {
+  //     otherInfo.value = `Failed to fetch stats: ${data.error || 'Unknown error'}`
+  //   }
+  // } catch (error) {
+  //   otherInfo.value = `Error: ${(error as Error).message}`
+  // }
+  // try {
+  //   const response = await fetch(`${purchase_status_url}?user_id=${userId}`, {
+  //     method: 'GET'
+  //   })
+  //   const data = await response.json()
+  //   if (response.ok) {
+  //     purchaseStats.value = {
+  //       total: data.all_time,
+  //       week: data.on_date
+  //     }
+  //   } else {
+  //     otherInfo.value = `Failed to fetch stats: ${data.error || 'Unknown error'}`
+  //   }
+  // } catch (error) {
+  //   otherInfo.value = `Error: ${(error as Error).message}`
+  // }
 }
 
 const updateRecordingStatus = async () => {
@@ -131,6 +139,29 @@ const handleClearCache = () => {
   }
 }
 
+const fetchCurrentWeekInfo = async (userId) => {
+  try {
+    const response = await fetch(`${current_week_info_url}?user_id=${userId}`, {
+      method: 'GET'
+    })
+    const data = await response.json()
+
+    if (response.ok) {
+      weekInfo.value = {
+        weekNumber: data.weekNumber,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        reasonProgress: data.reasonProgress,
+        purchaseProgress: data.purchaseProgress
+      }
+    } else {
+      console.error(`Failed to fetch week info: ${data.error || 'Unknown error'}`)
+    }
+  } catch (error) {
+    console.error(`Error fetching week info: ${(error as Error).message}`)
+  }
+}
+
 // Lifecycle hooks
 onMounted(async () => {
   updateRecordingStatus()
@@ -141,6 +172,7 @@ onMounted(async () => {
     showEditButton.value = true
     showDownloadButtons.value = result.userId.includes(data_collector_secret_id)
     await displayInteractionStats(result.userId)
+    await fetchCurrentWeekInfo(result.userId)
   }
 })
 </script>
@@ -151,7 +183,7 @@ onMounted(async () => {
     {{ count }}
     <NButton @click="handleClick">Click me</NButton> -->
 
-    <h3>Data Collector</h3>
+    <h3>Shopping Flow</h3>
     <div class="input-container">
       <div v-html="recordingStatus" class="recording-status"></div>
       <div v-if="showUserIdInput" class="user-id-label">User ID:</div>
@@ -159,7 +191,7 @@ onMounted(async () => {
         v-if="showUserIdInput"
         v-model:value="userId"
         type="text"
-        placeholder="Contact us if you don't have one"
+        placeholder="Use assigned ID or create one"
         class="user-id-input"
       />
 
@@ -189,31 +221,43 @@ onMounted(async () => {
         >Clear Data</NButton
       >
     </div>
-    <NDivider class="divider" />
+    <!-- <NDivider class="divider" /> -->
     <div class="info-text">{{ otherInfo }}</div>
 
-    <div class="output-container">
+    <div class="output-container" style="margin-top: 10px">
       <div class="output-item">
-        Total reason uploads: <b>{{ reasonStats.total }}</b>
-      </div>
-      <div class="output-item">
-        This week's reason: <b>{{ reasonStats.week }}</b>
+        Number of Actions Recorded: <b>{{ stats.total }}</b>
       </div>
     </div>
-    <div class="output-container">
-      <div class="output-item">
-        Total purchase uploads: <b>{{ purchaseStats.total }}</b>
-      </div>
-      <div class="output-item">
-        This week's purchase: <b>{{ purchaseStats.week }}</b>
-      </div>
+    <div
+      class="output-container"
+      style="margin-top: 5px; font-weight: bold; color: #333; margin-bottom: 5px"
+    >
+      <span
+        >Week {{ weekInfo.weekNumber }} ({{ weekInfo.startDate }} - {{ weekInfo.endDate }})
+        Progress:</span
+      >
     </div>
-    <div class="output-container">
-      <div class="output-item">
-        Total action uploads: <b>{{ stats.total }}</b>
+    <div style="display: flex; flex-direction: column">
+      <div style="display: flex; align-items: center" class="output-container">
+        <span style="width: 90px; margin-right: 10px; text-align: left">Reasons</span>
+        <NProgress
+          type="line"
+          :percentage="(weekInfo.reasonProgress / 2) * 100"
+          style="flex-grow: 1"
+          :show-indicator="false"
+        />
+        <span style="margin-left: 10px; width: 40px">{{ weekInfo.reasonProgress }}/2</span>
       </div>
-      <div class="output-item">
-        Today's action uploads: <b>{{ stats.today }}</b>
+      <div style="display: flex; align-items: center" class="output-container">
+        <span style="width: 90px; margin-right: 10px; text-align: left">Purchases</span>
+        <NProgress
+          type="line"
+          :percentage="(weekInfo.purchaseProgress / 1) * 100"
+          style="flex-grow: 1"
+          :show-indicator="false"
+        />
+        <span style="margin-left: 10px; width: 40px">{{ weekInfo.purchaseProgress }}/1</span>
       </div>
     </div>
   </div>
@@ -225,7 +269,7 @@ body {
   font-family: Arial, sans-serif;
   background-color: #ffffff;
   padding: 5px;
-  border-radius: 10px;
+  border-radius: 3px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -233,6 +277,7 @@ body {
 
 .popup-container {
   width: 100%;
+  border-radius: 3px;
 }
 
 .input-container {
@@ -263,7 +308,7 @@ body {
   width: 100%;
   padding: 10px;
   box-sizing: border-box;
-  border-radius: 8px;
+  border-radius: 3px;
   border: 1px solid #ccc;
   margin-bottom: 5px;
   font-size: 14px;
@@ -281,6 +326,7 @@ body {
   display: flex;
   font-size: 14px;
   align-items: center;
+  color: #333;
 }
 
 .button-container {
@@ -307,7 +353,7 @@ body {
 .divider {
   border-color: #78c2f4;
   width: 100%;
-  margin-top: 15px;
+  // margin-top: 15px;
 }
 
 .info-text {
@@ -315,9 +361,9 @@ body {
   overflow-y: auto;
   font-size: 12px;
   background-color: #eef8fb;
-  margin: 5px 0;
-  padding: 0 2px;
-  border-radius: 1px;
+  margin: 0 0;
+  padding: 0 0px;
+  border-radius: 3px;
   width: 100%;
 
   &:empty {
@@ -330,7 +376,6 @@ body {
   overflow-y: auto;
   font-size: 12px;
   background-color: transparent;
-  // margin-top: 5px;
   border-radius: 3px;
   width: 100%;
   display: flex;
