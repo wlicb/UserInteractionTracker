@@ -8,7 +8,8 @@ import {
   shouldExclude,
   getCustomQuestion,
   processRecipe,
-  findPageMeta
+  findPageMeta,
+  getHighLevelQuestion
 } from './utils/util'
 import axios from 'axios'
 import { DOMParser, parseHTML } from 'linkedom'
@@ -539,12 +540,11 @@ const sendPopup = async (
 
 const sendNewSessionPopup = async (tabId: number, timestamp: string, uuid: string) => {
   try {
+    const { question, placeholder } = getHighLevelQuestion()
     const reason = await chrome.tabs.sendMessage(tabId, {
       action: 'show_popup_session',
-      question:
-        'We noticed that you opened Amazon. Can you share what you are trying to do in this shopping journey?',
-      placeholder:
-        'e.g. I am buying equipment for the lab / I want to find a gift for my friend / I am looking for a new laptop ...'
+      question: question,
+      placeholder: placeholder
     })
     console.log('reason', reason)
     if (reason && reason.input !== null && reason.success !== false) {

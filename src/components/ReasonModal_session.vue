@@ -70,6 +70,15 @@ function reset() {
   background: rgba(24, 160, 88, 0.1);
   transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+:deep(.highlight-question-blue) {
+  padding: 0px 6px;
+  border-radius: 3px;
+  display: inline-block;
+  color: rgb(24, 106, 160);
+  border: 1px solid rgba(24, 106, 160, 0.3);
+  background: rgba(24, 106, 160, 0.1);
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
 .reason-textarea {
   width: 100%;

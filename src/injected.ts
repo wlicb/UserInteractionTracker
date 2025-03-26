@@ -31,7 +31,7 @@ const work = () => {
     const originalAddEventListener = EventTarget.prototype.addEventListener
 
     // Add this at the top of the file
-    const TimeOut = 30000
+    const TimeOut = 60000
 
     async function captureInteraction(
       eventType: string,
