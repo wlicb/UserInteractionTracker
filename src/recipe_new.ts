@@ -1992,7 +1992,8 @@ export const buy_again = [
                     name: 'buttons',
                     children: [
                       {
-                        selector: 'input[name="submit.addToCart"], span.add-to-cart-button input',
+                        selector:
+                          'span.add-to-cart-button input, div[class*="atcButtonContainer"], button',
                         add_text: true,
                         name: 'add_to_cart',
                         clickable: true
@@ -2031,7 +2032,7 @@ export const buy_again = [
                   const quantityEm = em.querySelector('div[name="ax-qs"] div[role="spinbutton"]')
                   const quantity = quantityEm?.innerText || '1'
                   return {
-                    name: 'active_items_opened_purchase',
+                    name: 'active_items_opened_fresh',
                     data: { title, asin, price, url, delivery, quantity }
                   }
                 }
