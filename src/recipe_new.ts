@@ -1322,6 +1322,68 @@ export const fresh_substitution_card = {
   }
 }
 
+export const fresh_quantity_selector = {
+  selector: 'div.qs-widget-container',
+  children: [
+    {
+      selector: "input[aria-label^='Remove']",
+      add_text: true,
+      text_js: function (element) {
+        if (element.hasAttribute('aria-label')) {
+          return element.getAttribute('aria-label')
+        }
+        return ''
+      },
+
+      clickable: true,
+      name: 'decrease_quantity_by_one'
+    },
+    {
+      selector: 'div.qs-widget-dropdown-flex-wrapper button',
+      add_text: true,
+      clickable: true,
+      name: 'quantity_drop_down_list',
+      text_format: 'Current Quantity: {}'
+    },
+    {
+      selector: 'div.qs-widget-dropdown-wrapper span[data-action="qs-widget-dropdown-decl"]',
+      add_text: true,
+      clickable: true,
+      use_root: true,
+      name: 'from_text',
+      text_format: 'Drop Down Option {}'
+    },
+    {
+      selector:
+        'div[id^="qs-widget-quantity-container-atfc"] span[data-action="qs-widget-quantity-changelink-decl"]',
+      add_text: true,
+      clickable: true,
+      use_root: true,
+      name: 'from_text'
+    },
+    {
+      selector:
+        'div[id^="qs-widget-summary-container-atfc"] span[id^="qs-widget-summary-atc-atfc"]',
+      add_text: true,
+      clickable: true,
+      use_root: true,
+      name: 'from_text'
+    },
+    {
+      selector: "input[aria-label^='Add']",
+      add_text: true,
+      text_js: function (element) {
+        if (element.hasAttribute('aria-label')) {
+          return element.getAttribute('aria-label')
+        }
+        return ''
+      },
+      clickable: true,
+      name: 'increase_quantity_by_one'
+    }
+  ]
+}
+
 export const fresh_cart = [
   nav,
   {
@@ -1353,70 +1415,7 @@ export const fresh_cart = [
           },
           {
             selector: 'div.sc-action-links',
-            children: [
-              {
-                selector: 'div.qs-widget-container',
-                children: [
-                  {
-                    selector: "input[aria-label^='Remove']",
-                    add_text: true,
-                    text_js: function (element) {
-                      if (element.hasAttribute('aria-label')) {
-                        return element.getAttribute('aria-label')
-                      }
-                      return ''
-                    },
-
-                    clickable: true,
-                    name: 'decrease_quantity_by_one'
-                  },
-                  {
-                    selector: 'div.qs-widget-dropdown-flex-wrapper button',
-                    add_text: true,
-                    clickable: true,
-                    name: 'quantity_drop_down_list',
-                    text_format: 'Current Quantity: {}'
-                  },
-                  {
-                    selector:
-                      'div.qs-widget-dropdown-wrapper span[data-action="qs-widget-dropdown-decl"]',
-                    add_text: true,
-                    clickable: true,
-                    use_root: true,
-                    name: 'from_text',
-                    text_format: 'Drop Down Option {}'
-                  },
-                  {
-                    selector:
-                      'div[id^="qs-widget-quantity-container-atfc"] span[data-action="qs-widget-quantity-changelink-decl"]',
-                    add_text: true,
-                    clickable: true,
-                    use_root: true,
-                    name: 'from_text'
-                  },
-                  {
-                    selector:
-                      'div[id^="qs-widget-summary-container-atfc"] span[id^="qs-widget-summary-atc-atfc"]',
-                    add_text: true,
-                    clickable: true,
-                    use_root: true,
-                    name: 'from_text'
-                  },
-                  {
-                    selector: "input[aria-label^='Add']",
-                    add_text: true,
-                    text_js: function (element) {
-                      if (element.hasAttribute('aria-label')) {
-                        return element.getAttribute('aria-label')
-                      }
-                      return ''
-                    },
-                    clickable: true,
-                    name: 'increase_quantity_by_one'
-                  }
-                ]
-              }
-            ]
+            children: [fresh_quantity_selector]
           },
           {
             selector: "input[data-action='delete']",
@@ -1773,7 +1772,7 @@ export const buy_again = [
             name: 'detailed_content',
             children: [
               {
-                selector: 'div:has(> img)',
+                selector: 'a > div:has(> img)',
                 clickable: true,
                 name: 'product_image',
                 add_text: true,
@@ -1801,7 +1800,7 @@ export const buy_again = [
               },
               {
                 selector:
-                  "div[data-buyingoptiontype='NEW'], div[class*='asinDetailInfoColumns']:has(input[name='submit.addToCart']",
+                  "div[data-buyingoptiontype='NEW'], div[class*='asinDetailInfoColumns']:has(input[name='submit.addToCart'])",
                 name: 'one_time_purchase',
                 children: [
                   {
@@ -1969,6 +1968,71 @@ export const buy_again = [
                   return {
                     name: 'active_items_opened_sns',
                     data: { title, asin, price, url, delivery }
+                  }
+                }
+              },
+              {
+                selector:
+                  "div[data-buyingoptiontype='ALM'], div[class*='asinDetailInfoColumns']:has(span.add-to-cart-button)",
+                name: 'shop_amazon_fresh',
+                children: [
+                  {
+                    selector:
+                      'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)',
+                    add_text: true,
+                    name: 'price'
+                  },
+                  {
+                    selector: '.almDeliveryMessage',
+                    add_text: true,
+                    name: 'delivery'
+                  },
+                  {
+                    selector: 'div[class*="actionButtonsRow"], div[class*="asinDetailActionsRow"]',
+                    name: 'buttons',
+                    children: [
+                      {
+                        selector: 'input[name="submit.addToCart"], span.add-to-cart-button input',
+                        add_text: true,
+                        name: 'add_to_cart',
+                        clickable: true
+                      },
+                      {
+                        selector: 'span[class*="seeAllOffers"]',
+                        add_text: true,
+                        name: 'from_text',
+                        clickable: true
+                      },
+                      {
+                        selector: 'div[id^="feedbackButtonSection"] input',
+                        add_text: true,
+                        name: 'remove_this_item',
+                        clickable: true
+                      },
+                      fresh_quantity_selector
+                    ]
+                  }
+                ],
+                generate_metadata: (em) => {
+                  const asinEm = em.closest('div[data-asin]')
+                  const asin = asinEm?.getAttribute('data-asin')
+                  const priceEm = em.querySelector(
+                    'span[class*="priceBlockWithMarginRight"] span.a-price > span:not(.a-offscreen)'
+                  )
+                  const price = priceEm?.innerText?.replace(/[\n]/g, '')
+                  const titleEm = em.parentElement?.parentElement?.querySelector(
+                    "a[id^='title'] span.a-truncate-full"
+                  )
+                  const title = titleEm?.innerText
+                  const urlEm = em.parentElement?.parentElement?.querySelector("a[id^='title']")
+                  const url = urlEm?.getAttribute('href')
+                  const deliveryEm = em.querySelector('#udmDeliveryMessageComponent')
+                  const delivery = deliveryEm?.innerText.replace(/[\n]/g, ' ')
+                  const quantityEm = em.querySelector('div[name="ax-qs"] div[role="spinbutton"]')
+                  const quantity = quantityEm?.innerText || '1'
+                  return {
+                    name: 'active_items_opened_purchase',
+                    data: { title, asin, price, url, delivery, quantity }
                   }
                 }
               }
