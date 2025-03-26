@@ -361,7 +361,7 @@ body {
   overflow-y: auto;
   font-size: 12px;
   background-color: #eef8fb;
-  margin: 0 0;
+  margin: 5px 0;
   padding: 0 0px;
   border-radius: 3px;
   width: 100%;
