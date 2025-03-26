@@ -175,7 +175,7 @@ def sessionize_interactions(user_name):
 
     print(f"user_name: {user_name}, processed_time: {datetime.now(timezone.utc).isoformat()},number_of_sessions: {session_num}")
 
-    
+
 
 if __name__ == "__main__":
     from extract_purchase_info_db import get_username_from_args
