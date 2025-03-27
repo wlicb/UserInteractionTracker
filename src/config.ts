@@ -1,6 +1,6 @@
 export const popup_probability = 0.15
 export const popup_scroll_probability = 0.05
-export const popup_click_probability = 0.2
+export const popup_click_probability = 0.1
 export const popup_navigation_probability = 0.15
 export const popup_tabActivate_probability = 0.15
 export const folder_name = `user_interaction_data` // the folder name to save the data

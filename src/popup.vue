@@ -91,8 +91,8 @@ const updateRecordingStatus = async () => {
     const isExcluded = await shouldExclude(url)
 
     recordingStatus.value = !isExcluded
-      ? '<img src="icon.png" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle;" /> Actions on this page will <b>be recorded</b>'
-      : '<img src="inactive_icon.png" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle;" /> Actions on this page will <b>not be recorded</b>'
+      ? '<img src="icon.png" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle;" /> This page is currently <b>being recorded</b>'
+      : '<img src="inactive_icon.png" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle;" /> This page is <b>not being recorded</b>'
   } catch (error) {
     console.error('Error updating recording status:', error)
   }
@@ -240,7 +240,7 @@ onMounted(async () => {
     </div>
     <div style="display: flex; flex-direction: column">
       <div style="display: flex; align-items: center" class="output-container">
-        <span style="width: 90px; margin-right: 10px; text-align: left">Reasons</span>
+        <span style="width: 100px; margin-right: 10px; text-align: left">Reasons</span>
         <NProgress
           type="line"
           :percentage="(weekInfo.reasonProgress / 2) * 100"
@@ -250,7 +250,7 @@ onMounted(async () => {
         <span style="margin-left: 10px; width: 40px">{{ weekInfo.reasonProgress }}/2</span>
       </div>
       <div style="display: flex; align-items: center" class="output-container">
-        <span style="width: 90px; margin-right: 10px; text-align: left">Purchases</span>
+        <span style="width: 100px; margin-right: 10px; text-align: left">Purchases</span>
         <NProgress
           type="line"
           :percentage="(weekInfo.purchaseProgress / 1) * 100"
@@ -264,6 +264,14 @@ onMounted(async () => {
 </template>
 
 <style lang="scss">
+/* 添加app元素的样式 */
+#app {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 5px;
+}
+
 body {
   width: 320px;
   font-family: Arial, sans-serif;
@@ -278,6 +286,8 @@ body {
 .popup-container {
   width: 100%;
   border-radius: 3px;
+  padding: 0 15px;
+  box-sizing: border-box;
 }
 
 .input-container {
@@ -292,7 +302,7 @@ body {
   background-color: transparent;
   color: #333;
   vertical-align: middle;
-
+  text-align: center;
   &:empty {
     display: none;
   }

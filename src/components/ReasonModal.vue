@@ -46,6 +46,9 @@ function reset() {
 </script>
 
 <style scoped lang="scss">
+// @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+// @import url('https://fonts.googleapis.com/css2?family=Comic+Neue&display=swap');
+// @import url('https://fonts.googleapis.com/css2?family=Rubik&display=swap');
 .reason-modal-overlay {
   position: fixed;
   top: 0;
@@ -61,7 +64,7 @@ function reset() {
 
 .reason-modal-content {
   background: white;
-  padding: 20px;
+  padding: 20px 20px 10px 20px;
   border-radius: 8px;
   width: 400px;
 }
@@ -86,6 +89,7 @@ function reset() {
 }
 
 .reason-textarea {
+  margin-top: 10px;
   width: 100%;
   height: 100px;
   :deep(textarea) {
@@ -107,12 +111,31 @@ function reset() {
   gap: 10px;
   margin-top: 10px;
 }
+
+.equal-width-button {
+  min-width: 80px; /* Adjust this value as needed */
+}
+#reason-skip {
+  background-color: #f5f5f5;
+  color: #adabab;
+  &:hover {
+    background-color: #e7e6e6;
+  }
+}
+:deep(.bold-question) {
+  font-weight: bold;
+}
+
+:deep(.question) {
+  font-size: 18px;
+  font-weight: 500;
+}
 </style>
 
 <template>
   <div v-if="visible" id="reason-modal" class="reason-modal-overlay">
     <div class="reason-modal-content">
-      <h3 v-html="question"></h3>
+      <span class="question" v-html="question"></span>
       <NInput
         type="textarea"
         id="reason-input"
@@ -124,8 +147,24 @@ function reset() {
         Please enter a valid reason.
       </div>
       <div class="button-container">
-        <NButton strong secondary type="info" id="reason-skip" @click="skip">Skip</NButton>
-        <NButton strong secondary type="info" id="reason-submit" @click="submit">Submit</NButton>
+        <NButton
+          strong
+          secondary
+          type="tertiary"
+          id="reason-skip"
+          @click="skip"
+          class="equal-width-button"
+          >Skip</NButton
+        >
+        <NButton
+          strong
+          secondary
+          type="info"
+          id="reason-submit"
+          @click="submit"
+          class="equal-width-button"
+          >Submit</NButton
+        >
       </div>
     </div>
   </div>
