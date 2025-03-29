@@ -56,7 +56,7 @@ function reset() {
 
 .reason-modal-content {
   background: white;
-  padding: 20px;
+  padding: 20px 20px 10px 20px;
   border-radius: 8px;
   width: 400px;
 }
@@ -81,6 +81,7 @@ function reset() {
 }
 
 .reason-textarea {
+  margin-top: 10px;
   width: 100%;
   height: 100px;
   :deep(textarea) {

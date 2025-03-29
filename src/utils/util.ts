@@ -403,7 +403,7 @@ export function getCustomQuestion(
 
 export function getHighLevelQuestion(): { question: string; placeholder: string } {
   const question =
-    '<span class="highlight-question-blue">High-level Intention</span>: <span class="bold-question">What do you want to do in this shopping session?</span>'
+    '<span class="highlight-question-blue">General Goal</span>: <span class="bold-question">What brings you to Amazon right now?</span>'
   const placeholder =
     'E.g., I want to buy a laptop for the lab;\nI just want to explore gift options for my boyfriend;\nI am just randomly browsing ...'
   return { question, placeholder }
