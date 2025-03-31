@@ -107,6 +107,7 @@ const handleConfirmUserId = () => {
   showDownloadButtons.value = userId.value.includes(data_collector_secret_id)
   updateRecordingStatus()
   displayInteractionStats(userId.value)
+  fetchCurrentWeekInfo(userId.value)
 }
 
 const handleEditUserId = () => {
