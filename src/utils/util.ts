@@ -306,7 +306,7 @@ export function getCustomQuestion(
         data?.target?.id === 'buy-now-button'
       ) {
         question =
-          'You <span class="highlight-question">clicked</span> on the <span class="highlight-question-blue">"buy now"</span> button. <span class="bold-question">What do you like about this particular product?</span>'
+          'You <span class="highlight-question">clicked</span> on the <span class="highlight-question-blue">"buy now"</span> button. <span class="bold-question">Why did you do that?</span>'
         placeholder =
           'E.g., I like some product features;\nI want to get a discount by buying now;\nI have used this product before ...'
       } else if (
@@ -318,12 +318,12 @@ export function getCustomQuestion(
         question =
           'You <span class="highlight-question">clicked</span> on the <span class="highlight-question-blue">"add to cart"</span> button. <span class="bold-question">Why did you add this item to your cart?</span>'
         placeholder =
-          'E.g., I want to buy this product;\nI want to compare with other options;\nI want to save for future ...'
+          'E.g., I want to buy this product;\nI want to compare with other options;\nI want to save it for the future ...'
       } else if (data['data-semantic-id'] === 'nav_bar.search_button') {
         question =
           'You <span class="highlight-question">clicked</span> on the <span class="highlight-question-blue">"search"</span> button. <span class="bold-question">Why did you make this search?</span>'
         placeholder =
-          'E.g., I want to search for a gift for my son;\nNot satisfied with the previous search term ...'
+          'E.g., I want to search for a gift for my son;\nI am adjusting the search term to find a better option ...'
       } else if (
         data['data-semantic-id']?.startsWith('refinements.') ||
         data['data-semantic-id']?.startsWith('filters.') ||
@@ -331,11 +331,12 @@ export function getCustomQuestion(
       ) {
         question =
           'You <span class="highlight-question">clicked</span> on this <span class="highlight-question-blue">filter</span>. <span class="bold-question">Why did you use this filter?</span>'
-        placeholder = 'E.g., I have a budget constraint;\nI like specific brand ...'
+        placeholder = 'E.g., I have a budget constraint;\nI like a specific brand ...'
       } else if (data['data-semantic-id']?.startsWith('product_options.')) {
         question =
           'You <span class="highlight-question">clicked</span> on this <span class="highlight-question-blue">product option</span>. <span class="bold-question">Why did you click this product option?</span>'
-        placeholder = 'E.g., I want to check the detail of the other options;\nI like this look ...'
+        placeholder =
+          'E.g., I want to check the details of the other options;\nI like this look ...'
       } else if (data['data-semantic-id']?.endsWith('check_out')) {
         question =
           'You <span class="highlight-question">clicked</span> on the <span class="highlight-question-blue">"checkout"</span> button. <span class="bold-question">What made you decide to checkout?</span>'
@@ -358,7 +359,7 @@ export function getCustomQuestion(
         question =
           'You <span class="highlight-question">clicked</span> on this <span class="highlight-question-blue">product</span>. <span class="bold-question">Why did you click on this product?</span>'
         placeholder =
-          'E.g., This product is on sale;\nI like the look of this product;\nI want to compare with other options ...'
+          'E.g., This product is on sale;\nI like the look of this product;\nI want to compare it with other options ...'
       } else {
         question =
           'We noticed that you just had a <span class="highlight-question">click</span> action. <span class="bold-question">Why did you do that?</span>'
