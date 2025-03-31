@@ -619,21 +619,21 @@ chrome.webNavigation.onDOMContentLoaded.addListener(async (details) => {
     const timestamp = new Date().toISOString()
     const uuid = uuidv4()
     let newSession = false
-    if (navigationType === 'new') {
-      const result = await chrome.storage.local.get({ lastNewNavigationTimestamp: '' })
-      await chrome.storage.local.set({ lastNewNavigationTimestamp: timestamp })
-      const lastNewNavTime = result.lastNewNavigationTimestamp
-      if (lastNewNavTime) {
-        const timeDiff = new Date(timestamp).getTime() - new Date(lastNewNavTime).getTime()
-        if (timeDiff > new_session_interval) {
-          console.log('Starting new session due to time interval:', timeDiff)
-          newSession = true
-        }
-      } else {
-        console.log('no lastNewNavTime')
-        newSession = true
-      }
-    }
+    // if (navigationType === 'new') {
+    //   const result = await chrome.storage.local.get({ lastNewNavigationTimestamp: '' })
+    //   await chrome.storage.local.set({ lastNewNavigationTimestamp: timestamp })
+    //   const lastNewNavTime = result.lastNewNavigationTimestamp
+    //   if (lastNewNavTime) {
+    //     const timeDiff = new Date(timestamp).getTime() - new Date(lastNewNavTime).getTime()
+    //     if (timeDiff > new_session_interval) {
+    //       console.log('Starting new session due to time interval:', timeDiff)
+    //       newSession = true
+    //     }
+    //   } else {
+    //     console.log('no lastNewNavTime')
+    //     newSession = true
+    //   }
+    // }
 
     chrome.tabs.sendMessage(details.tabId, { action: 'getHTML' }, async (response) => {
       const htmlContent = response?.html
