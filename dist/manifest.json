@@ -1,5 +1,5 @@
 {
-  "manifest_version": 3,
+  "manifest_version": 3.1,
   "name": "ShoppingFlow: Research Tool for Online Shopping",
   "version": "3.0",
   "description": "Record your clicks, scrolls, and navigation on Amazon websites to support research aimed at improving shopping experiences.",
