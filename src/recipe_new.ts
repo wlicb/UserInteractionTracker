@@ -685,7 +685,10 @@ export const carousel_card = {
         'a[aria-describedby*="sp_detail_thematic-deals"]:not(:has(span.a-price)), a[aria-describedby*="sp_detail_thematic-recent_history"]:not(:has(span.a-price))',
       add_text: true,
       name: 'from_text',
-      clickable: true
+      clickable: true,
+      text_js: (em) => {
+        return em.querySelector('i')?.getAttribute('aria-label') || em.innerText || ''
+      }
     },
     {
       selector: 'div[class*="sc-price"]',
@@ -756,7 +759,12 @@ export const carousel_card = {
       ?.getAttribute('data-adfeedbackdetails')
     let asinJSON
     if (asinJSONString !== undefined) {
-      asinJSON = JSON.parse(asinJSONString)
+      try {
+        asinJSON = JSON.parse(asinJSONString)
+      } catch (e) {
+        console.log('data-adfeedbackdetails is not a valid JSON.')
+        asinJSON = null
+      }
     }
     const asinEm = em.querySelector(
       'div[id*="sc-turbo-container"], div[data-asin], input[data-asin], span[data-csa-c-item-id]'
@@ -2549,8 +2557,15 @@ export const recipes = [
                             if (formEm) {
                               const prop = formEm.getAttribute('data-slider-props')
                               if (prop) {
-                                const steps = JSON.parse(prop).stepLabels
-                                return steps
+                                try {
+                                  const steps = JSON.parse(prop).stepLabels
+                                  return steps
+                                } catch (e) {
+                                  console.log(
+                                    'price min value data-slider-props is not a valid JSON.'
+                                  )
+                                  return ''
+                                }
                               }
                             }
                             return ''
@@ -2562,8 +2577,15 @@ export const recipes = [
                               if (formEm) {
                                 const prop = formEm.getAttribute('data-slider-props')
                                 if (prop) {
-                                  const steps = JSON.parse(prop).stepLabels
-                                  return steps[value]
+                                  try {
+                                    const steps = JSON.parse(prop).stepLabels
+                                    return steps[value]
+                                  } catch (e) {
+                                    console.log(
+                                      'price min value data-slider-props is not a valid JSON.'
+                                    )
+                                    return ''
+                                  }
                                 }
                               }
                             }
@@ -2573,7 +2595,7 @@ export const recipes = [
                       },
                       {
                         selector: 'div.s-slider-container div.s-upper-bound input',
-                        name: 'price_min_value',
+                        name: 'price_max_value',
                         add_text: true,
                         clickable: true,
                         keep_attr: ['min', 'max', 'step'],
@@ -2583,8 +2605,15 @@ export const recipes = [
                             if (formEm) {
                               const prop = formEm.getAttribute('data-slider-props')
                               if (prop) {
-                                const steps = JSON.parse(prop).stepLabels
-                                return steps
+                                try {
+                                  const steps = JSON.parse(prop).stepLabels
+                                  return steps
+                                } catch (e) {
+                                  console.log(
+                                    'price max value data-slider-props is not a valid JSON.'
+                                  )
+                                  return ''
+                                }
                               }
                             }
                             return ''
@@ -2596,8 +2625,15 @@ export const recipes = [
                               if (formEm) {
                                 const prop = formEm.getAttribute('data-slider-props')
                                 if (prop) {
-                                  const steps = JSON.parse(prop).stepLabels
-                                  return steps[value]
+                                  try {
+                                    const steps = JSON.parse(prop).stepLabels
+                                    return steps[value]
+                                  } catch (e) {
+                                    console.log(
+                                      'price min value data-slider-props is not a valid JSON.'
+                                    )
+                                    return ''
+                                  }
                                 }
                               }
                             }
@@ -2812,8 +2848,13 @@ export const recipes = [
                         if (formEm) {
                           const prop = formEm.getAttribute('data-slider-props')
                           if (prop) {
-                            const steps = JSON.parse(prop).stepLabels
-                            return steps
+                            try {
+                              const steps = JSON.parse(prop).stepLabels
+                              return steps
+                            } catch (e) {
+                              console.log('price min value data-slider-props is not a valid JSON.')
+                              return ''
+                            }
                           }
                         }
                         return ''
@@ -2825,8 +2866,15 @@ export const recipes = [
                           if (formEm) {
                             const prop = formEm.getAttribute('data-slider-props')
                             if (prop) {
-                              const steps = JSON.parse(prop).stepLabels
-                              return steps[value]
+                              try {
+                                const steps = JSON.parse(prop).stepLabels
+                                return steps[value]
+                              } catch (e) {
+                                console.log(
+                                  'price min value data-slider-props is not a valid JSON.'
+                                )
+                                return ''
+                              }
                             }
                           }
                         }
@@ -2854,8 +2902,13 @@ export const recipes = [
                         if (formEm) {
                           const prop = formEm.getAttribute('data-slider-props')
                           if (prop) {
-                            const steps = JSON.parse(prop).stepLabels
-                            return steps
+                            try {
+                              const steps = JSON.parse(prop).stepLabels
+                              return steps
+                            } catch (e) {
+                              console.log('price max value data-slider-props is not a valid JSON.')
+                              return ''
+                            }
                           }
                         }
                         return ''
@@ -2867,8 +2920,15 @@ export const recipes = [
                           if (formEm) {
                             const prop = formEm.getAttribute('data-slider-props')
                             if (prop) {
-                              const steps = JSON.parse(prop).stepLabels
-                              return steps[value]
+                              try {
+                                const steps = JSON.parse(prop).stepLabels
+                                return steps[value]
+                              } catch (e) {
+                                console.log(
+                                  'price max value data-slider-props is not a valid JSON.'
+                                )
+                                return ''
+                              }
                             }
                           }
                         }
