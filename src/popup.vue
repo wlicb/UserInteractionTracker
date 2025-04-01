@@ -241,24 +241,38 @@ onMounted(async () => {
     </div>
     <div style="display: flex; flex-direction: column">
       <div style="display: flex; align-items: center" class="output-container">
-        <span style="width: 100px; margin-right: 10px; text-align: left">Reasons</span>
+        <span
+          style="width: 100px; margin-right: 10px; text-align: left"
+          class="info-label"
+          title="Takes 10 seconds to update"
+          >Reasons</span
+        >
         <NProgress
           type="line"
           :percentage="(weekInfo.reasonProgress / 2) * 100"
           style="flex-grow: 1"
           :show-indicator="false"
         />
-        <span style="margin-left: 10px; width: 40px">{{ weekInfo.reasonProgress }}/2</span>
+        <span style="margin-left: 10px; width: 40px">
+          {{ weekInfo.reasonProgress }}{{ weekInfo.reasonProgress <= 2 ? '/2' : '' }}
+        </span>
       </div>
       <div style="display: flex; align-items: center" class="output-container">
-        <span style="width: 100px; margin-right: 10px; text-align: left">Purchases</span>
+        <span
+          style="width: 100px; margin-right: 10px; text-align: left"
+          class="info-label"
+          title="Takes 10 minutes to update"
+          >Purchases</span
+        >
         <NProgress
           type="line"
           :percentage="(weekInfo.purchaseProgress / 1) * 100"
           style="flex-grow: 1"
           :show-indicator="false"
         />
-        <span style="margin-left: 10px; width: 40px">{{ weekInfo.purchaseProgress }}/1</span>
+        <span style="margin-left: 10px; width: 40px">
+          {{ weekInfo.purchaseProgress }}{{ weekInfo.purchaseProgress <= 1 ? '/1' : '' }}
+        </span>
       </div>
     </div>
   </div>
@@ -401,6 +415,11 @@ body {
 
 .output-item {
   margin: 0 0;
+}
+
+.info-label {
+  position: relative;
+  cursor: help;
 }
 
 h3 {
