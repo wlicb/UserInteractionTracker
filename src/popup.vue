@@ -8,7 +8,7 @@ import {
   current_week_info_url
 } from './config'
 import { shouldExclude } from './utils/util'
-import { NButton, NInput, NDivider, NProgress } from 'naive-ui'
+import { NButton, NInput, NDivider, NProgress, NTooltip } from 'naive-ui'
 // State management with refs
 const count = ref(0)
 const userId = ref('')
@@ -242,11 +242,23 @@ onMounted(async () => {
     <div style="display: flex; flex-direction: column">
       <div style="display: flex; align-items: center" class="output-container">
         <span
-          style="width: 100px; margin-right: 10px; text-align: left"
+          style="
+            width: 120px;
+            margin-right: 10px;
+            text-align: left;
+            display: flex;
+            align-items: center;
+          "
           class="info-label"
-          title="Takes 10 seconds to update"
-          >Reasons</span
         >
+          <span style="width: 65px">Reasons</span>
+          <n-tooltip trigger="hover" placement="right" class="small-tooltip">
+            <template #trigger>
+              <span class="info-icon">i</span>
+            </template>
+            <span class="small-tooltip-content">Takes 10 seconds to update</span>
+          </n-tooltip>
+        </span>
         <NProgress
           type="line"
           :percentage="(weekInfo.reasonProgress / 2) * 100"
@@ -259,11 +271,23 @@ onMounted(async () => {
       </div>
       <div style="display: flex; align-items: center" class="output-container">
         <span
-          style="width: 100px; margin-right: 10px; text-align: left"
+          style="
+            width: 120px;
+            margin-right: 10px;
+            text-align: left;
+            display: flex;
+            align-items: center;
+          "
           class="info-label"
-          title="Takes 10 minutes to update"
-          >Purchases</span
         >
+          <span style="width: 65px">Purchases</span>
+          <n-tooltip trigger="hover" placement="right" class="small-tooltip">
+            <template #trigger>
+              <span class="info-icon">i</span>
+            </template>
+            <span class="small-tooltip-content">Takes 10 minutes to update</span>
+          </n-tooltip>
+        </span>
         <NProgress
           type="line"
           :percentage="(weekInfo.purchaseProgress / 1) * 100"
@@ -279,7 +303,6 @@ onMounted(async () => {
 </template>
 
 <style lang="scss">
-/* 添加app元素的样式 */
 #app {
   width: 100%;
   box-sizing: border-box;
@@ -419,7 +442,35 @@ body {
 
 .info-label {
   position: relative;
+}
+
+.info-icon {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  line-height: 12px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  background-color: #78c2f4;
+  border-radius: 50%;
+  margin-left: 4px;
   cursor: help;
+}
+
+:deep(.small-tooltip .n-tooltip) {
+  padding: 4px 8px;
+  max-width: 150px;
+}
+
+:deep(.small-tooltip .n-tooltip-arrow) {
+  transform: scale(0.8);
+}
+
+.small-tooltip-content {
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 h3 {

@@ -142,6 +142,7 @@ function reset() {
         v-model:value="reason_text"
         :placeholder="placeholder"
         class="reason-textarea"
+        @keydown.enter.prevent="submit"
       />
       <div id="error-message" class="error-message" v-show="showError">
         Please enter a valid reason.
