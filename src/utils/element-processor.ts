@@ -174,7 +174,8 @@ export function processElement(
     'role',
     'aria-label',
     'aria-hidden',
-    'aria-selected'
+    'aria-selected',
+    'href'
   ]
   attrsToCopy.forEach((attr) => {
     const value = element.getAttribute(attr)
