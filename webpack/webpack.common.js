@@ -5,7 +5,7 @@ const srcDir = path.join(__dirname, '..', 'src')
 const { VueLoaderPlugin } = require('vue-loader')
 
 module.exports = {
-  devtool: 'inline-source-map',
+  // devtool: 'inline-source-map',
   entry: {
     popup: path.join(srcDir, 'popup.ts'),
     background: path.join(srcDir, 'background.ts'),
