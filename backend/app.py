@@ -13,6 +13,7 @@ from botocore.exceptions import NoCredentialsError
 from pymongo.errors import BulkWriteError, DuplicateKeyError
 from data_collection_monitor import analyze_user_data
 import config
+from functools import wraps
 
 client = MongoClient(config.MONGO_URI)
 db = client[config.DATABASE_NAME]
@@ -319,11 +320,16 @@ def get_rationale_by_date(user_name, date=None):
     start_of_period = (date - timedelta(days=6)).strftime("%Y-%m-%dT00:00:00.000Z")
 
     n_documents_date = rationale_collection.count_documents(
-        {"user_name": user_name, "timestamp": {"$gte": start_of_period, "$lt": end_of_period}}
+        {
+            "user_name": user_name, 
+            "timestamp": {"$gte": start_of_period, "$lt": end_of_period},
+            "eventType": {"$ne": "new_session"}
+        }
     )
     n_documents = rationale_collection.count_documents(
         {
             "user_name": user_name,
+            "eventType": {"$ne": "new_session"}
         }
     )
     return {"on_date": n_documents_date, "all_time": n_documents}
@@ -409,7 +415,31 @@ def check_user_id():
         app.logger.info(f"Created new user with user_name: {user_id}")
         return jsonify({"valid": True}), 200
 
+def api_key_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Get the API key from the Authorization header
+        auth_header = request.headers.get('Authorization')
+        
+        if not auth_header:
+            return jsonify({"error": "Authorization header is missing"}), 401
+        
+        # Expected format: "Bearer API_KEY"
+        parts = auth_header.split()
+        if len(parts) != 2 or parts[0].lower() != 'bearer':
+            return jsonify({"error": "Authorization header must be in format: Bearer API_KEY"}), 401
+        
+        api_key = parts[1]
+        
+        # Check if the API key is in the allowed list
+        if api_key not in config.API_KEYS:
+            return jsonify({"error": "Invalid API key"}), 403
+            
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route("/api/monitor_user_data", methods=["GET"])
+@api_key_required
 def monitor_user_data():
     user_name = request.args.get("user_id")
     date = request.args.get("date")
@@ -422,6 +452,7 @@ def monitor_user_data():
     return jsonify(analyze_user_data(user_name, date)), 200
 
 @app.route("/api/all_user_list", methods=["GET"])
+@api_key_required
 def all_user_list():
     user_list = user_collection.find({"user_name": {"$ne": ""}}, {"_id": 0, "user_name": 1})
     return jsonify(list(user_list)), 200
@@ -463,7 +494,8 @@ def current_week_info():
     
     rationale_count = rationale_collection.count_documents({
         "user_name": user_name,
-        "timestamp": {"$gte": week_start_timestamp, "$lt": week_end_timestamp}
+        "timestamp": {"$gte": week_start_timestamp, "$lt": week_end_timestamp},
+        "eventType": {"$ne": "new_session"}
     })
     
     order_count = order_processed_collection.count_documents({
