@@ -167,7 +167,7 @@ export function hashCode(str: string) {
     hash = (hash << 5) - hash + str.charCodeAt(i)
     hash |= 0
   }
-  console.log('Hash value before return:', hash)
+  // console.log('Hash value before return:', hash)
   return hash.toString()
 }
 
@@ -259,7 +259,7 @@ export function processRecipe(
   document = globalThis.document,
   window = globalThis.window
 ) {
-  console.log('start process recipe')
+  // console.log('start process recipe')
   try {
     const recipe = selectRecipe(url, document, window)
     let rootElement

@@ -232,7 +232,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         const saveData = async () => {
           console.log('saveData ', message.data.eventType)
-          console.log(fetchUrl)
+          // console.log(fetchUrl)
           if (fetchUrl !== '') {
             fetchCartInfo(fetchUrl).then(async (cartInfo) => {
               const cartdata = {
@@ -397,7 +397,7 @@ function hashCode(str: string) {
     hash = (hash << 5) - hash + str.charCodeAt(i)
     hash |= 0
   }
-  console.log('Hash value before return:', hash)
+  // console.log('Hash value before return:', hash)
   return hash.toString()
 }
 
@@ -508,7 +508,7 @@ const sendPopup = async (
       break
   }
   if (Math.random() < probability && tabId) {
-    console.log('send popup')
+    // console.log('send popup')
     try {
       if (eventType === 'scroll') {
         lastScrollPopupTime = Date.now()
@@ -519,7 +519,7 @@ const sendPopup = async (
         question: question,
         placeholder: placeholder
       })
-      console.log('reason', reason)
+      // console.log('reason', reason)
       if (reason && reason.input !== null && reason.success !== false) {
         const newitem = {
           uuid: uuid,
@@ -546,7 +546,7 @@ const sendNewSessionPopup = async (tabId: number, timestamp: string, uuid: strin
       question: question,
       placeholder: placeholder
     })
-    console.log('reason', reason)
+    // console.log('reason', reason)
     if (reason && reason.input !== null && reason.success !== false) {
       const newitem = {
         uuid: uuid,
@@ -609,12 +609,12 @@ chrome.tabs.onActivated.addListener(async (activeInfo) => {
 
 chrome.webNavigation.onDOMContentLoaded.addListener(async (details) => {
   if (details.frameId !== 0) return
-  console.log('webNavigation onDOMContentLoaded event triggered:', details)
+  // console.log('webNavigation onDOMContentLoaded event triggered:', details)
   update_icon(details.url)
 
   if (!(await shouldExclude(details.url))) {
     const navigationType = analyzeNavigation(details.tabId, details.url)
-    console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`)
+    // console.log(`Navigation type: ${navigationType} for tab ${details.tabId} to ${details.url}`)
 
     const timestamp = new Date().toISOString()
     const uuid = uuidv4()

@@ -39,7 +39,8 @@ const work = () => {
       timestamp: string,
       selector: string,
       url: string,
-      uuid: string
+      uuid: string,
+      event?: MouseEvent
     ) {
       function findClickableParent(
         element: HTMLElement | null,
@@ -114,6 +115,16 @@ const work = () => {
           width: window.innerWidth,
           height: window.innerHeight
         },
+        mousePosition: event
+          ? {
+              clientX: event.clientX,
+              clientY: event.clientY,
+              pageX: event.pageX,
+              pageY: event.pageY,
+              screenX: event.screenX,
+              screenY: event.screenY
+            }
+          : null,
         htmlContent: document.documentElement.outerHTML,
         simplifiedHTML: simplifiedHTML
       }
@@ -292,7 +303,8 @@ const work = () => {
                 timestamp,
                 selector,
                 window.location.href,
-                uuid
+                uuid,
+                event
               )
 
               window.postMessage(
@@ -386,7 +398,8 @@ const work = () => {
                 maxNumberOfPathChecks: 0
               }),
               window.location.href,
-              uuid
+              uuid,
+              event
             )
             // Request screenshot
             window.postMessage(
@@ -537,7 +550,8 @@ const work = () => {
                   maxNumberOfPathChecks: 0
                 }),
                 window.location.href,
-                uuid
+                uuid,
+                event
               )
               window.postMessage({ type: 'SAVE_INTERACTION_DATA', data: data, uuid: uuid }, '*')
               const interactionComplete = new Promise((resolve, reject) => {

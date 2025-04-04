@@ -204,7 +204,7 @@ const work = () => {
   // Function to handle the first scroll event in a scroll sequence
   async function handleFirstScroll(scrollUuid: string, scrollTimestamp: string) {
     try {
-      console.log('First scroll event')
+      // console.log('First scroll event')
       captureScreenshot(scrollTimestamp, scrollUuid)
       processRecipe()
     } catch (error) {
@@ -215,7 +215,7 @@ const work = () => {
   // Function to handle when scrolling stops (no scroll events within the threshold)
   async function handleScrollStop(scrollUuid: string, scrollTimestamp: string) {
     try {
-      console.log('scroll stop uuid', scrollUuid)
+      // console.log('scroll stop uuid', scrollUuid)
       const currentScrollTop = window.scrollY || document.documentElement.scrollTop
       accumulatedScrollDistance += currentScrollTop - scrollStartTop
 
@@ -266,7 +266,7 @@ const work = () => {
       event.target !== document &&
       event.target !== document.documentElement
     ) {
-      console.log('Scroll event ignored from a nested scrollable container')
+      // console.log('Scroll event ignored from a nested scrollable container')
       return
     }
 
@@ -338,7 +338,7 @@ const work = () => {
         })
       }
       if (message.action === 'show_popup') {
-        console.log('show_popup', message)
+        // console.log('show_popup', message)
         // assert there isn't already a popup
         if (document.getElementById('reason-modal')) {
           sendResponse({ success: false, message: 'popup already exists' })
