@@ -1,0 +1,37 @@
+analysis_period:
+  2025-03-30 to 2025-04-06
+all_interactions:
+  count: 5414
+  mean: 3.276005171776875
+  median: 1.487
+  min: 0.003
+  max: 48.66
+  std: 5.33478126972062
+full_all_interactions:
+  count: 5609
+  mean: 14.114672460925892
+  median: 0.025833333333333333
+  min: 5e-05
+  max: 5839.745133333333
+  std: 189.58790691318188
+consecutive_scrolls:
+  count: 3515
+  mean: 3.5659220483641536
+  median: 1.425
+  min: 0.409
+  max: 49.53
+  std: 5.82892863898835
+before_click_operations:
+  count: 1273
+  mean: 4.237890023566378
+  median: 2.004
+  min: 0.008
+  max: 49.505
+  std: 6.41705580532409
+after_click_operations:
+  count: 1249
+  mean: 3.734152121697358
+  median: 1.792
+  min: 0.017
+  max: 48.493
+  std: 6.053242549408298
