@@ -12,7 +12,7 @@ interaction_collection = db[config.INTERACTION_COLLECTION_NAME]
 session_split_collection = db[config.SESSION_SPLIT_COLLECTION_NAME]
 order_processed_collection = db[config.ORDER_PROCESSED_COLLECTION_NAME]
 
-SESSION_TIMEOUT = 42 # 42 minutes
+SESSION_TIMEOUT = 78 # 78 minutes
 
 
 
@@ -43,50 +43,7 @@ def is_purchase_event(interaction):
     return False
 
 
-def get_purchased_items_by_uuid(uuid_value):
 
-    order_doc = order_processed_collection.find_one({"uuid": uuid_value})
-    if not order_doc or "items" not in order_doc:
-        return []
-    return order_doc["items"]
-
-def fuzzy_match(search_term, product_name):
-    for item in search_term.split():
-        if item in product_name:
-            return True
-    return False
-
-def find_related_interactions(purchased_items, reference_time, user_name):
-    if not purchased_items:
-        return []
-
-    item_names = [item.get("title", "") for item in purchased_items]
-
-    time_range = reference_time - timedelta(hours=24)
-
-    interactions_cursor = interaction_collection.find({
-        "timestamp": {"$gte": time_range.isoformat()},
-        "user_name": user_name
-    })
-
-    matched_interaction_ids = []
-    for itx in interactions_cursor:
-        PageMeta = itx.get("pageMeta", {})
-        if isinstance(PageMeta, dict):
-            search_terms = PageMeta.get('search_term', [])
-            if search_terms:
-                search_term = search_terms[0]['term']
-            else:
-                search_term = ''
-        else:
-            search_term = ''
-
-        for item_name in item_names:
-            if fuzzy_match(search_term.lower(),item_name.lower()):
-                matched_interaction_ids.append(itx["uuid"])
-                break
-
-    return matched_interaction_ids
 
 
 def sessionize_interactions(user_name,save_to_db=False):
@@ -141,15 +98,9 @@ def sessionize_interactions(user_name,save_to_db=False):
                 event_uuid = interaction.get("uuid",'')
                 current_session["uuid_list"].append(event_uuid)
                 if event_uuid:
-                    purchased_items = get_purchased_items_by_uuid(event_uuid)
-                    related_interactions = find_related_interactions(purchased_items, timestamp, user_name)
-                    if len(related_interactions) > 0:
-                        print(f"related_interactions: {related_interactions}")
-                    current_session["uuid_list"].extend(related_interactions)
                     if current_session["start_time"] is not None:
-                        current_session["end_time"] = last_interaction_time
+                        current_session["end_time"] = timestamp
                         session_name = f"'{current_session['start_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')}'_'{current_session['end_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')}'"
-                        # print(session_name)
                         if save_to_db:
                             session_split_collection.insert_one({
                             "user_name": user_name,
@@ -173,6 +124,7 @@ def sessionize_interactions(user_name,save_to_db=False):
                         "end_time": None,
                         "uuid_list": []
                     }
+                    continue
         if current_session["start_time"] is None:
             current_session["start_time"] = timestamp
 

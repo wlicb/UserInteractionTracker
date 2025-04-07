@@ -12,7 +12,7 @@ interaction_collection = db[config.INTERACTION_COLLECTION_NAME]
 session_split_collection = db[config.SESSION_SPLIT_COLLECTION_NAME]
 order_processed_collection = db[config.ORDER_PROCESSED_COLLECTION_NAME]
 
-SESSION_TIMEOUT = 42 # 42 minutes
+SESSION_TIMEOUT = config.SESSION_TIMEOUT
 
 
 
@@ -89,7 +89,7 @@ def find_related_interactions(purchased_items, reference_time, user_name):
     return matched_interaction_ids
 
 
-def sessionize_interactions(user_name,save_to_db=False):
+def sessionize_interactions(user_name):
     session_num=0
     interactions = list(interaction_collection.find({"user_name": user_name}).sort('timestamp', 1))
     current_session = {
@@ -114,22 +114,13 @@ def sessionize_interactions(user_name,save_to_db=False):
                     current_session["end_time"] = last_interaction_time
                     session_name = f"'{current_session['start_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')}'_'{current_session['end_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')}'"
                     # print(session_name)
-                    if save_to_db:
-                        session_split_collection.insert_one({
-                            "user_name": user_name,
-                            "session_name": session_name,
+                    session_split_collection.insert_one({
+                        "user_name": user_name,
+                        "session_name": session_name,
                         "start_time": current_session["start_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                         "end_time": current_session["end_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                            "uuid_list": current_session["uuid_list"],
-                        })
-                    else:
-                        print({
-                            "user_name": user_name,
-                            "session_name": session_name,
-                            "start_time": current_session["start_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                            "end_time": current_session["end_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                            "uuid_list_length": len(current_session["uuid_list"]),
-                        })
+                        "uuid_list": current_session["uuid_list"],
+                    })
                     session_num+=1
                 current_session = {
                     "start_time": None,
@@ -143,30 +134,18 @@ def sessionize_interactions(user_name,save_to_db=False):
                 if event_uuid:
                     purchased_items = get_purchased_items_by_uuid(event_uuid)
                     related_interactions = find_related_interactions(purchased_items, timestamp, user_name)
-                    if len(related_interactions) > 0:
-                        print(f"related_interactions: {related_interactions}")
                     current_session["uuid_list"].extend(related_interactions)
                     if current_session["start_time"] is not None:
                         current_session["end_time"] = last_interaction_time
                         session_name = f"'{current_session['start_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')}'_'{current_session['end_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')}'"
                         # print(session_name)
-                        if save_to_db:
-                            session_split_collection.insert_one({
+                        session_split_collection.insert_one({
                             "user_name": user_name,
                             "session_name": session_name,
                             "start_time": current_session["start_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                             "end_time": current_session["end_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                             "uuid_list": current_session["uuid_list"],
-                            })
-                        else:
-                            print({
-                            "user_name": user_name,
-                            "session_name": session_name,
-                            "start_time": current_session["start_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                            "end_time": current_session["end_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                            "uuid_list_length": len(current_session["uuid_list"]),
-                            })
-                            
+                        })
                         session_num+=1
                     current_session = {
                         "start_time": None,
@@ -185,22 +164,13 @@ def sessionize_interactions(user_name,save_to_db=False):
         current_session["end_time"] = last_interaction_time
         session_name = f"'{current_session['start_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')}'_'{current_session['end_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')}'"
         # print(session_name)
-        if save_to_db:
-            session_split_collection.insert_one({
-                "user_name": user_name,
-                "session_name": session_name,
-                "start_time": current_session["start_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                "end_time": current_session["end_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                "uuid_list": current_session["uuid_list"],
-            })
-        else:
-            print({
-                "user_name": user_name,
-                "session_name": session_name,
-                "start_time": current_session["start_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                "end_time": current_session["end_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                "uuid_list_length": len(current_session["uuid_list"]),
-            })
+        session_split_collection.insert_one({
+            "user_name": user_name,
+            "session_name": session_name,
+            "start_time": current_session["start_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            "end_time": current_session["end_time"].strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            "uuid_list": current_session["uuid_list"],
+        })
         session_num+=1
 
     print(f"user_name: {user_name}, processed_time: {datetime.now(timezone.utc).isoformat()},number_of_sessions: {session_num}")
@@ -208,18 +178,17 @@ def sessionize_interactions(user_name,save_to_db=False):
     
 
 if __name__ == "__main__":
-    # from extract_purchase_info_db import get_username_from_args
-    # user_arg = get_username_from_args()
-    # if user_arg:
-    #     # Process only the specified user if a username is passed in
-    #     distinct_users = [user_arg]
-    # else:
-    #     # Gather all distinct users from both the interaction and order collections
-    #     distinct_users = set(interaction_collection.distinct("user_name")).union(
-    #         interaction_collection.distinct("user_name")
-    #     )
+    from extract_purchase_info_db import get_username_from_args
+    user_arg = get_username_from_args()
+    if user_arg:
+        # Process only the specified user if a username is passed in
+        distinct_users = [user_arg]
+    else:
+        # Gather all distinct users from both the interaction and order collections
+        distinct_users = set(interaction_collection.distinct("user_name")).union(
+            interaction_collection.distinct("user_name")
+        )
 
-    # # For each user found, run process_order_info
-    # for user in distinct_users:
-    #     sessionize_interactions(user)
-    sessionize_interactions("dakuo",save_to_db=False)
+    # For each user found, run process_order_info
+    for user in distinct_users:
+        sessionize_interactions(user)

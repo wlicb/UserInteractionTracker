@@ -548,8 +548,10 @@ def current_week_info():
 @api_key_required
 def all_users_data():
     date = request.args.get("date")
+    past24hours =False
     if date is None:
         date = datetime.now()
+        past24hours =True
     else:
         try:
             date = datetime.strptime(date, "%Y-%m-%d")
@@ -589,8 +591,12 @@ def all_users_data():
         
         # Get today's date range
         today = date
-        start_of_day = today.strftime("%Y-%m-%dT00:00:00.000Z")
-        end_of_day = (today + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00.000Z")
+        if past24hours:
+            start_of_day = (today - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            end_of_day = today.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        else:
+            start_of_day = today.strftime("%Y-%m-%dT00:00:00.000Z")
+            end_of_day = (today + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00.000Z")
         
         # Get today's counts
         today_interactions = interaction_collection.count_documents({
