@@ -11,7 +11,7 @@ from pymongo import MongoClient
 import boto3
 from botocore.exceptions import NoCredentialsError
 from pymongo.errors import BulkWriteError, DuplicateKeyError
-from data_collection_monitor import analyze_user_data
+from post_processing.data_collection_monitor import analyze_user_data
 import config
 from functools import wraps
 
