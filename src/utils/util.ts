@@ -76,7 +76,7 @@ export function MarkViewableElements() {
 
   // Select all elements
   const allElements = document.querySelectorAll(
-    'a, button, select, [onclick], input[type="button"], input[type="submit"]'
+    'a, button, select, [onclick], input[type="button"], input[type="submit"], input[type="checkbox"]'
   )
   // Check if each element is in the viewport and add marker
   allElements.forEach((element) => {
