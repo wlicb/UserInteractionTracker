@@ -838,6 +838,103 @@ export const review_panel = {
   ]
 }
 
+export const video_panel = {
+  selector: '.vse-vwdp-video-block-wrapper',
+  name: 'product_videos',
+  children: [
+    {
+      selector: '#ive-hero-video-player',
+      name: 'active_video',
+      children: [
+        {
+          selector: 'video.vjs-tech',
+          clickable: true,
+          name: 'video'
+        },
+        {
+          selector: 'svg.ive-custom-play-button',
+          clickable: true,
+          name: 'play'
+        },
+        {
+          selector: 'button.vjs-play-control.vjs-paused',
+          clickable: true,
+          name: 'play'
+        },
+        {
+          selector: 'div.vse-fb-trigger-container',
+          clickable: true,
+          name: 'report_video'
+        },
+        {
+          selector: '#ive-vftphero-action-share',
+          clickable: true,
+          name: 'share'
+        },
+        {
+          selector: 'button.vjs-play-control.vjs-playing',
+          clickable: true,
+          name: 'pause'
+        },
+        {
+          selector: 'div.vjs-progress-control',
+          clickable: true,
+          name: 'progress_control'
+        },
+        {
+          selector: 'div.vjs-subs-caps-button',
+          clickable: true,
+          name: 'captions'
+        },
+        {
+          selector: 'button.vjs-mute-control[title="Mute"]',
+          clickable: true,
+          name: 'mute'
+        },
+        {
+          selector: 'button.vjs-mute-control[title="Unmute"]',
+          clickable: true,
+          name: 'unmute'
+        }
+      ]
+    },
+    {
+      selector: '#vse-placeholder-related-products-config',
+      name: 'related_products',
+      children: [
+        {
+          selector: 'ol',
+          name: 'product_list',
+          children: [
+            {
+              selector: 'li',
+              name: 'from_text',
+              add_text: true,
+              clickable: true,
+              text_selector: 'div.vse-product-title'
+            }
+          ]
+        },
+        carousel_prev_button,
+        carousel_next_button
+      ]
+    },
+    {
+      selector: '#vse-placeholder-related-videos ol',
+      name: 'related_videos',
+      children: [
+        {
+          selector: 'li',
+          name: 'from_text',
+          add_text: true,
+          clickable: true,
+          text_selector: '.vse-video-title-text'
+        }
+      ]
+    }
+  ]
+}
+
 export const carousel_card = {
   selector: 'li.a-carousel-card:not(.a-carousel-card-empty), #gridItemRoot, li > span.a-list-item',
   name: 'from_text',
@@ -4446,6 +4543,7 @@ export const recipes = [
               }
             ]
           },
+          video_panel,
           review_panel,
           {
             selector: '#attach-warranty-pane #attach-warranty-display',
