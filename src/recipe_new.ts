@@ -671,6 +671,139 @@ export const carousel_next_button = {
   name: 'from_text'
 }
 
+export const bundle_card = {
+  selector: '#bundles_feature_div',
+  name: 'from_text',
+  text_selector: '#bundles-card .a-cardui-header',
+  children: [
+    {
+      selector: '#bundles-card .a-cardui-header',
+      add_text: true
+    },
+    {
+      selector: '#bundles-card .a-cardui-body',
+      children: [
+        {
+          selector: 'div.a-carousel-viewport ol',
+          name: 'items',
+          children: [
+            {
+              selector: 'li',
+              name: 'from_text',
+              clickable: true,
+              add_text: true,
+              text_selector: 'div.outer-bundle-title span.a-truncate-full'
+            }
+          ]
+        },
+        carousel_prev_button,
+        carousel_next_button
+      ]
+    },
+    {
+      selector: '#bundles-card span[data-action="open-bundles-drawer-side-sheet"]',
+      add_text: true,
+      clickable: true,
+      name: 'from_text'
+    },
+    {
+      selector: '#bundles-desktop-side-sheet-modal-wrapper',
+      name: 'all_bundles',
+      children: [
+        {
+          selector: 'a.bundles-bg-close-button',
+          clickable: true,
+          add_text: true,
+          text_format: 'Close',
+          name: 'from_text'
+        },
+        {
+          selector: 'div.secondary-bundle-container',
+          name: 'from_text',
+          text_selector: 'a.bundle-expander-header',
+          children: [
+            {
+              selector: 'a.bundle-expander-header',
+              name: 'header',
+              clickable: true,
+              add_text: true
+            },
+            {
+              selector: 'div.bundle-expander-content',
+              children: [
+                {
+                  selector: 'a.bundle-details-title',
+                  clickable: true,
+                  add_text: true,
+                  text_selector: 'span.a-truncate-full',
+                  name: 'bundle_title'
+                },
+                {
+                  selector: 'div.a-col-right > div.a-row > span.a-price span.a-offscreen',
+                  add_text: true,
+                  text_format: 'Bundle price: {}'
+                },
+                {
+                  selector: 'a.bundle-components-expander-header',
+                  clickable: true,
+                  add_text: true,
+                  name: 'from_text'
+                },
+                {
+                  selector: 'div.bundle-components-expander-content',
+                  name: 'bundle_content',
+                  children: [
+                    {
+                      selector: 'div.bundle-component-card',
+                      text_selector: 'a.item-title span.a-truncate-full',
+                      name: 'from_text',
+                      children: [
+                        {
+                          selector: 'a.item-title',
+                          add_text: true,
+                          text_selector: 'span.a-truncate-full',
+                          clickable: true,
+                          name: 'product_title'
+                        },
+                        {
+                          selector: 'span.a-price span.a-offscreen',
+                          add_text: true
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  selector: '.bundle-atc-block span.a-button',
+                  clickable: true,
+                  add_text: true,
+                  name: 'add_to_cart'
+                }
+              ],
+              generate_metadata: (em) => {
+                const asin = em.getAttribute('id')?.split('-').at(-1)
+                const priceEm = em.querySelector(
+                  'a-col-right > div.a-row > span.a-price span.a-offscreen'
+                )
+                const price = priceEm?.innerText?.replace(/[\n]/g, '')
+                const titleEm = em.querySelector('a.bundle-details-title span.a-truncate-full')
+                const title = titleEm?.innerText || ''
+                const urlEm = em.querySelector('a.bundle-details-title')
+                const url = urlEm?.getAttribute('href')
+
+                return {
+                  name: 'bundle',
+                  data: { asin, price, title, url }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
 export const review_panel = {
   selector: '#customerReviews',
   name: 'reviews',
@@ -3899,6 +4032,7 @@ export const recipes = [
                   }
                 ]
               },
+              bundle_card,
               {
                 selector: '#twister',
                 class: 'product-options',
