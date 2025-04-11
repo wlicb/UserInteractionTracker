@@ -479,9 +479,41 @@ export const product_facts = {
 }
 
 export const product_delivery = {
-  selector: 'div.mir-layout-DELIVERY_BLOCK-slot-PRIMARY_DELIVERY_MESSAGE_LARGE',
+  selector:
+    'div.mir-layout-DELIVERY_BLOCK-slot-PRIMARY_DELIVERY_MESSAGE_LARGE, #deliveryBlock_feature_div',
   add_text: true,
-  class: 'product-delivery'
+  class: 'product-delivery',
+  name: 'product_delivery',
+  children: [
+    {
+      selector: 'a',
+      clickable: true,
+      // add_text: true,
+      name: 'from_text',
+      text_js: (em) => {
+        return em.parentElement?.innerText || ''
+      }
+    }
+  ]
+}
+
+export const global_purchase_message = {
+  selector: '#globalStoreBadgePopoverInsideBuybox_feature_div',
+  name: 'from_text',
+  add_text: true,
+  children: [
+    {
+      selector: 'a.a-link-normal',
+      clickable: true,
+      name: 'from_text',
+      add_text: true
+    },
+    {
+      selector: 'i.a-icon-popover',
+      clickable: true,
+      name: 'open_learn_more_popover'
+    }
+  ]
 }
 
 export const quantity_selector = {
@@ -607,6 +639,7 @@ export const buy_box_with_accordion = {
       children: [
         product_facts,
         product_delivery,
+        global_purchase_message,
         quantity_selector,
         delivery_frequency_selector,
         set_up_now_button,
@@ -628,6 +661,7 @@ export const buy_box_without_accordion_delivery = {
       children: [
         product_facts,
         product_delivery,
+        global_purchase_message,
         quantity_selector,
         add_to_cart_button,
         buy_now_button,
@@ -646,6 +680,7 @@ export const buy_box_without_accordion_pick_up = {
       children: [
         product_facts,
         product_delivery,
+        global_purchase_message,
         quantity_selector,
         add_to_cart_button,
         buy_now_button,
@@ -804,6 +839,69 @@ export const bundle_card = {
   ]
 }
 
+export const video_control = [
+  {
+    selector: 'video.vjs-tech',
+    clickable: true,
+    name: 'video'
+  },
+  {
+    selector: 'svg.ive-custom-play-button, button.vjs-big-play-button',
+    clickable: true,
+    name: 'play'
+  },
+  {
+    selector: 'button.vjs-play-control.vjs-paused',
+    clickable: true,
+    name: 'play'
+  },
+  {
+    selector: 'div.vse-fb-trigger-container',
+    clickable: true,
+    name: 'report_video'
+  },
+  {
+    selector: '#ive-vftphero-action-share',
+    clickable: true,
+    name: 'share'
+  },
+  {
+    selector: 'button.vjs-play-control.vjs-playing',
+    clickable: true,
+    name: 'pause'
+  },
+  {
+    selector: 'div.vjs-progress-control, div.vjs-progress-holder',
+    clickable: true,
+    name: 'progress_control'
+  },
+  {
+    selector: 'div.vjs-subs-caps-button',
+    clickable: true,
+    name: 'captions'
+  },
+  {
+    selector: 'button.vjs-mute-control[title="Mute"]',
+    clickable: true,
+    name: 'mute'
+  },
+  {
+    selector: 'button.vjs-mute-control[title="Unmute"]',
+    clickable: true,
+    name: 'unmute'
+  },
+  {
+    selector: 'div.vjs-volume-control',
+    clickable: true,
+    name: 'volume_control'
+  },
+  {
+    selector: 'button.vjs-fullscreen-control',
+    clickable: true,
+    name: 'fullscreen'
+  }
+]
+
 export const review_panel = {
   selector: '#customerReviews',
   name: 'reviews',
@@ -954,6 +1052,17 @@ export const review_panel = {
               add_text: true
             },
             {
+              selector: 'div.review-text-read-more-expander',
+              add_text: true,
+              children: [
+                {
+                  selector: 'div.video-block',
+                  name: 'video',
+                  children: video_control
+                }
+              ]
+            },
+            {
               selector: '.review-image-tile-section',
               name: 'images',
               children: [
@@ -967,6 +1076,34 @@ export const review_panel = {
           ]
         }
       ]
+    },
+    {
+      selector: '#reviews-medley-footer',
+      name: 'more_reviews',
+      clickable: true,
+      add_text: true
+    },
+    {
+      selector: '.global-reviews-content ul',
+      name: 'foreign_reviews',
+      children: [
+        {
+          selector: 'li',
+          name: 'from_nth_child',
+          children: [
+            {
+              selector: '.cr-original-review-content',
+              add_text: true
+            }
+          ]
+        },
+        {
+          selector: 'a[data-hook="see-all-reviews-link-foot"]',
+          clickable: true,
+          add_text: true,
+          name: 'from_text'
+        }
+      ]
     }
   ]
 }
@@ -978,58 +1115,7 @@ export const video_panel = {
     {
       selector: '#ive-hero-video-player',
       name: 'active_video',
-      children: [
-        {
-          selector: 'video.vjs-tech',
-          clickable: true,
-          name: 'video'
-        },
-        {
-          selector: 'svg.ive-custom-play-button',
-          clickable: true,
-          name: 'play'
-        },
-        {
-          selector: 'button.vjs-play-control.vjs-paused',
-          clickable: true,
-          name: 'play'
-        },
-        {
-          selector: 'div.vse-fb-trigger-container',
-          clickable: true,
-          name: 'report_video'
-        },
-        {
-          selector: '#ive-vftphero-action-share',
-          clickable: true,
-          name: 'share'
-        },
-        {
-          selector: 'button.vjs-play-control.vjs-playing',
-          clickable: true,
-          name: 'pause'
-        },
-        {
-          selector: 'div.vjs-progress-control',
-          clickable: true,
-          name: 'progress_control'
-        },
-        {
-          selector: 'div.vjs-subs-caps-button',
-          clickable: true,
-          name: 'captions'
-        },
-        {
-          selector: 'button.vjs-mute-control[title="Mute"]',
-          clickable: true,
-          name: 'mute'
-        },
-        {
-          selector: 'button.vjs-mute-control[title="Unmute"]',
-          clickable: true,
-          name: 'unmute'
-        }
-      ]
+      children: video_control
     },
     {
       selector: '#vse-placeholder-related-products-config',
@@ -2888,6 +2974,11 @@ export const recipes = [
           nav,
           cart_side_bar,
           {
+            selector: 'div.gw-desktop-herotator',
+            name: 'banner',
+            children: [carousel_prev_button, carousel_next_button]
+          },
+          {
             selector: 'div.gw-col',
             text_selector:
               'h1 span.a-truncate-full, h2 span.a-truncate-full, h3 span.a-truncate-full, h1:not(:has(span.a-truncate-full)), h2:not(:has(span.a-truncate-full)), h3:not(:has(span.a-truncate-full))',
@@ -3503,6 +3594,12 @@ export const recipes = [
             name: 'search_results',
             children: [
               {
+                selector: 'div.s-messaging-widget-result-summary-sort-option-container',
+                clickable: true,
+                add_text: true,
+                name: 'sort'
+              },
+              {
                 selector: 'div.AdHolder',
                 name: 'ads',
                 children: [
@@ -3727,7 +3824,19 @@ export const recipes = [
             ]
           },
           {
-            selector: 'div.a-popover-wrapper',
+            selector: 'div.a-popover.a-dropdown div.a-popover-wrapper',
+            name: 'dropdown',
+            children: [
+              {
+                selector: 'li.a-dropdown-item',
+                clickable: true,
+                add_text: true,
+                name: 'from_text'
+              }
+            ]
+          },
+          {
+            selector: 'div.a-popover:not(a-dropdown) div.a-popover-wrapper',
             name: 'popover',
             children: [
               {
@@ -3910,6 +4019,11 @@ export const recipes = [
             class: 'product-card',
             children: [
               {
+                selector: '#brandBar_feature_div',
+                clickable: true,
+                name: 'brand'
+              },
+              {
                 selector: '#title',
                 add_text: true,
                 keep_attr: ['id'],
@@ -3954,14 +4068,48 @@ export const recipes = [
                 class: 'review',
                 children: [
                   {
-                    selector: 'span.a-icon-alt',
-                    add_text: true
+                    selector: 'a.mvt-cm-cr-review-stars-mini-popover',
+                    add_text: true,
+                    clickable: true,
+                    name: 'ratings'
                   },
                   {
                     selector: '#acrCustomerReviewText',
                     add_text: true,
                     clickable: true,
                     name: 'reviews'
+                  },
+                  {
+                    selector: 'div[aria-label="Customer Reviews Ratings Summary"]',
+                    use_root: true,
+                    name: 'ratings_summary',
+                    children: [
+                      {
+                        selector: 'a.a-button-close',
+                        clickable: true,
+                        add_text: true,
+                        text_format: 'Close',
+                        name: 'from_text'
+                      },
+                      {
+                        selector: '#histogramTable',
+                        name: 'ratings_histogram',
+                        children: [
+                          {
+                            selector: 'li:has(a)',
+                            name: 'from_text',
+                            clickable: true,
+                            add_text: true
+                          }
+                        ]
+                      },
+                      {
+                        selector: '#acrPopoverLink',
+                        clickable: true,
+                        add_text: true,
+                        name: 'from_text'
+                      }
+                    ]
                   }
                 ]
               },
@@ -3999,6 +4147,12 @@ export const recipes = [
                     data: { price: em?.innerText?.replace(/\n/g, '') || '' }
                   }
                 }
+              },
+              {
+                selector: '#creturns-return-policy-message',
+                clickable: true,
+                add_text: true,
+                name: 'from_text'
               },
               {
                 selector: '#alternativeOfferEligibilityMessaging_feature_div',
@@ -4236,25 +4390,66 @@ export const recipes = [
                 ]
               },
               {
-                selector:
-                  '#productFactsDesktopExpander ul.a-unordered-list, #featurebullets_feature_div ul.a-unordered-list, #bond-feature-bullets-desktop ul.a-unordered-list',
+                selector: 'div.a-expander-section-container',
+                clickable: true,
                 add_text: true,
+                name: 'from_text'
+              },
+              {
+                selector:
+                  '#productFactsDesktopExpander, #featurebullets_feature_div, #bond-feature-bullets-desktop, #feature-bullets',
                 name: 'about_this_item',
-                text_format: 'About this item: ',
                 children: [
                   {
-                    selector: 'li',
-                    add_text: true
+                    selector: 'ul.a-unordered-list',
+                    children: [
+                      {
+                        selector: 'li',
+                        add_text: true
+                      }
+                    ],
+                    generate_metadata: (em) => {
+                      return {
+                        name: 'product_details',
+                        data: {
+                          bullet_list: em?.innerText?.replace(/\n/g, ' ') || ''
+                        }
+                      }
+                    }
+                  },
+                  {
+                    selector: 'a.a-expander-extend-header',
+                    clickable: true,
+                    add_text: true,
+                    name: 'from_text'
                   }
-                ],
-                generate_metadata: (em) => {
-                  return {
-                    name: 'product_details',
-                    data: {
-                      bullet_list: em?.innerText?.replace(/\n/g, ' ') || ''
+                ]
+              },
+              {
+                selector: '#newer-version',
+                name: 'newer_version',
+                children: [
+                  {
+                    selector: 'h2.a-text-bold',
+                    add_text: true
+                  },
+                  {
+                    selector: 'div.a-col-left:has(img)',
+                    clickable: true,
+                    add_text: true,
+                    text_format: 'Product Image',
+                    name: 'from_text'
+                  },
+                  {
+                    selector: 'div.a-col-right a',
+                    clickable: true,
+                    add_text: true,
+                    name: 'from_text',
+                    text_js: (em) => {
+                      return em.innerText || em.getAttribute('aria-label') || ''
                     }
                   }
-                }
+                ]
               }
             ]
           },
@@ -4363,6 +4558,31 @@ export const recipes = [
             selector: '#outOfStock',
             add_text: true,
             text_format: 'Currently Unavailable'
+          },
+          {
+            selector: '#fodcx_feature_div',
+            add_text: true,
+            name: 'no_featured_offer_available',
+            children: [
+              {
+                selector: 'a[aria-describedby="fod-cx-message-with-learn-more"]',
+                clickable: true,
+                add_text: true,
+                name: 'from_text'
+              }
+            ]
+          },
+          {
+            selector: '#unqualifiedBuyBox',
+            name: 'unqualified_buybox',
+            children: [
+              {
+                selector: 'div.a-button-stack',
+                clickable: true,
+                add_text: true,
+                name: 'from_text'
+              }
+            ]
           },
           {
             selector: 'div.cardRoot.bucket',
@@ -4509,6 +4729,26 @@ export const recipes = [
                         selector: 'div > div[class^="_product-comparison-desktop_titleStyle"]',
                         add_text: true,
                         name: 'product_title'
+                      },
+                      {
+                        selector: 'div[id^="swatchesContainer"]',
+                        name: 'colors',
+                        children: [
+                          {
+                            selector: 'span',
+                            direct_child: true,
+                            add_text: true,
+                            clickable: true,
+                            name: 'from_nth_child'
+                          },
+                          {
+                            selector: 'a',
+                            direct_child: true,
+                            add_text: true,
+                            clickable: true,
+                            name: 'from_text'
+                          }
+                        ]
                       }
                     ]
                   }
@@ -4678,6 +4918,19 @@ export const recipes = [
             ]
           },
           video_panel,
+          {
+            selector: '#aplusBrandStory_feature_div',
+            name: 'brand_story',
+            children: [carousel_prev_button, carousel_next_button]
+          },
+          {
+            selector: 'div.aplus-module',
+            name: 'from_text',
+            text_js: (em) => {
+              return em.getAttribute('cel_widget_id') || ''
+            },
+            children: [carousel_prev_button, carousel_next_button]
+          },
           review_panel,
           {
             selector: '#attach-warranty-pane #attach-warranty-display',
