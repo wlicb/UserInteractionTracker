@@ -49,6 +49,11 @@ export const nav = {
       selector: '#nav-search-bar-form',
       children: [
         {
+          selector: 'select.nav-search-dropdown',
+          name: 'search_drop_down_list',
+          clickable: true
+        },
+        {
           selector: 'input#twotabsearchtextbox',
           name: 'search_input',
           clickable: true,
@@ -125,6 +130,34 @@ export const nav = {
     hmenu
   ]
 }
+
+export const ratings_summary = [
+  {
+    selector: 'a.a-button-close, button.a-button-close',
+    clickable: true,
+    add_text: true,
+    text_format: 'Close',
+    name: 'from_text'
+  },
+  {
+    selector: '#histogramTable',
+    name: 'ratings_histogram',
+    children: [
+      {
+        selector: 'li:has(a)',
+        name: 'from_text',
+        clickable: true,
+        add_text: true
+      }
+    ]
+  },
+  {
+    selector: '#acrPopoverLink',
+    clickable: true,
+    add_text: true,
+    name: 'from_text'
+  }
+]
 
 export const cart_side_bar = {
   selector: '#nav-flyout-ewc',
@@ -1154,6 +1187,44 @@ export const video_panel = {
   ]
 }
 
+export const product_specifications = {
+  selector: '#productDetails_feature_div',
+  name: 'product_specifications',
+  children: [
+    {
+      selector: 'span.voyager-expand-collapse-all-btn',
+      clickable: true,
+      add_text: true,
+      name: 'from_text'
+    },
+    {
+      selector: '.a-expander-container',
+      text_selector: 'span[data-action="voyager-expander-heading-toggle"]',
+      name: 'from_text',
+      children: [
+        {
+          selector: 'span[data-action="voyager-expander-heading-toggle"]',
+          clickable: true,
+          add_text: true,
+          name: 'toggle_section'
+        },
+        {
+          selector: 'a.mvt-cm-cr-review-stars-mini-popover',
+          clickable: true,
+          add_text: true,
+          name: 'product_ratings'
+        },
+        {
+          selector: 'a:has(#acrCustomerReviewText)',
+          clickable: true,
+          add_text: true,
+          name: 'product_rating_count'
+        }
+      ]
+    }
+  ]
+}
+
 export const carousel_card = {
   selector: 'li.a-carousel-card:not(.a-carousel-card-empty), #gridItemRoot, li > span.a-list-item',
   name: 'from_text',
@@ -2025,6 +2096,43 @@ export const fresh_cart = [
             data: { title, asin, price, url, quantity }
           }
         }
+      },
+      {
+        selector: 'div.sc-list-item-content-removed',
+        text_selector: 'ul > li > span.a-list-item > a.sc-product-title span.a-truncate-full',
+        name: 'from_text',
+        children: [
+          {
+            selector: 'div.sc-product-image-desktop a img',
+            clickable: true,
+            name: 'product_image',
+            add_text: true,
+            text_format: 'Product Image'
+          },
+          {
+            selector: 'ul > li > span.a-list-item > a.sc-product-title',
+            clickable: true,
+            text_selector: 'span.a-truncate-full',
+            add_text: true,
+            name: 'product_detail'
+          },
+          {
+            selector: 'div.sc-badge-price-to-pay span.sc-price',
+            add_text: true
+          },
+          {
+            selector: "input[data-action='delete'], input[value='Delete']",
+            add_text: true,
+            clickable: true,
+            name: 'delete'
+          },
+          {
+            selector: "input[value='Replace item']",
+            add_text: true,
+            clickable: true,
+            name: 'delete'
+          }
+        ]
       }
     ]
   },
@@ -3600,6 +3708,20 @@ export const recipes = [
                 name: 'sort'
               },
               {
+                selector: 'div[class*="brandLogoHeaderContainer"]',
+                name: 'from_text',
+                text_selector: 'a[class*="c2Itd_link"] span[class*="ctaLastWord"]',
+                children: [
+                  {
+                    selector: 'a[class*="c2Itd_link"]',
+                    clickable: true,
+                    add_text: true,
+                    text_format: 'Open Store',
+                    name: 'from_text'
+                  }
+                ]
+              },
+              {
                 selector: 'div.AdHolder',
                 name: 'ads',
                 children: [
@@ -3700,7 +3822,8 @@ export const recipes = [
                         name: 'product_rating'
                       },
                       {
-                        selector: 'span.a-size-base.s-underline-text',
+                        selector:
+                          'a:has(span.a-size-base.s-underline-text, span.a-size-small.s-underline-text)',
                         add_text: true,
                         text_format: '{} reviews',
                         class: 'product-rating-count',
@@ -3774,6 +3897,25 @@ export const recipes = [
                         name: 'increase_quantity_by_one'
                       }
                     ]
+                  },
+                  {
+                    selector: 'div[data-cy="multi-offer-display"]',
+                    text_selector: 'a:has(span.s-underline-text.a-text-bold)',
+                    name: 'from_text',
+                    children: [
+                      {
+                        selector: 'a:has(span.s-underline-text.a-text-bold)',
+                        add_text: true,
+                        clickable: true,
+                        name: 'from_text'
+                      },
+                      {
+                        selector: 'div:has(> a[aria-describedby="price-link"])',
+                        clickable: true,
+                        add_text: true,
+                        name: 'offer_price'
+                      }
+                    ]
                   }
                 ],
                 generate_metadata: (em) => {
@@ -3836,7 +3978,13 @@ export const recipes = [
             ]
           },
           {
-            selector: 'div.a-popover:not(a-dropdown) div.a-popover-wrapper',
+            selector: 'div.a-popover.a-popover-no-header div.a-popover-wrapper',
+            name: 'ratings_summary',
+            children: ratings_summary
+          },
+          {
+            selector:
+              'div.a-popover:not(.a-dropdown):not(.a-popover-no-header) div.a-popover-wrapper',
             name: 'popover',
             children: [
               {
@@ -4083,33 +4231,7 @@ export const recipes = [
                     selector: 'div[aria-label="Customer Reviews Ratings Summary"]',
                     use_root: true,
                     name: 'ratings_summary',
-                    children: [
-                      {
-                        selector: 'a.a-button-close',
-                        clickable: true,
-                        add_text: true,
-                        text_format: 'Close',
-                        name: 'from_text'
-                      },
-                      {
-                        selector: '#histogramTable',
-                        name: 'ratings_histogram',
-                        children: [
-                          {
-                            selector: 'li:has(a)',
-                            name: 'from_text',
-                            clickable: true,
-                            add_text: true
-                          }
-                        ]
-                      },
-                      {
-                        selector: '#acrPopoverLink',
-                        clickable: true,
-                        add_text: true,
-                        name: 'from_text'
-                      }
-                    ]
+                    children: ratings_summary
                   }
                 ]
               },
@@ -4152,7 +4274,7 @@ export const recipes = [
                 selector: '#creturns-return-policy-message',
                 clickable: true,
                 add_text: true,
-                name: 'from_text'
+                name: 'return_policy'
               },
               {
                 selector: '#alternativeOfferEligibilityMessaging_feature_div',
@@ -4649,7 +4771,7 @@ export const recipes = [
           },
           {
             selector:
-              'div#dp:not(.grocery):not(.luxury) #similarities_feature_div, div[id^="sims-themis-sponsored-products"]',
+              'div#dp:not(.grocery):not(.luxury) #similarities_feature_div, div[id^="sims-themis-sponsored-products"], div[id^="sims-simsContainer_feature_div"]',
             text_selector: 'h2.a-carousel-heading, h1[class*="carousel-heading"]',
             name: 'from_text',
             children: [
@@ -4690,6 +4812,7 @@ export const recipes = [
               carousel_next_button
             ]
           },
+          product_specifications,
           {
             selector: '#product-comparison_feature_div',
             name: 'product_comparison',
@@ -5559,13 +5682,19 @@ export const recipes = [
           },
           {
             selector:
-              'div.sw-atf-recommendations-container div[id^="CardInstance"], div#smart-wagon-recommendations-btf div[id^="CardInstance"]',
-            text_selector: 'h1.a-carousel-heading',
+              'div.sw-atf-recommendations-container div[id^="CardInstance"], div#smart-wagon-recommendations-btf div[id^="CardInstance"], #rhf-shoveler div[id^="CardInstance"]',
+            text_selector: '.a-carousel-heading',
             name: 'from_text',
             children: [
               {
-                selector: 'h1.a-carousel-heading',
+                selector: '.a-carousel-heading',
                 add_text: true
+              },
+              {
+                selector: '.a-carousel-header-row a',
+                clickable: true,
+                add_text: true,
+                name: 'from_text'
               },
               carousel_card,
               carousel_prev_button,
