@@ -71,6 +71,8 @@ def abnormal_detection(user_name, date=None):
     for interaction in interactions:
         current_interaction_uuid = interaction['uuid']
         current_interaction_time = datetime.fromisoformat(interaction['timestamp'])
+        current_target=interaction.get('selector',None)
+        action_type=interaction.get('eventType',None)
         #check for long gap
         if previous_interaction_time is not None:
             gap = current_interaction_time - previous_interaction_time
@@ -78,15 +80,14 @@ def abnormal_detection(user_name, date=None):
                 long_gap_abnormal_uuids.extend([[previous_interaction_uuid, current_interaction_uuid]])
                 long_gap_count+=1
         #check for rapid interaction
-        interaction_window.append([current_interaction_time, current_interaction_uuid])
+        if not action_type.startswith('scroll'): 
+            interaction_window.append([current_interaction_time, current_interaction_uuid])
         interaction_window=[t for t in interaction_window if t[0] > current_interaction_time - rapid_interaction_window]
         if len(interaction_window) > rapid_interaction_rate*rapid_interaction_window.total_seconds():
             rapid_interaction_abnormal_uuids.extend([[t[1] for t in interaction_window]])
             interaction_window=[]
 
         #check for repeated interaction
-        current_target=interaction.get('selector',None)
-        action_type=interaction.get('eventType',None)
         if action_type.startswith('click') and current_target is not None:
             if current_target==previous_target:
                 repeated_interaction_count+=1
@@ -128,5 +129,5 @@ def abnormal_detection(user_name, date=None):
 
 if __name__ == "__main__":
     user_name = get_username_from_args() or "hailab-buyer-test"
-    detection_result = abnormal_detection(user_name, date=None) #"2025-03-06"
+    detection_result = abnormal_detection(user_name, date="2025-03-06") #"2025-03-06"
     print(detection_result)

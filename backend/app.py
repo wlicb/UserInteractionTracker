@@ -691,5 +691,114 @@ def all_users_data():
 def test():
     return {"message": "Hello World"}
 
+@app.route('/api/last_24_hours_users_data', methods=['GET'])
+def last_24_hours_users_data():
+    filter_user_list = 'test,unknown,hailab-yuxuan_984624,hailab-yuxuan,wenbo_326409,hailab-ziyi,hailab-test-buyer,abcdefg,hailab-03,zoey-000000,yuxuan,hai-user1'
+    
+    # Handle empty filter case
+    if filter_user_list:
+        user_list = filter_user_list.split(",")
+    else:
+        user_list = []
+    
+    # Calculate time range for last 24 hours
+    now = datetime.now()
+    start_time = (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    end_time = now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    
+    # Get all users excluding the filtered ones
+    all_users = list(user_collection.find(
+        {"user_name": {"$nin": user_list, "$ne": ""}}, 
+        {"_id": 0, "user_name": 1}
+    ))
+    total_users = len(all_users)
+    
+    # Get users with activity in the last 24 hours
+    active_users = set()
+    
+    # Count interactions
+    total_interactions = 0
+    interactions_pipeline = [
+        {"$match": {
+            "user_name": {"$nin": user_list, "$ne": ""},
+            "timestamp": {"$gte": start_time, "$lt": end_time}
+        }},
+        {"$group": {
+            "_id": "$user_name",
+            "count": {"$sum": 1}
+        }}
+    ]
+    interaction_results = list(interaction_collection.aggregate(interactions_pipeline))
+    
+    for result in interaction_results:
+        active_users.add(result["_id"])
+        total_interactions += result["count"]
+    
+    # Count reasons
+    total_reasons = 0
+    reasons_pipeline = [
+        {"$match": {
+            "user_name": {"$nin": user_list, "$ne": ""},
+            "timestamp": {"$gte": start_time, "$lt": end_time},
+            "eventType": {"$ne": "new_session"}
+        }},
+        {"$group": {
+            "_id": "$user_name",
+            "count": {"$sum": 1}
+        }}
+    ]
+    reason_results = list(rationale_collection.aggregate(reasons_pipeline))
+    
+    for result in reason_results:
+        active_users.add(result["_id"])
+        total_reasons += result["count"]
+    
+    # Count purchases
+    total_purchases = 0
+    purchases_pipeline = [
+        {"$match": {
+            "user_name": {"$nin": user_list, "$ne": ""},
+            "timestamp": {"$gte": start_time, "$lt": end_time}
+        }},
+        {"$group": {
+            "_id": "$user_name",
+            "count": {"$sum": 1}
+        }}
+    ]
+    purchase_results = list(order_processed_collection.aggregate(purchases_pipeline))
+    
+    for result in purchase_results:
+        active_users.add(result["_id"])
+        total_purchases += result["count"]
+    
+    # Get total counts for all time (not just last 24 hours)
+    all_time_interactions = interaction_collection.count_documents(
+        {"user_name": {"$nin": user_list, "$ne": ""}}
+    )
+    
+    all_time_reasons = rationale_collection.count_documents(
+        {"user_name": {"$nin": user_list, "$ne": ""}, "eventType": {"$ne": "new_session"}}
+    )
+    
+    all_time_purchases = order_processed_collection.count_documents(
+        {"user_name": {"$nin": user_list, "$ne": ""}}
+    )
+    
+    # Prepare response
+    response = {
+        "totalUsers": total_users,
+        "activeUsersToday": len(active_users),
+        "totalInteractionsToday": total_interactions,
+        "totalPurchasesToday": total_purchases,
+        "totalReasonsToday": total_reasons,
+        "allTimeStats": {
+            "totalInteractions": all_time_interactions,
+            "totalReasons": all_time_reasons,
+            "totalPurchases": all_time_purchases
+        }
+    }
+    
+    return jsonify(response), 200
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
