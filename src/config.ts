@@ -27,7 +27,9 @@ export const filter_url = [
   'https://www.amazon.com/gp/cart/desktop/',
   'https://www.amazon.com/gp/primecentral/editPaymentPreference',
   'https://www.amazon.com/gp/css/summary/print.html',
-  'https://www.amazon.com/documents/download/'
+  'https://www.amazon.com/documents/download/',
+  'https://www.amazon.com/ap/oa?',
+  'https://www.amazon.com/ap/mfa?'
 ]
 export const scroll_threshold = 300
 export const scroll_popup_interval = 15 * 1000 // 15 seconds
