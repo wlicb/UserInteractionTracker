@@ -144,13 +144,15 @@ export function processElement(
     const nameId = element.getAttribute('name')
 
     const tag = element.parentElement?.querySelector('span.a-button-dropdown span.a-button-text')
-    const newTag = document.createElement('span')
-    newTag.textContent = tag.textContent
-    const tagName = elementName + '.open_drop_down_list'
-    newTag.setAttribute('name', tagName)
-    tag.setAttribute('data-clickable-id', tagName) // Tag actual DOM option element
+    if (tag) {
+      const newTag = document.createElement('span')
+      newTag.textContent = tag.textContent
+      const tagName = elementName + '.open_drop_down_list'
+      newTag.setAttribute('name', tagName)
+      tag.setAttribute('data-clickable-id', tagName) // Tag actual DOM option element
 
-    newElement.appendChild(newTag)
+      newElement.appendChild(newTag)
+    }
 
     const options = document.querySelectorAll('a[id^="' + selectId + '"]')
     options.forEach(async (option) => {
