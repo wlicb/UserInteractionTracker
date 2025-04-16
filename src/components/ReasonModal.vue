@@ -23,6 +23,8 @@ const emit = defineEmits(['submit', 'skip'])
 const reason_text = ref('')
 const showError = ref(false)
 
+const textareaRef = ref()
+
 function submit() {
   if (!isValidReason(reason_text.value)) {
     showError.value = true
@@ -42,6 +44,11 @@ function skip() {
 function reset() {
   reason_text.value = ''
   showError.value = false
+}
+
+const handleFocusIn = (e) => {
+  e.stopPropagation()
+  e.stopImmediatePropagation()
 }
 </script>
 
@@ -137,12 +144,14 @@ function reset() {
     <div class="reason-modal-content">
       <span class="question" v-html="question"></span>
       <NInput
+        ref="textareaRef"
         type="textarea"
         id="reason-input"
         v-model:value="reason_text"
         :placeholder="placeholder"
         class="reason-textarea"
         @keydown.enter.prevent="submit"
+        @focusin.capture="handleFocusIn"
       />
       <div id="error-message" class="error-message" v-show="showError">
         Please enter a valid reason.
