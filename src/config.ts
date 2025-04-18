@@ -26,9 +26,12 @@ export const filter_url = [
   'https://www.amazon.com/gp/checkoutportal/',
   'https://www.amazon.com/gp/cart/desktop/',
   'https://www.amazon.com/gp/primecentral/editPaymentPreference',
-  'https://www.amazon.com/gp/css/summary/print.html'
+  'https://www.amazon.com/gp/css/summary/print.html',
+  'https://www.amazon.com/documents/download/',
+  'https://www.amazon.com/ap/oa?',
+  'https://www.amazon.com/ap/mfa?'
 ]
 export const scroll_threshold = 300
-export const scroll_popup_interval = 10 * 1000 // 10 seconds
+export const scroll_popup_interval = 15 * 1000 // 15 seconds
 export const new_session_interval = 1000 * 60 * 60 * 6 // 4 hours
 export const current_week_info_url = `${base_url}/current_week_info`

@@ -52,7 +52,7 @@ export function getClickableElementsInViewport() {
   // Select all potential clickable elements
   const documentCopy = document.cloneNode(true) as Document
   const allElements = documentCopy.querySelectorAll(
-    'a, button, [onclick], input[type="button"], input[type="submit"]'
+    'a, button, [onclick], input[type="button"], input[type="submit"], input[type="checkbox"]'
   )
 
   // Check if each element is in the viewport and add marker
@@ -76,7 +76,7 @@ export function MarkViewableElements() {
 
   // Select all elements
   const allElements = document.querySelectorAll(
-    'a, button, select, [onclick], input[type="button"], input[type="submit"]'
+    'a, button, select, [onclick], input[type="button"], input[type="submit"], input[type="checkbox"]'
   )
   // Check if each element is in the viewport and add marker
   allElements.forEach((element) => {
